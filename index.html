@@ -777,7 +777,8 @@ function api(fn){
   const t=setTimeout(()=>{if(ctl)ctl.abort();},30000);
   return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args}),
       credentials:'omit',redirect:'follow',cache:'no-store',signal:ctl?ctl.signal:undefined})
-    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+    .then(t=>{try{return JSON.parse(t);}catch(e){throw new Error('bad-response');}})
     .finally(()=>clearTimeout(t));
 }
 function queueOp(id){
@@ -943,7 +944,7 @@ async function submitAuth(e){
     $('#a-user').value='';$('#a-pin').value='';$('#a-pin2').value='';$('#a-name').value='';
     addAccount(res);
     toast(reg?'Akun @'+res.user.username+' berhasil dibuat 🎉':'Halo, '+res.user.name+'!');
-  }catch(ex){show('Tidak bisa terhubung. Periksa internet lalu coba lagi.');}
+  }catch(ex){show(ex&&ex.message==='bad-response'?'Server belum siap: pastikan Code.gs terbaru sudah diterapkan sebagai Versi baru (Terapkan → Kelola penerapan).':'Tidak bisa terhubung. Periksa internet lalu coba lagi.');}
   finally{btn.disabled=false;btn.textContent=authTab==='daftar'?'Buat akun':'Masuk';}
 }
 
