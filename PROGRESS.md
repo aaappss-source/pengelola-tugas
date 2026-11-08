@@ -8,7 +8,7 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 | Tahap | Isi | Status | Commit |
 |---|---|---|---|
 | 0 | Pemetaan, alat uji, PROGRESS.md | ✅ selesai (8 Nov 2026) | `Tahap 0: …` |
-| 1 | Fondasi data + migrasi | ⏳ menunggu jawaban Q1–Q3 di bawah + konfirmasi user | – |
+| 1 | Fondasi data + migrasi | ⏳ siap dimulai di sesi baru (Q1–Q3 sudah dijawab, lihat §6) | – |
 | 2 | Poin 4 → 5 → 1 → 2 → 3 → 9 → durasi | belum | – |
 | 3 | Poin 10 → 8 (kategori) | belum | – |
 | 4 | Poin 12 → 13 (banyak tugas sekaligus) | belum | – |
@@ -171,17 +171,21 @@ Untuk tahap berikutnya: logika rawan (migrasi, rentang multi-hari, susunan blok 
 
 ---
 
-## 6. Keputusan K1–K6 dan pertanyaan terbuka
+## 6. Keputusan K1–K6 dan keputusan tambahan
 
-Default dari dokumen dipakai kecuali disebut lain. Pertanyaan ini perlu dijawab **sebelum Tahap 1** karena menentukan rancangan data.
+Jawaban user 8 Nov 2026: **Q1 = a, Q2 = a, Q3 = b**. K2, K3, K4, K5 (kategori milik akun), dan K6 memakai default dokumen.
 
-- **Q1 / K1 (Poin 15):** Data sudah punya `date` (Tanggal dikerjakan) dan `dlDate` (Deadline). Usul: **tidak menambah field "Tanggal mulai"**; `date` = tanggal mulai, `dlDate` = akhir rentang. Akibatnya 2 tugas lama yang deadline-nya lebih lambat akan tampil multi-hari setelah Tahap 5 (dokumen default: tugas lama tetap 1 hari). → *menunggu jawaban*
-- **Q2 (Poin 17 + toggle lama):** Usul: toggle **Tugas | Kegiatan** di layar "+" dijadikan pemilih jenis (field baru `kind`), kategori tidak lagi dikelompokkan, dan **semua tugas lama tetap Tugas** (bisa dicentang & dihitung di grafik). Alternatif: tugas lama berkategori kelompok Kegiatan otomatis jadi Kegiatan (tidak bisa dicentang, keluar dari grafik). → *menunggu jawaban*
-- **Q3 (Poin 10 + migrasi kategori, K5):** Usul: 27 kategori bawaan disalin jadi kategori milik akun (bisa diubah/dihapus, kode lama dipakai sebagai ID sehingga tugas lama tidak perlu ditulis ulang), dua "Lainnya" digabung jadi satu yang tidak bisa dihapus, akun baru mendapat set bawaan yang sama. → *menunggu jawaban*
-- **K2, K3, K4, K5 (milik akun), K6:** pakai default dokumen.
+- **Q1 / K1 (Poin 15): pakai field yang ada.** Tidak ada field "Tanggal mulai" baru. `date` = tanggal mulai, `dlDate` = akhir rentang. Tugas multi-hari = `dlDate > date`. Tugas tanpa deadline = 1 hari. 2 tugas lama yang deadline-nya lebih lambat ikut tampil multi-hari setelah Tahap 5 (disetujui user). Migrasi Tahap 1 "tanggal mulai = deadline = tanggal tugas" **tidak dipakai**. K2: drag menggeser `date` dan `dlDate` dengan selisih hari yang sama.
+- **Q2 (Poin 17): toggle lama jadi pemilih jenis.** Field baru `kind: 'tugas' | 'kegiatan'`; **semua tugas lama = `'tugas'`** (tetap bisa dicentang dan dihitung di grafik). Di Tahap 8, toggle **Tugas | Kegiatan** di layar "+" berubah fungsi jadi pemilih jenis, dan kategori tidak lagi difilter per kelompok (`g`). Default deadline ON/OFF ikut jenis (Tugas ON, Kegiatan OFF), tidak lagi ikut kelompok kategori. Sampai Tahap 8, toggle tetap bekerja seperti sekarang.
+- **Q3 (Poin 10): kategori bawaan tetap permanen, kategori custom hanya tambahan.**
+  - 27 kategori bawaan tetap hardcode, sama untuk semua akun, tidak bisa diubah nama atau dihapus. Tidak ada migrasi kategori (poin Tahap 1 "kategori lama dipindah ke kategori milik akun" **tidak dipakai**).
+  - Kategori custom milik akun (K5: dipakai bersama semua profil), berisi nama + warna, disimpan di server. Bisa ditambah, diubah, dihapus. Saat dihapus, tugasnya pindah ke "Lainnya" (`lain_t`).
+  - Nama kategori custom tidak boleh sama dengan kategori custom lain **maupun nama kategori bawaan** di akun itu (tidak peka huruf besar/kecil).
+- **Turunan Q2 + Q3 (default diambil Tahap 0, bisa dikoreksi user):** karena pengelompokan kategori hilang di Tahap 8, dua kategori bawaan bernama "Lainnya" (`lain_t`, `lain_k`) akan muncul dobel. Default: pemilih kategori hanya menampilkan satu "Lainnya" (`lain_t`); tugas lama berkode `lain_k` tetap valid dan tampil sebagai "Lainnya". Kode tidak diubah di sheet.
+- **Untuk Tahap 3 (bukan soal data, putuskan di sesi itu):** ikon kategori custom (bawaan punya ikon, custom hanya nama + warna), urutan grid kalau bawaan + custom digabung, dan letak kategori custom di toggle Tugas | Kegiatan sebelum Tahap 8.
 - **Diputuskan Tahap 0 (bisa dikoreksi user):**
   - Tanpa jam = `start === ''` (tanpa field baru); durasi = `end` − `start` (tanpa field baru), default 1 jam.
-  - Semua ubahan `Code.gs` dikumpulkan di Tahap 1 (field baru, kategori per akun, profil per akun, pembuat/pencentang) supaya user cukup deploy server sekali.
+  - Semua ubahan `Code.gs` dikumpulkan di Tahap 1 (field baru: `kind`, kegiatan induk, kesulitan, pembuat/pencentang; kategori custom per akun; profil per akun) supaya user cukup deploy server sekali.
   - Sebelum deploy Tahap 1, buat salinan spreadsheet sebagai cadangan.
   - Tahap selesai = commit + push ke `main` (langsung live), karena user perlu mencobanya di HP. Batalkan dengan `git revert`.
 
@@ -193,4 +197,5 @@ Default dari dokumen dipakai kecuali disebut lain. Pertanyaan ini perlu dijawab 
 
 - **Kode aplikasi tidak diubah** (`index.html`, `sw.js`, `manifest.webmanifest`, `apps-script/Code.gs` identik dengan commit `d2e4add`).
 - File baru: `PROGRESS.md`, `package.json` (hanya skrip, tanpa dependensi), `.gitignore`, `tests/gas-mock.js`, `tests/server.test.js`, `tests/e2e.test.js`, `tests/check.js`, `tests/typecheck.js`, `tests/typecheck-baseline.json`.
-- Belum beres: jawaban Q1–Q3; konfirmasi user untuk mulai Tahap 1.
+- Q1–Q3 dijawab user (1a, 2a, 3b), dicatat di §6.
+- Belum beres: konfirmasi user untuk mulai Tahap 1 (di sesi baru, sesuai aturan satu tahap per sesi).
