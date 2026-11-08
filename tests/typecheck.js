@@ -17,17 +17,20 @@ if (which.status !== 0) { console.log('tsc tidak ditemukan, type check dilewati'
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pt-tsc-'));
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-fs.writeFileSync(path.join(dir, 'app.js'), (html.match(/<script>([\s\S]*?)<\/script>/) || [, ''])[1]);
+// script pustaka data (pt-lib) + script utama, digabung jadi satu file
+const lib = (html.match(/<script id="pt-lib">([\s\S]*?)<\/script>/) || [, ''])[1];
+fs.writeFileSync(path.join(dir, 'app.js'), lib + '\n' + (html.match(/<script>([\s\S]*?)<\/script>/) || [, ''])[1]);
+fs.writeFileSync(path.join(dir, 'globals.d.ts'), 'interface Window { PT_LIB: any }\n');   // dibuat oleh script pt-lib
 fs.copyFileSync(path.join(ROOT, 'sw.js'), path.join(dir, 'sw.js'));
-const run = (file, lib) => {
-  const r = spawnSync('tsc', ['--allowJs', '--checkJs', '--noEmit', '--strict', 'false', '--target', 'es2020', '--lib', lib, file],
+const run = (files, lib) => {
+  const r = spawnSync('tsc', ['--allowJs', '--checkJs', '--noEmit', '--strict', 'false', '--target', 'es2020', '--lib', lib].concat(files),
     { cwd: dir, encoding: 'utf8' });
   const lines = (r.stdout + r.stderr).split('\n').filter(l => /error TS\d+/.test(l));
   const codes = {};
   lines.forEach(l => { const c = l.match(/error (TS\d+)/)[1]; codes[c] = (codes[c] || 0) + 1; });
   return { count: lines.length, codes, lines };
 };
-const res = { 'index.html': run('app.js', 'dom,es2020'), 'sw.js': run('sw.js', 'webworker,es2020') };
+const res = { 'index.html': run(['globals.d.ts', 'app.js'], 'dom,es2020'), 'sw.js': run(['sw.js'], 'webworker,es2020') };
 const now = Object.fromEntries(Object.entries(res).map(([k, v]) => [k, v.count]));
 console.log(which.stdout.trim() + ' — jumlah error:', JSON.stringify(now));
 Object.entries(res).forEach(([k, v]) => console.log('  ' + k + ': ' + JSON.stringify(v.codes)));

@@ -6,6 +6,8 @@
 //   S.apiRegister('adit', '1234', 'Adit'); // panggil fungsi Code.gs langsung
 //   S.post('apiLogin', 'adit', '1234');    // atau lewat doPost (JSON bolak-balik, sama seperti aplikasi)
 //   S.sheet('@adit').rows();               // isi tab sebagai array baris
+//   makeRuntime({ codePath: 'tests/fixtures/Code-v1.gs' })   // server versi lama (sebelum Tahap 1)
+//   makeRuntime({ shareWith: S })          // server lain di atas spreadsheet yang sama
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -16,12 +18,15 @@ const CODE_GS = path.join(__dirname, '..', 'apps-script', 'Code.gs');
 
 function makeRuntime(opts) {
   opts = opts || {};
-  const sheets = [];
-  const log = { formulaAttempts: 0 };
+  // shareWith: runtime lain yang spreadsheet & Script Properties-nya dipakai bersama
+  // (mis. data dibuat server versi lama, lalu dibaca server versi baru = uji migrasi)
+  const sheets = opts.shareWith ? opts.shareWith.__sheets : [];
+  const log = { formulaAttempts: 0, writes: 0 };
 
   class Range {
     constructor(sh, r, c, nr, nc) { Object.assign(this, { sh, r, c, nr, nc }); }
     setValues(vals) {
+      log.writes++;
       if (vals.length !== this.nr || vals.some(v => v.length !== this.nc)) throw new Error('setValues: ukuran tidak cocok');
       vals.forEach((row, i) => row.forEach((v, j) => {
         let s = v == null ? '' : String(v);
@@ -43,6 +48,7 @@ function makeRuntime(opts) {
       return out;
     }
     clearContent() {
+      log.writes++;
       for (let i = 0; i < this.nr; i++) for (let j = 0; j < this.nc; j++) this.sh.set(this.r + i, this.c + j, '');
       return this;
     }
@@ -61,8 +67,11 @@ function makeRuntime(opts) {
       return 0;
     }
     getMaxRows() { return 1000; }
+    getMaxColumns() { return this.maxCols || 26; }
+    insertColumnsAfter(after, n) { this.maxCols = this.getMaxColumns() + n; }
     getRange(r, c, nr, nc) {
       if (r < 1 || c < 1 || nr < 1 || nc < 1) throw new Error('range tidak valid ' + [r, c, nr, nc]);
+      if (c + (nc || 1) - 1 > this.getMaxColumns()) throw new Error('range di luar jumlah kolom tab: ' + [r, c, nr, nc]);
       return new Range(this, r, c, nr || 1, nc || 1);
     }
     setFrozenRows() {}
@@ -93,7 +102,7 @@ function makeRuntime(opts) {
     getSpreadsheetTimeZone: () => 'Asia/Jakarta'
   };
 
-  const props = Object.assign({}, opts.props || {});
+  const props = opts.shareWith ? opts.shareWith.__props : Object.assign({}, opts.props || {});
   // Asia/Jakarta = UTC+7 tanpa DST
   const fmt = d => {
     const j = new Date(d.getTime() + 7 * 3600e3), p = n => String(n).padStart(2, '0');

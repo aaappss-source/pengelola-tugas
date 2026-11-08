@@ -635,9 +635,131 @@ details.tbl th{color:var(--muted);font-weight:500}
 
 <div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-btn" class="hidden"></button></div>
 
+<script id="pt-lib">
+/* Fungsi data murni (tanpa DOM): bentuk standar tugas/kategori/profil, antrean sinkron, migrasi cache & cadangan.
+   Dipakai script utama lewat window.PT_LIB dan diuji langsung di Node (tests/client.test.js). */
+window.PT_LIB=(function(){
+"use strict";
+const SCHEMA=2;                 // versi data server yang dibutuhkan aplikasi ini (Code.gs Tahap 1)
+const CACHE_V=2;                // versi cache di localStorage HP
+const MAX_PROFILES=5,MAX_CATS=50,CAT_NAME_MAX=30;
+const has=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
+const isId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,60}$/.test(x);
+const isProf=x=>typeof x==='string'&&/^p[a-z0-9]{1,20}$/.test(x);
+const isCustomCat=x=>typeof x==='string'&&/^c_[a-z0-9]{1,20}$/.test(x);
+const DIFFS=['mudah','sedang','sulit'];
+const okD=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x)?x:'';
+const okT=x=>typeof x==='string'&&/^\d{2}:\d{2}$/.test(x)?x:'';
+const str=(x,m)=>typeof x==='string'?x.slice(0,m):'';
+const cleanName=(x,m)=>typeof x==='string'?x.replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim().slice(0,m):'';
+const BASE=['id','cat','name','detail','date','start','end','dlDate','dlTime','done','doneAt','createdAt','updatedAt'];
+const EXTRA=['kind','diff','parent','by','doneBy'];   // field Tahap 1
+
+/** Tugas dari server/cache/cadangan → bentuk standar. Field Tahap 1 (kind, diff, parent, by, doneBy) hanya diisi
+ *  kalau ada di sumber. Data versi lama tidak punya field itu → dibiarkan undefined → tidak ikut terkirim → server
+ *  mempertahankan nilainya. isBuiltinCat(k) = apakah k kode kategori bawaan. Kode kategori custom (c_…) dipertahankan
+ *  walau kategorinya belum/tidak dikenal di HP ini (tampil sebagai "Lainnya"); server yang memutuskan. */
+function normTask(v,id,isBuiltinCat){
+  if(!v||typeof v!=='object')return null;
+  const date=okD(v.date);if(!date||typeof id!=='string'||!id)return null;
+  const t={id:id,cat:isBuiltinCat(v.cat)||isCustomCat(v.cat)?v.cat:'lain_t',name:str(v.name,200)||'(tanpa nama)',detail:str(v.detail,4000),date:date,
+    start:okT(v.start),end:okT(v.end),dlDate:okD(v.dlDate),dlTime:okT(v.dlTime),done:!!v.done,
+    doneAt:typeof v.doneAt==='number'?v.doneAt:null,createdAt:+v.createdAt||0,updatedAt:+v.updatedAt||0};
+  if(has(v,'kind'))t.kind=v.kind==='kegiatan'?'kegiatan':'tugas';     // 'task' (sisa kode lama) → 'tugas'
+  if(has(v,'diff'))t.diff=DIFFS.indexOf(v.diff)>=0?v.diff:'';
+  if(has(v,'parent'))t.parent=isId(v.parent)&&v.parent!==id?v.parent:'';
+  if(isProf(v.by))t.by=v.by;
+  if(has(v,'doneBy'))t.doneBy=t.done&&isProf(v.doneBy)?v.doneBy:'';
+  return t;
+}
+/** Tugas → data yang dikirim ke server / disimpan di cadangan. Field Tahap 1 yang undefined tidak ikut. */
+function toDoc(t){const d={};BASE.forEach(k=>{d[k]=t[k];});EXTRA.forEach(k=>{if(t[k]!==undefined)d[k]=t[k];});return d;}
+function normCat(v){
+  if(!v||typeof v!=='object'||!isCustomCat(v.id))return null;
+  const name=cleanName(v.name,CAT_NAME_MAX);if(!name)return null;
+  const n=Math.round(Number(v.hue));
+  return {id:v.id,name:name,hue:isFinite(n)?((n%360)+360)%360:0};
+}
+function normProfile(v){
+  if(!v||typeof v!=='object'||!isProf(v.id))return null;
+  return {id:v.id,name:cleanName(v.name,40)||'Profil',avatar:typeof v.avatar==='string'&&/^[a-z0-9_-]{1,20}$/.test(v.avatar)?v.avatar:''};
+}
+function normList(list,fn,max){
+  const out=[],seen=Object.create(null);
+  (Array.isArray(list)?list:[]).forEach(v=>{const x=fn(v);if(x&&!seen[x.id]){seen[x.id]=1;out.push(x);}});
+  return out.slice(0,max);
+}
+/** Kunci antrean: satu op per item (tugas t:, kategori c:, profil p:). null = op tidak valid. */
+function opKey(o){
+  if(!o||typeof o!=='object')return null;
+  switch(o.op){
+    case 'upsert':return o.task&&isId(o.task.id)?'t:'+o.task.id:null;
+    case 'delete':return isId(o.id)?'t:'+o.id:null;
+    case 'cat':return o.cat&&isCustomCat(o.cat.id)?'c:'+o.cat.id:null;
+    case 'cat-del':return isCustomCat(o.id)?'c:'+o.id:null;
+    case 'profile':return o.profile&&isProf(o.profile.id)?'p:'+o.profile.id:null;
+    case 'profile-del':return isProf(o.id)?'p:'+o.id:null;
+  }
+  return null;
+}
+/** Tambah op ke antrean: op lama untuk item yang sama dibuang, op baru ditaruh paling belakang. */
+function enqueue(ops,op){const k=opKey(op);return k?ops.filter(o=>opKey(o)!==k).concat([op]):ops;}
+/** Data dari server + perubahan di HP yang belum terkirim. cur = {cats, profiles} di HP, dipakai kalau server
+ *  versi lama tidak mengirim cats/profiles (supaya tidak terhapus). */
+function mergeServer(res,ops,cur,isBuiltinCat){
+  const tasks={};
+  (res&&Array.isArray(res.tasks)?res.tasks:[]).forEach(v=>{const t=normTask(v,v&&v.id,isBuiltinCat);if(t)tasks[t.id]=t;});
+  let cats=res&&Array.isArray(res.cats)?normList(res.cats,normCat,MAX_CATS):cur.cats.slice();
+  let profiles=res&&Array.isArray(res.profiles)?normList(res.profiles,normProfile,MAX_PROFILES):cur.profiles.slice();
+  const put=(list,x)=>{const i=list.findIndex(y=>y.id===x.id);if(i>=0)list[i]=x;else list.push(x);};
+  (ops||[]).forEach(o=>{
+    if(o.op==='delete')delete tasks[o.id];
+    else if(o.op==='upsert'){const t=normTask(o.task,o.task.id,isBuiltinCat);if(t)tasks[t.id]=t;}
+    else if(o.op==='cat'){const c=normCat(o.cat);if(c)put(cats,c);}
+    else if(o.op==='cat-del')cats=cats.filter(c=>c.id!==o.id);
+    else if(o.op==='profile'){const p=normProfile(o.profile);if(p)put(profiles,p);}
+    else if(o.op==='profile-del')profiles=profiles.filter(p=>p.id!==o.id);
+  });
+  return {tasks:tasks,cats:cats,profiles:profiles};
+}
+/** Cache HP (localStorage pt.cache.<akun>) versi berapa pun → versi CACHE_V.
+ *  v1 (sebelum Tahap 1) = {tasks:{id:tugas}, ops:[…]}; v2 = + v, cats, profiles. Antrean lama dipertahankan. */
+function migrateCache(c,isBuiltinCat){
+  c=c&&typeof c==='object'?c:{};
+  const tasks={},src=c.tasks&&typeof c.tasks==='object'?c.tasks:{};
+  for(const id in src){if(has(src,id)){const t=normTask(src[id],id,isBuiltinCat);if(t)tasks[id]=t;}}
+  return {v:CACHE_V,tasks:tasks,ops:(Array.isArray(c.ops)?c.ops:[]).filter(o=>opKey(o)!==null),
+    cats:normList(c.cats,normCat,MAX_CATS),profiles:normList(c.profiles,normProfile,MAX_PROFILES)};
+}
+/** Teks cadangan versi 2 (tugas + kategori custom + profil). */
+function makeBackup(taskList,cats,profiles,nowIso){
+  return JSON.stringify({app:'pengelola-tugas',version:2,exportedAt:nowIso,tasks:taskList.map(toDoc),cats:cats,profiles:profiles});
+}
+/** Cadangan versi 1 ({tasks}), versi 2 ({tasks, cats, profiles}) atau array tugas → {tasks, cats, profiles}.
+ *  null kalau formatnya tidak dikenali. newId() dipakai untuk tugas tanpa ID valid. */
+function parseBackup(o,isBuiltinCat,newId){
+  const arr=Array.isArray(o)?o:(o&&Array.isArray(o.tasks)?o.tasks:null);
+  if(!arr)return null;
+  const tasks=[];
+  arr.slice(0,3000).forEach(v=>{const t=normTask(v,v&&isId(v.id)?v.id:newId(),isBuiltinCat);if(t)tasks.push(t);});
+  return {tasks:tasks,cats:normList(o&&o.cats,normCat,MAX_CATS),profiles:normList(o&&o.profiles,normProfile,MAX_PROFILES)};
+}
+/** Server sudah memakai Code.gs Tahap 1 atau lebih baru? (server lama tidak mengirim schema) */
+const serverIsCurrent=res=>!!res&&typeof res.schema==='number'&&res.schema>=SCHEMA;
+/** Profil yang dipakai di HP ini: pilihan tersimpan kalau masih ada, kalau tidak profil pertama. */
+function pickProfile(profiles,stored){
+  if(profiles.some(p=>p.id===stored))return stored;
+  return profiles.length?profiles[0].id:undefined;
+}
+return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CATS,isId:isId,isProf:isProf,isCustomCat:isCustomCat,
+  normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
+  migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile};
+})();
+</script>
 <script>
 (function(){
 "use strict";
+const L=window.PT_LIB;
 
 /* ================= helpers ================= */
 const $=s=>document.querySelector(s);
@@ -736,40 +858,35 @@ const CATS=[
  {k:'lain_k', n:'Lainnya', g:'kegiatan', h:30, i:'dots'}
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
-const catOf=k=>CAT[k]||CAT.lain_t;
+const isBuiltinCat=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(CAT,k);
+const catOf=k=>isBuiltinCat(k)?CAT[k]:CAT.lain_t;      // kode custom (c_…) tampil "Lainnya" sampai Tahap 3
 const catIc=(c,big)=>'<div class="cat-ic'+(big?' big':'')+'" style="--h:'+c.h+'">'+ic(c.i)+'</div>';
 
 /* ================= data store (Google Apps Script + spreadsheet) ================= */
 const API_URL='https://script.google.com/macros/s/AKfycbxd5t15V5dDg42HldXBx91JbiPxUZQp6zttDX4JwhjU_pI-d0ceNlitVTFXtvQ1wlFAGg/exec';   // URL aplikasi web Apps Script (…/exec)
 const HAS_GAS=/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(API_URL)||API_URL.indexOf('http://localhost')===0;
 let tasks={};          // id -> task (akun yang sedang aktif)
-let ops=[];            // perubahan yang belum terkirim ke server
+let ops=[];            // perubahan yang belum terkirim ke server (tugas, kategori custom, profil)
+let cats=[];           // kategori custom akun aktif [{id:'c_…', name, hue}] (UI di Tahap 3)
+let profiles=[];       // profil di akun aktif [{id:'p…', name, avatar}] (UI di Tahap 9)
 let accounts=[];       // akun yang tersimpan di HP ini
 let me=null;           // akun aktif
-const net={status:'idle',msg:'',inflight:false,timer:null,backoff:0,lastLoad:0};
+// oldServer: server belum memakai Code.gs Tahap 1 (field baru belum tersimpan)
+const net={status:'idle',msg:'',inflight:false,timer:null,backoff:0,lastLoad:0,oldServer:false};
 
-function normTask(v,id){
-  if(!v||typeof v!=='object')return null;
-  const s=(x,m)=>typeof x==='string'?x.slice(0,m):'';
-  const okD=x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x)?x:'';
-  const okT=x=>typeof x==='string'&&/^\d{2}:\d{2}$/.test(x)?x:'';
-  const date=okD(v.date);if(!date||typeof id!=='string'||!id)return null;
-  return {id:id,cat:CAT[v.cat]?v.cat:'lain_t',name:s(v.name,200)||'(tanpa nama)',detail:s(v.detail,4000),date:date,
-    start:okT(v.start),end:okT(v.end),dlDate:okD(v.dlDate),dlTime:okT(v.dlTime),done:!!v.done,
-    doneAt:typeof v.doneAt==='number'?v.doneAt:null,createdAt:+v.createdAt||0,updatedAt:+v.updatedAt||0};
-}
-const toDoc=t=>({id:t.id,cat:t.cat,name:t.name,detail:t.detail,date:t.date,start:t.start,end:t.end,dlDate:t.dlDate,dlTime:t.dlTime,
-  done:t.done,doneAt:t.doneAt,createdAt:t.createdAt,updatedAt:t.updatedAt});
+const toDoc=L.toDoc;
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function saveAccounts(){lsSet('pt.accounts',accounts);lsSet('pt.current',me?me.id:null);}
-function saveLocal(){if(me)lsSet('pt.cache.'+me.id,{tasks:tasks,ops:ops});}
+function saveLocal(){if(me)lsSet('pt.cache.'+me.id,{v:L.CACHE_V,tasks:tasks,ops:ops,cats:cats,profiles:profiles});}
+// cache lama (versi 1, sebelum Tahap 1) dimigrasi di sini; antrean yang belum terkirim tetap ikut
 function loadLocalFor(acc){
-  const c=lsGet('pt.cache.'+acc.id,{})||{};tasks={};
-  const src=c.tasks||{};for(const id in src){const t=normTask(src[id],id);if(t)tasks[id]=t;}
-  ops=Array.isArray(c.ops)?c.ops.filter(o=>o&&((o.op==='delete'&&o.id)||(o.op==='upsert'&&o.task&&o.task.id))):[];
+  const c=L.migrateCache(lsGet('pt.cache.'+acc.id,{}),isBuiltinCat);
+  tasks=c.tasks;ops=c.ops;cats=c.cats;profiles=c.profiles;
 }
+// profil yang dipakai di HP ini untuk akun aktif (pemilih profil dibuat di Tahap 9)
+function curProfile(){return me?L.pickProfile(profiles,lsGet('pt.prof.'+me.id,null)):undefined;}
 function api(fn){
   const args=[].slice.call(arguments,1);
   if(!HAS_GAS)return Promise.reject(new Error('offline'));
@@ -783,10 +900,11 @@ function api(fn){
 }
 function queueOp(id){
   const t=tasks[id];
-  ops=ops.filter(o=>(o.op==='delete'?o.id:o.task.id)!==id);
-  ops.push(t?{op:'upsert',task:toDoc(t)}:{op:'delete',id:id});
+  ops=L.enqueue(ops,t?{op:'upsert',task:toDoc(t)}:{op:'delete',id:id});
   saveLocal();
 }
+// perubahan kategori custom / profil: {op:'cat'|'cat-del'|'profile'|'profile-del', …} lewat antrean yang sama
+function queueMeta(op){ops=L.enqueue(ops,op);saveLocal();scheduleFlush(500);}
 function persist(id){queueOp(id);render();scheduleFlush(500);return Promise.resolve();}
 function syncOne(id){queueOp(id);scheduleFlush(800);return Promise.resolve();}
 function scheduleFlush(ms){clearTimeout(net.timer);net.timer=setTimeout(flush,ms==null?500:ms);}
@@ -799,7 +917,7 @@ async function flush(){
     if(acc!==me)return;
     if(!res||!res.ok){apiErr(res);return;}
     ops=ops.filter(o=>sent.indexOf(o)<0);
-    applyServer(res.tasks);
+    applyServer(res);
     net.backoff=0;net.lastLoad=Date.now();setNet(ops.length?'saving':'saved');
   }catch(e){
     if(acc!==me)return;
@@ -810,12 +928,12 @@ async function flush(){
     if(me&&ops.length&&net.status==='saving')scheduleFlush(300);
   }
 }
-// data dari server + perubahan lokal yang belum terkirim
-function applyServer(list){
-  const next={};
-  (list||[]).forEach(v=>{const t=normTask(v,v&&v.id);if(t)next[t.id]=t;});
-  ops.forEach(o=>{if(o.op==='delete')delete next[o.id];else{const t=normTask(o.task,o.task.id);if(t)next[t.id]=t;}});
-  tasks=next;saveLocal();render();
+// data dari server (tugas, kategori, profil) + perubahan lokal yang belum terkirim
+function applyServer(res){
+  const m=L.mergeServer(res,ops,{cats:cats,profiles:profiles},isBuiltinCat);
+  tasks=m.tasks;cats=m.cats;profiles=m.profiles;
+  if(res)net.oldServer=!L.serverIsCurrent(res);
+  saveLocal();render();
 }
 async function load(){
   if(!me)return;
@@ -827,7 +945,7 @@ async function load(){
     if(!res||!res.ok){apiErr(res);return;}
     acc.name=res.user.name;acc.username=res.user.username;saveAccounts();
     net.lastLoad=Date.now();
-    applyServer(res.tasks);
+    applyServer(res);
     setNet(ops.length?'saving':'saved');
     if(ops.length)scheduleFlush(200);
   }catch(e){if(acc===me)setNet('offline');}
@@ -837,6 +955,7 @@ function apiErr(res){
   setNet('error',(res&&res.message)||'Gagal menyimpan.');
 }
 function setNet(st,msg){net.status=st;net.msg=msg||'';renderSync();if(state.view==='saya')renderMe();}
+const OLD_SERVER_MSG='Server belum diperbarui: terapkan Code.gs terbaru (Versi baru) supaya data baru ikut tersimpan';
 const STATUS={
   idle:['',''],
   loading:['busy','Memuat data…'],
@@ -845,9 +964,16 @@ const STATUS={
   offline:['bad','Offline — perubahan disimpan di HP dan dikirim saat online'],
   error:['bad','Gagal menyimpan']
 };
-function statusText(){const st=STATUS[net.status]||STATUS.idle;return net.status==='error'&&net.msg?net.msg:st[1];}
+// [kelas titik status, teks status]
+function syncState(){
+  const st=STATUS[net.status]||STATUS.idle;
+  if(net.status==='error'&&net.msg)return [st[0],net.msg];
+  if(net.oldServer&&net.status==='saved')return ['bad',OLD_SERVER_MSG];
+  return st;
+}
+function statusText(){return syncState()[1];}
 function renderSync(){
-  const d=$('#sync-dot');const st=STATUS[net.status]||STATUS.idle;d.className='sync-dot '+st[0];d.title=statusText();
+  const d=$('#sync-dot');const st=syncState();d.className='sync-dot '+st[0];d.title=st[1];
   const av=$('#hdr-av');if(av)av.textContent=me?initial(me):'?';
 }
 function initial(a){return String((a&&(a.name||a.username))||'?').trim().charAt(0)||'?';}
@@ -873,13 +999,13 @@ function addAccount(res){
   if(!a){a={id:res.user.id};accounts.push(a);}
   a.username=res.user.username;a.name=res.user.name;a.token=res.token;
   me=a;loadLocalFor(a);
-  applyServer(res.tasks||[]);
+  applyServer(res);
   useAccount(a,true);
   if(ops.length)scheduleFlush(200);
 }
 function signOut(id,expired){
-  accounts=accounts.filter(a=>a.id!==id);lsDel('pt.cache.'+id);
-  if(me&&me.id===id){me=null;tasks={};ops=[];clearTimeout(net.timer);net.status='idle';}
+  accounts=accounts.filter(a=>a.id!==id);lsDel('pt.cache.'+id);lsDel('pt.prof.'+id);
+  if(me&&me.id===id){me=null;tasks={};ops=[];cats=[];profiles=[];clearTimeout(net.timer);net.status='idle';net.oldServer=false;}
   saveAccounts();
   if(!me){
     while(layers.length)hideLayer(layers[layers.length-1]);
@@ -1229,9 +1355,9 @@ function renderMe(){
   const l=all(),d=l.filter(t=>t.done).length;
   const byCat={};l.forEach(t=>byCat[t.cat]=(byCat[t.cat]||0)+1);
   const fav=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a])[0];
-  const st=STATUS[net.status]||STATUS.idle;
+  const st=syncState();
   let h='<div class="me-card"><span class="av big">'+esc(initial(me))+'</span><div><b>'+esc(me.name||me.username)+'</b><p style="margin-top:1px">@'+esc(me.username)+'</p>'+
-    (statusText()?'<p><i class="sync-dot '+st[0]+'"></i>'+esc(statusText())+(ops.length?' ('+ops.length+')':'')+'</p>':'')+'</div></div>';
+    (st[1]?'<p><i class="sync-dot '+st[0]+'"></i>'+esc(st[1])+(ops.length?' ('+ops.length+')':'')+'</p>':'')+'</div></div>';
   h+='<div class="tiles" style="grid-template-columns:repeat(3,1fr)">'+tile('Semua tugas',l.length,'tercatat')+tile('Selesai',d,pct(d,l.length).toString().replace('.',',')+'%')+
     tile('Paling sering',fav?catOf(fav).n:'-',fav?byCat[fav]+' tugas':'belum ada')+'</div>';
   if(canInstall)h+='<div class="menu" style="margin-top:14px"><button data-act="install">'+ic('phone')+'<div>Pasang sebagai aplikasi<small>Ikon di layar utama, terbuka penuh tanpa bilah browser</small></div></button></div>';
@@ -1280,10 +1406,10 @@ function renderDetail(){
 /* ================= actions ================= */
 function toggleDone(id,btn){
   const t=tasks[id];if(!t)return;
-  t.done=!t.done;t.doneAt=t.done?Date.now():null;t.updatedAt=Date.now();
+  t.done=!t.done;t.doneAt=t.done?Date.now():null;t.doneBy=t.done?curProfile():'';t.updatedAt=Date.now();
   persist(id);
   const b=document.querySelector('.check[data-check="'+CSS.escape(id)+'"]');if(b){b.classList.add('pop');}
-  if(t.done)toast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',['Urungkan',()=>{t.done=false;t.doneAt=null;t.updatedAt=Date.now();persist(id);}]);
+  if(t.done)toast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',['Urungkan',()=>{t.done=false;t.doneAt=null;t.doneBy='';t.updatedAt=Date.now();persist(id);}]);
 }
 function delTask(id){
   const bak=tasks[id];if(!bak)return;
@@ -1340,7 +1466,7 @@ function saveForm(e){
     dlDate:dlOn?($('#f-dl-date').value||date):'',dlTime:dlOn?($('#f-dl-time').value||'23:59'):''};
   const now=Date.now();let id;
   if(f.editId&&tasks[f.editId]){id=f.editId;Object.assign(tasks[id],data,{updatedAt:now});}
-  else{id=newId();tasks[id]=Object.assign({id:id,kind:'task'},data,{done:false,doneAt:null,createdAt:now,updatedAt:now});}
+  else{id=newId();tasks[id]=Object.assign({id:id,kind:'tugas',diff:'',parent:'',by:curProfile()},data,{done:false,doneAt:null,doneBy:'',createdAt:now,updatedAt:now});}
   const wasEdit=!!f.editId,ret=state.returnTo;
   closeAdd();
   if(ret==='kalender'){state.calMonth=mkey(date);state.calSel=date;}
@@ -1416,7 +1542,7 @@ function renderMonthPicker(){
 }
 
 /* ---- backup/import ---- */
-function backupJson(){const arr=all().sort(byTime).map(t=>{const d=toDoc(t);d.id=t.id;return d;});return JSON.stringify({app:'pengelola-tugas',version:1,exportedAt:new Date().toISOString(),tasks:arr});}
+function backupJson(){return L.makeBackup(all().sort(byTime),cats,profiles,new Date().toISOString());}
 function showImport(prefill,mode){
   $('#import-body').innerHTML=
     '<p style="margin:0 0 12px;color:var(--text2);font-size:14px">'+(mode==='copy'?'Tekan lama pada teks di bawah, pilih semua, lalu salin. Simpan di catatan atau chat pribadi.':'Tempel teks cadangan (JSON) di bawah. Tugas dengan ID yang sama akan diperbarui.')+'</p>'+
@@ -1427,10 +1553,13 @@ function showImport(prefill,mode){
 }
 async function doImport(){
   let o;try{o=JSON.parse($('#imp-txt').value);}catch(e){const er=$('#imp-err');er.textContent='Teks bukan JSON yang valid.';er.classList.remove('hidden');return;}
-  const arr=Array.isArray(o)?o:(o&&Array.isArray(o.tasks)?o.tasks:null);
-  if(!arr){const er=$('#imp-err');er.textContent='Format tidak dikenali. Harus berisi daftar "tasks".';er.classList.remove('hidden');return;}
+  const b=L.parseBackup(o,isBuiltinCat,newId);
+  if(!b){const er=$('#imp-err');er.textContent='Format tidak dikenali. Harus berisi daftar "tasks".';er.classList.remove('hidden');return;}
+  // cadangan versi 2: kategori custom & profil yang belum ada ikut dipulihkan (supaya tugasnya tetap berkategori)
+  b.cats.forEach(c=>{if(!cats.some(x=>x.id===c.id)){cats.push(c);queueMeta({op:'cat',cat:c});}});
+  b.profiles.forEach(p=>{if(!profiles.some(x=>x.id===p.id)&&profiles.length<L.MAX_PROFILES){profiles.push(p);queueMeta({op:'profile',profile:p});}});
   const ids=[];
-  arr.slice(0,3000).forEach(v=>{let id=v&&typeof v.id==='string'&&/^[A-Za-z0-9_-]{1,60}$/.test(v.id)?v.id:newId();const t=normTask(v,id);if(t){delete t._local;t.updatedAt=Date.now();tasks[id]=t;ids.push(id);}});
+  b.tasks.forEach(t=>{t.updatedAt=Date.now();tasks[t.id]=t;ids.push(t.id);});
   hideLayer('import');saveLocal();render();
   toast(ids.length+' tugas dipulihkan');
   for(const id of ids){await syncOne(id);}

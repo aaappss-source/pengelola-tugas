@@ -8,7 +8,7 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 | Tahap | Isi | Status | Commit |
 |---|---|---|---|
 | 0 | Pemetaan, alat uji, PROGRESS.md | ✅ selesai (8 Nov 2026) | `Tahap 0: …` |
-| 1 | Fondasi data + migrasi | ⏳ siap dimulai di sesi baru (Q1–Q3 sudah dijawab, lihat §6) | – |
+| 1 | Fondasi data + migrasi | ✅ selesai (8 Nov 2026), `Code.gs` di-deploy user 8 Nov 17.24 WIB, lalu `index.html` live | `Tahap 1: …` |
 | 2 | Poin 4 → 5 → 1 → 2 → 3 → 9 → durasi | belum | – |
 | 3 | Poin 10 → 8 (kategori) | belum | – |
 | 4 | Poin 12 → 13 (banyak tugas sekaligus) | belum | – |
@@ -36,14 +36,14 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 
 ## 1. Peta struktur kode
 
-Nomor baris = posisi di commit Tahap 0 (akan bergeser). Cari pakai nama fungsi/ID, jangan hanya nomor baris.
+Nomor baris = posisi di commit Tahap 0 (sudah bergeser ±130 baris sejak Tahap 1 karena `<script id="pt-lib">`). Cari pakai nama fungsi/ID, jangan hanya nomor baris.
 
 ### File
 
 | File | Isi |
 |---|---|
-| `index.html` (1589 baris) | `<style>` baris 18–440 · markup 442–636 · satu `<script>` IIFE 638–1587 |
-| `apps-script/Code.gs` (381 baris) | server API + akses spreadsheet |
+| `index.html` (±1720 baris) | `<style>` · markup · **`<script id="pt-lib">`** (sejak Tahap 1: fungsi data murni tanpa DOM → `window.PT_LIB`, diuji di Node) · `<script>` IIFE utama (memakai `const L=window.PT_LIB`) |
+| `apps-script/Code.gs` (±615 baris) | server API + akses spreadsheet (versi data `SCHEMA = 2` sejak Tahap 1) |
 | `sw.js` | service worker, cache `pt-v2`. Halaman: network-first. File lain (ikon, manifest): cache-first → **naikkan nama cache kalau mengganti ikon/logo** |
 | `manifest.webmanifest` | nama "Pengelola Tugas"/"Tugas", warna `#232323`/`#1b1b1b`, 3 ikon |
 | `icons/` | `icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png` (PNG saja, tidak ada sumber SVG) |
@@ -66,7 +66,8 @@ Nomor baris = posisi di commit Tahap 0 (akan bergeser). Cari pakai nama fungsi/I
 
 - Helper (642): `$`, `esc`, tanggal (`today`, `mkey`, `parseYmd`, `addDays`, `fmt*`), ikon `P` + `ic()` (668).
 - **Kategori** `CATS` (709–738), `CAT`, `catOf(k)`, `catIc(c)`.
-- **Data store** (742–855): `API_URL`, `tasks`, `ops`, `accounts`, `me`, `normTask` 751, `toDoc` 761, `lsGet/lsSet`, `api()` 773, `queueOp` 784, `persist` 790, `flush` 793, `applyServer` 814, `load` 820, status sinkron `STATUS`/`renderSync`.
+- **Pustaka data `PT_LIB`** (script `pt-lib`, sejak Tahap 1): `normTask`, `toDoc`, `normCat`, `normProfile`, `opKey`/`enqueue` (antrean), `mergeServer`, `migrateCache`, `makeBackup`/`parseBackup`, `serverIsCurrent`, `pickProfile`. Logika data baru taruh di sini + beri tes di `tests/client.test.js`.
+- **Data store**: `API_URL`, `tasks`, `ops`, **`cats`** (kategori custom), **`profiles`**, `accounts`, `me`, `isBuiltinCat`, `lsGet/lsSet`, `saveLocal`/`loadLocalFor` (cache v2), **`curProfile()`**, `api()`, `queueOp` (tugas), **`queueMeta(op)`** (kategori/profil), `persist`, `flush`, `applyServer(res)`, `load`, status sinkron `STATUS`/**`syncState()`**/`renderSync` (titik merah "Server belum diperbarui" kalau server belum Tahap 1).
 - **Akun** (856–900) dan **layar masuk/daftar** (902–950).
 - `state` 951 (view aktif, bulan per tampilan, filter, form).
 - Render: `renderHome` 1000, `renderCalendar` 1051, `renderStats` 1084, `renderMe` 1226, `renderSearch` 1254, `renderDetail` 1265.
@@ -77,7 +78,8 @@ Nomor baris = posisi di commit Tahap 0 (akan bergeser). Cari pakai nama fungsi/I
 
 ### Server (`Code.gs`)
 
-`doPost` 44 → `API_FUNCS_` 55: `apiRegister` 58, `apiLogin` 80, `apiLoad` 119, `apiSync(token, ops)` 133, `apiProfile` 172, `apiChangePin` 183.
+`doPost` → `API_FUNCS_`: `apiRegister`, `apiLogin`, `apiLoad`, `apiSync(token, ops)`, `apiProfile`, `apiChangePin`.
+Sejak Tahap 1 semua akses data satu akun lewat `openAccount_(userRow)` (baca tugas + kategori + profil, jalankan migrasi di memori, tandai `dirty`) lalu `saveAccount_(acc)` (tulis yang berubah, hanya di dalam `withLock_`). Jawaban berisi `bundle_`: `tasks`, `cats`, `profiles`, `schema: 2`.
 Keamanan: token HMAC `userId.versi.kedaluwarsa.tanda` (`auth_` 199, `makeToken_` 209), PIN di-hash HMAC + salt (`hashPin_` 224, SECRET di Script Properties), kunci 10 menit setelah 5x salah, `LockService` di setiap tulis (`withLock_` 377), `safe_` 368 mencegah teks berawalan `= + - @` jadi rumus.
 `doGet` 36 masih menyajikan UI lama (HtmlService `Index`) dari proyek Apps Script; tidak dipakai lagi.
 
@@ -96,10 +98,21 @@ Keamanan: token HMAC `userId.versi.kedaluwarsa.tanda` (`auth_` 199, `makeToken_`
   start: 'HH:MM'|'',   // jam mulai; '' = tanpa jam (sudah bisa: kosongkan kolom jam)
   end: 'HH:MM'|'',     // jam selesai; end < start dianggap lewat tengah malam (renderDetail)
   dlDate: 'YYYY-MM-DD'|'', dlTime: 'HH:MM'|'',   // deadline; dlDate tanpa jam -> '23:59'
-  done: bool, doneAt: ms|null, createdAt: ms, updatedAt: ms }
+  done: bool, doneAt: ms|null, createdAt: ms, updatedAt: ms,
+  // --- sejak Tahap 1 ---
+  kind: 'tugas'|'kegiatan',   // Kegiatan tidak bisa dicentang (server memaksa done=false) & tidak dihitung di statistik
+  diff: ''|'mudah'|'sedang'|'sulit',   // tingkat kesulitan (opsional)
+  parent: ''|'<id kegiatan>', // Kegiatan induk; server mengosongkan kalau induknya tidak ada / bukan kegiatan / diri sendiri
+  by: 'p…',                   // profil pembuat; TIDAK berubah setelah dibuat (server mempertahankan nilai lama)
+  doneBy: ''|'p…' }           // profil pencentang; '' kalau belum selesai
 ```
 
-- `saveForm` menambah `kind:'task'` ke tugas baru, tapi `normTask`/`toDoc` membuangnya → **tidak pernah tersimpan** (sisa kode lama).
+- **Tanpa jam** = `start === ''`, **durasi** = `end − start` (default 1 jam), **multi-hari** = `dlDate > date` → tanpa field baru (keputusan Tahap 0).
+- **Aturan "field tidak dikirim = pertahankan"** (kompatibilitas): kalau `kind`/`diff`/`parent` tidak ada di data yang dikirim aplikasi, server memakai nilai yang sudah ada di sheet. Aplikasi sebelum Tahap 1 tidak pernah mengirim `kind` (= penanda "aplikasi lama"); kalau ia mengirim `cat:'lain_t'` untuk tugas yang berkategori custom, kategori custom dipertahankan. Di HP, `PT_LIB.normTask` hanya mengisi field baru kalau ada di sumber (data cache lama → `undefined` → tidak ikut terkirim).
+- Kode kategori: bawaan (27 kode) **atau** custom `c_[a-z0-9]{1,20}`. Klien mempertahankan kode custom walau belum kenal (tampil "Lainnya" lewat `catOf` sampai Tahap 3); server mengganti kode custom yang tidak ada di akun itu jadi `lain_t`.
+- ID profil: `p[a-z0-9]{1,20}`; profil pertama tiap akun = **`p1`** (dibuat otomatis oleh migrasi).
+
+- Tugas baru dari `saveForm` (sejak Tahap 1): `kind:'tugas', diff:'', parent:'', by:curProfile(), doneBy:''`. `toggleDone` mengisi `doneBy` = profil aktif saat dicentang, `''` saat dibatalkan. (Dulu `kind:'task'` hanya tersimpan di cache HP; `normTask` mengubahnya jadi `'tugas'`.)
 - Default form: jam = jam berikutnya s/d +1 jam (hari ini) atau 08:00–09:00; deadline **ON** untuk kategori kelompok Tugas, **OFF** untuk kelompok Kegiatan (case `pick-cat`), tanggal deadline ikut tanggal tugas sampai diubah manual.
 
 ### Kategori
@@ -112,18 +125,21 @@ Hardcode di **dua tempat** yang harus selalu sama:
 ### Akun / user
 
 - Satu akun = satu orang (username + PIN). **Belum ada profil.** Avatar = huruf awal nama di kotak kuning (`.av`).
-- Server, tab **`Pengguna`** (baris 1 = judul): `User ID | Username | Nama tampilan | PIN hash | Salt | Versi sesi | Dibuat | Terakhir masuk | Jumlah tugas | Selesai | Gagal login | Terkunci sampai | Nama tab`.
+- Server, tab **`Pengguna`** (baris 1 = judul, **tidak berubah** di Tahap 1): `User ID | Username | Nama tampilan | PIN hash | Salt | Versi sesi | Dibuat | Terakhir masuk | Jumlah tugas | Selesai | Gagal login | Terkunci sampai | Nama tab`.
 - Klien (localStorage di tiap HP): `pt.accounts` = `[{id, username, name, token}]` (semua akun yang pernah masuk di HP itu), `pt.current` = id akun aktif.
 
 ### Penyimpanan tugas
 
-- Server: satu tab **`@username`** per akun. Kolom: `ID | Tanggal | Hari | Jam mulai | Jam selesai | Kategori | Nama tugas | Detail | Deadline (tanggal) | Deadline (jam) | Status | Selesai pada | Dibuat | Diubah | Kode kategori`. Semua sel format teks.
+- Server: satu tab **`@username`** per akun. Kolom: `ID | Tanggal | Hari | Jam mulai | Jam selesai | Kategori | Nama tugas | Detail | Deadline (tanggal) | Deadline (jam) | Status | Selesai pada | Dibuat | Diubah | Kode kategori` + sejak Tahap 1 **`Jenis | Kesulitan | Kegiatan induk | Dibuat oleh | Diselesaikan oleh`** (kolom P–T; isi: `Tugas`/`Kegiatan`, `Mudah`/`Sedang`/`Sulit`/kosong, ID kegiatan, ID profil, ID profil). Semua sel format teks. Kolom "Kategori" untuk kategori custom = nama terbarunya (diperbarui saat kategori diganti nama).
+- **Tab `Kategori`** (sejak Tahap 1, dibuat saat kategori custom pertama): `User ID | Username | ID kategori | Nama | Warna (hue) | Dibuat | Diubah`. Warna = angka hue 0–359 (keputusan 1a: palet seragam dengan kategori bawaan). Maks 50 per akun, nama maks 30 huruf; nama kembar (dengan bawaan atau custom lain, tidak peka huruf besar/kecil) diberi akhiran " 2", " 3"… oleh server. Hapus → tugasnya jadi `lain_t`.
+- **Tab `Profil`** (sejak Tahap 1): `User ID | Username | ID profil | Nama | Avatar | Dibuat | Diubah`. Maks **5** profil per akun (keputusan 3b). Profil terakhir tidak bisa dihapus. Hapus profil → tugas tetap mencatat ID lamanya (keputusan 2a; aplikasi menampilkan "Profil terhapus" di Tahap 9). Avatar = kode `[a-z0-9_-]` (diisi Tahap 9), kosong = huruf awal.
+- Op sinkron (`apiSync`): `upsert`/`delete` (tugas) + **`cat`, `cat-del`, `profile`, `profile-del`**. Server memproses op kategori & profil lebih dulu, baru tugas; urutan di antrean tidak berpengaruh.
   - `readTasks_` membaca kolom **berdasarkan judul** (urutan kolom boleh diubah pemilik), mengisi ID untuk baris yang ditambah manual, dan memahami format tanggal Indonesia `d/m/yyyy`.
   - `apiSync` menulis ulang seluruh tab (urut tanggal + jam) dan memperbarui statistik di `Pengguna`.
-  - `writeTaskRows_` **tidak pernah menulis ulang baris judul** → kolom baru butuh migrasi judul.
-  - Hanya `TASK_HEADER.length` kolom yang dibaca/ditulis.
-- Klien: `pt.cache.<userId>` = `{tasks: {id: task}, ops: [...]}`. `ops` = antrean offline `{op:'upsert', task}` / `{op:'delete', id}`; dikirim `flush()` dengan backoff sampai 60 dtk; satu op per id (yang terbaru).
-- Cadangan teks (menu Saya): JSON `{app:'pengelola-tugas', version:1, exportedAt, tasks:[…]}`.
+  - Sejak Tahap 1 `writeTaskRows_` **menulis ulang baris judul** dalam urutan standar setiap kali menulis (memperbaiki bug: kalau pemilik menukar urutan kolom, data dulu ditulis dalam urutan standar di bawah judul yang tertukar → data bergeser).
+  - Hanya `TASK_HEADER.length` (20) kolom yang dibaca/ditulis; tab yang kolomnya kurang dari 20 ditambah kolom.
+- Klien: `pt.cache.<userId>` = **versi 2** `{v:2, tasks: {id: task}, ops: [...], cats: [...], profiles: [...]}` (versi 1 tanpa `v`/`cats`/`profiles` dimigrasi `PT_LIB.migrateCache` saat dibuka; antrean lama tetap terkirim). `ops` = antrean offline semua jenis op; dikirim `flush()` dengan backoff sampai 60 dtk; satu op per item (`opKey`: `t:`/`c:`/`p:` + id). Profil yang dipakai di HP: `pt.prof.<userId>` (default profil pertama).
+- Cadangan teks (menu Saya): JSON **versi 2** `{app:'pengelola-tugas', version:2, exportedAt, tasks:[…], cats:[…], profiles:[…]}`. Impor menerima versi 1, versi 2, atau array tugas; kategori & profil yang belum ada ikut dipulihkan.
 
 ### Data nyata (dibaca 8 Nov 2026, hanya hitungan)
 
@@ -133,18 +149,18 @@ Hardcode di **dua tempat** yang harus selalu sama:
 
 ## 3. Padanan "Firebase security rules"
 
-Tidak memakai Firebase. Padanannya ada di `Code.gs`: whitelist field di `cleanTask_` 304, `taskRow_` 318, `parseRow_` 324, `TASK_HEADER` 19, dan validasi kategori `CATS`. **Field yang tidak ada di sana dibuang diam-diam oleh server** (sudah dibuktikan di `tests/server.test.js`), jadi setiap field baru wajib ditambahkan di empat tempat itu + `normTask`/`toDoc` di klien.
+Tidak memakai Firebase. Padanannya ada di `Code.gs`: whitelist field di `cleanTask_`, `taskRow_`, `parseRow_`, `normRows_`, `TASK_HEADER`, validasi kategori (`CATS` + `validCat_`), dan `upsertCat_`/`upsertProfile_`. **Field yang tidak ada di sana dibuang diam-diam oleh server**, jadi setiap field baru wajib ditambahkan di tempat-tempat itu + `PT_LIB.normTask`/`toDoc` (konstanta `EXTRA`) di klien. Tahap 1 sudah menyiapkan semua field yang direncanakan; tahap berikutnya seharusnya tidak perlu mengubah `Code.gs` lagi.
 
 ---
 
 ## 4. Temuan yang memengaruhi tahap berikutnya
 
-1. **Tahap 1 – kompatibilitas aplikasi lama.** `apiSync` mengganti satu baris penuh. HP yang masih membuka versi lama (PWA belum di-reload) akan mengirim tugas tanpa field baru → field baru terhapus. Rancangan Tahap 1 sebaiknya: server **mempertahankan nilai lama untuk field yang tidak dikirim**, dan klien mengirim versi aplikasi supaya server bisa meminta reload.
-2. **Tahap 1 – migrasi ada di 3 tempat**: baris sheet (server, termasuk judul kolom baru), cache + antrean `ops` di localStorage tiap HP (klien), dan file cadangan JSON versi 1 (impor).
-3. **Tahap 1 – "penanda tanpa jam" dan "durasi" sudah tersedia**: `start === ''` sudah berarti tanpa jam, dan `end` (jam selesai) sudah ada dengan default +1 jam. Usul: tidak perlu field baru; durasi dihitung dari `start`/`end`.
+1. ~~Tahap 1 – kompatibilitas aplikasi lama~~ → **beres di Tahap 1**: server mempertahankan field yang tidak dikirim (lihat §2). Arah sebaliknya (aplikasi baru, server lama) ditangani dengan `schema`: aplikasi menampilkan titik merah "Server belum diperbarui" tapi tetap menyimpan.
+2. ~~Tahap 1 – migrasi di 3 tempat~~ → **beres**: sheet (`openAccount_`/`normRows_`, otomatis per akun), cache HP (`migrateCache`), cadangan (`parseBackup`).
+3. Tanpa jam & durasi memakai field yang ada (dipakai Tahap 2 dan 7).
 4. **Tahap 2 – Poin 4:** tinggi item sekarang 72 px (tanpa deadline) dan 91 px (dengan deadline; lebih tinggi lagi kalau baris deadline terlipat, mis. "Selesai tepat waktu" di layar 390 px). Di HP 390×844 daftar mulai di y≈306 px, jadi hanya 5–6 item terlihat. Item tidak menampilkan teks detail; "detail" di Poin 4 ditafsirkan sebagai baris info (jam · kategori · deadline) yang digabung jadi 1 baris.
 5. **Tahap 2 – Poin 5:** `.toast` `bottom:88px` sedikit menimpa bagian atas FAB (puncak FAB 93 px dari bawah layar). Aksi sudah dijalankan seketika dan "Urungkan" membalikkannya, jadi tombol × cukup menyembunyikan toast.
-6. **Tahap 3 – Poin 10:** server sekarang memaksa kode kategori tak dikenal jadi `lain_t` → kategori custom wajib disiapkan di server pada Tahap 1.
+6. **Tahap 3 – Poin 10:** server sudah siap (Tahap 1). Yang tersisa di klien: UI kelola kategori, `catOf()` mengenali kategori custom (`cats`), pemilih kategori menampilkan custom, palet hue, hapus kategori lokal → tugasnya `lain_t` (server juga melakukannya), pakai `queueMeta({op:'cat'…})`/`{op:'cat-del'}`.
 7. **Tahap 7 – Poin 16:** Home menampilkan daftar **per bulan**, sedangkan Time Blocking per **hari** → perlu pemilih hari. Tugas yang lewat tengah malam (end < start) perlu aturan tampilan.
 8. **Tahap 8 – Poin 17 bentrok dengan yang sudah ada:** layar "+" sudah punya toggle **Tugas | Kegiatan**, tapi itu hanya memfilter kelompok kategori dan mengatur default deadline. Lihat Q2.
 9. **Tahap 9 – Poin 6:** avatar karakter harus gambar SVG buatan sendiri (bukan karakter berhak cipta). Tempat avatar: `#hdr-av`, `.me-card`, baris akun `accRow`, layar masuk (akun tersimpan).
@@ -160,14 +176,14 @@ Tidak memakai Firebase. Padanannya ada di `Code.gs`: whitelist field di `cleanTa
 | Perintah | Isi | Hasil Tahap 0 |
 |---|---|---|
 | `npm run check` (`node tests/check.js`) | Pengganti lint: sintaks JS di `index.html`/`sw.js`/`Code.gs`, manifest + ikon ada, id HTML unik, setiap `$('#id')` punya elemen, setiap `data-act` punya `case` di `handle()`, file SHELL `sw.js` ada | lolos (90 rujukan id, 47 data-act) |
-| `npm run typecheck` (`node tests/typecheck.js`) | `tsc --checkJs` mode tidak ketat. Kode tidak bertipe jadi ada derau bawaan (Element vs HTMLElement, `api()` pakai `arguments`); gagal hanya jika jumlah error **naik** dari `tests/typecheck-baseline.json`. Lewati otomatis kalau `tsc` tidak ada | baseline index.html 28, sw.js 7 |
-| `npm test` (`node --test tests/server.test.js`) | 10 unit test `Code.gs` lewat mock Apps Script (`tests/gas-mock.js`): daftar/masuk/kunci, sinkron, anti-rumus, field & kategori tak dikenal dibuang, token & ganti PIN, pemulihan dari sheet, dua akun terpisah, doPost | 10/10 lolos |
-| `npm run test:e2e` (`node --test tests/e2e.test.js`) | Chromium (Playwright) membuka `index.html` dari repo; panggilan ke Apps Script dicegat dan dijawab `Code.gs` di mock (spreadsheet asli tidak tersentuh). Alur: daftar → tambah tugas → centang + Urungkan → offline lalu online → tombol back HP → tata letak → reload → semua menu → akun kedua + ganti akun → tidak ada error JS. `SHOTS=1` menyimpan tangkapan layar ke `tests/.shots/` | lolos (±17 dtk) |
-| `npm run verify` | semua di atas | lolos |
+| `npm run typecheck` (`node tests/typecheck.js`) | `tsc --checkJs` mode tidak ketat atas script `pt-lib` + script utama. Kode tidak bertipe jadi ada derau bawaan (Element vs HTMLElement, `api()` pakai `arguments`); gagal hanya jika jumlah error **naik** dari `tests/typecheck-baseline.json`. Lewati otomatis kalau `tsc` tidak ada | baseline index.html 28, sw.js 7 (Tahap 1: tetap 28, `pt-lib` 0 error) |
+| `npm test` | `tests/server.test.js` (10 tes dasar `Code.gs` lewat mock Apps Script `tests/gas-mock.js`) + **`tests/server-data.test.js`** (Tahap 1: migrasi dari data server lama `tests/fixtures/Code-v1.gs`, idempoten, kompatibilitas aplikasi lama, field baru, kategori custom, profil, urutan kolom, baris manual, tab kurang kolom) + **`tests/client.test.js`** (Tahap 1: `PT_LIB` diambil dari `index.html` dan dijalankan di Node: migrasi cache v1→v2, normTask, antrean, gabung data server, cadangan v1/v2, alur cache lama → server baru) | 27/27 lolos |
+| `npm run test:e2e` (`node --test tests/e2e.test.js`) | Chromium (Playwright) membuka `index.html` dari repo; panggilan ke Apps Script dicegat dan dijawab `Code.gs` di mock (spreadsheet asli tidak tersentuh); font Google dibalas CSS kosong (sandbox tanpa internet). 3 skenario: (1) daftar → tambah → centang + Urungkan → offline/online → back HP → tata letak → reload → semua menu → ganti akun (+ cek kolom baru & cache v2); (2) **HP dengan cache v1 + antrean offline, data dari server lama → server baru** (migrasi penuh); (3) **aplikasi baru + server lama** (tetap simpan, titik merah). `SHOTS=1` menyimpan tangkapan layar ke `tests/.shots/` | 3/3 lolos (±25 dtk) |
+| `npm run verify` | semua di atas | lolos (30 tes, Tahap 1) |
 
 Kebutuhan: Node ≥ 18. E2E butuh Playwright + Chromium; dicari di `node_modules` lalu folder global (`npm root -g`), kalau tidak ada tes E2E di-skip. Di sandbox Claude registry npm biasanya terblokir, jadi pakai Playwright global yang sudah ada; jangan `npm install`.
 
-Untuk tahap berikutnya: logika rawan (migrasi, rentang multi-hari, susunan blok Time Blocking) sebaiknya dibuat sebagai fungsi murni di `index.html` lalu diuji. Fungsi di dalam IIFE tidak bisa di-`require`; cara yang disarankan: tes mengambil `<script>` dari `index.html` dan menjalankannya di Playwright/`vm`, atau taruh fungsi murni di objek global kecil (mis. `window.PT_LIB`) yang bisa dipanggil dari tes.
+Untuk tahap berikutnya: logika rawan (rentang multi-hari, susunan blok Time Blocking, dll) taruh sebagai fungsi murni di script **`pt-lib`** (`window.PT_LIB`, tanpa DOM) lalu tambah tes di `tests/client.test.js` (script diambil dari `index.html` dan dijalankan dengan `vm`).
 
 ---
 
@@ -182,6 +198,7 @@ Jawaban user 8 Nov 2026: **Q1 = a, Q2 = a, Q3 = b**. K2, K3, K4, K5 (kategori mi
   - Kategori custom milik akun (K5: dipakai bersama semua profil), berisi nama + warna, disimpan di server. Bisa ditambah, diubah, dihapus. Saat dihapus, tugasnya pindah ke "Lainnya" (`lain_t`).
   - Nama kategori custom tidak boleh sama dengan kategori custom lain **maupun nama kategori bawaan** di akun itu (tidak peka huruf besar/kecil).
 - **Turunan Q2 + Q3 (default diambil Tahap 0, bisa dikoreksi user):** karena pengelompokan kategori hilang di Tahap 8, dua kategori bawaan bernama "Lainnya" (`lain_t`, `lain_k`) akan muncul dobel. Default: pemilih kategori hanya menampilkan satu "Lainnya" (`lain_t`); tugas lama berkode `lain_k` tetap valid dan tampil sebagai "Lainnya". Kode tidak diubah di sheet.
+- **Tahap 1 (jawaban user 8 Nov 2026: 1a, 2a, 3b):** warna kategori custom = palet hue (angka 0–359, seragam dengan kategori bawaan); profil yang dihapus → tugasnya tetap mencatat ID profil lama (tampil "Profil terhapus"); maks **5** profil per akun.
 - **Untuk Tahap 3 (bukan soal data, putuskan di sesi itu):** ikon kategori custom (bawaan punya ikon, custom hanya nama + warna), urutan grid kalau bawaan + custom digabung, dan letak kategori custom di toggle Tugas | Kegiatan sebelum Tahap 8.
 - **Diputuskan Tahap 0 (bisa dikoreksi user):**
   - Tanpa jam = `start === ''` (tanpa field baru); durasi = `end` − `start` (tanpa field baru), default 1 jam.
@@ -198,4 +215,25 @@ Jawaban user 8 Nov 2026: **Q1 = a, Q2 = a, Q3 = b**. K2, K3, K4, K5 (kategori mi
 - **Kode aplikasi tidak diubah** (`index.html`, `sw.js`, `manifest.webmanifest`, `apps-script/Code.gs` identik dengan commit `d2e4add`).
 - File baru: `PROGRESS.md`, `package.json` (hanya skrip, tanpa dependensi), `.gitignore`, `tests/gas-mock.js`, `tests/server.test.js`, `tests/e2e.test.js`, `tests/check.js`, `tests/typecheck.js`, `tests/typecheck-baseline.json`.
 - Q1–Q3 dijawab user (1a, 2a, 3b), dicatat di §6.
-- Belum beres: konfirmasi user untuk mulai Tahap 1 (di sesi baru, sesuai aturan satu tahap per sesi).
+- Belum beres: konfirmasi user untuk mulai Tahap 1 (di sesi baru, sesuai aturan satu tahap per sesi). → dikerjakan di bawah.
+
+### Tahap 1 — Fondasi data + migrasi (8 Nov 2026)
+
+Rancangan ditunjukkan dulu ke user dan disetujui (+ jawaban 1a, 2a, 3b, lihat §6). **Tampilan aplikasi tidak berubah.**
+
+File diubah:
+- `apps-script/Code.gs` — `SCHEMA = 2`; 5 kolom baru di tab tugas; tab baru `Kategori` & `Profil`; `openAccount_`/`saveAccount_`/`bundle_`; migrasi otomatis per akun (`normRows_`: Jenis=Tugas, Dibuat oleh=profil pertama, Diselesaikan oleh=profil pertama untuk yang selesai, profil `p1` dibuat dari nama akun); op `cat`/`cat-del`/`profile`/`profile-del`; `cleanTask_` mempertahankan field yang tidak dikirim aplikasi lama; Kegiatan tidak bisa dicentang; induk divalidasi; statistik `Pengguna` hanya menghitung jenis Tugas; judul kolom selalu ditulis ulang dalam urutan standar (perbaikan bug urutan kolom); tab yang kurang kolom ditambah kolom; peta ID memakai `Object.create(null)` (ID seperti `toString` tidak lagi dianggap ada).
+- `index.html` — script baru `pt-lib` (`window.PT_LIB`); store memakai `PT_LIB` (cache v2, `cats`, `profiles`, `curProfile`, `queueMeta`, `applyServer(res)`); tugas baru menyimpan `kind/diff/parent/by`; centang menyimpan `doneBy`; cadangan versi 2; titik status merah kalau server belum Tahap 1 (`syncState`); `catOf` aman untuk kode aneh.
+- Tes: `tests/server-data.test.js` (baru), `tests/client.test.js` (baru), `tests/fixtures/Code-v1.gs` (salinan server sebelum Tahap 1, untuk uji migrasi), `tests/gas-mock.js` (spreadsheet bersama antar-runtime, penghitung tulis, `getMaxColumns`), `tests/server.test.js` (header 20 kolom), `tests/e2e.test.js` (font dicegat — sebelumnya gagal di sandbox karena `ERR_TUNNEL_CONNECTION_FAILED` ke Google Fonts; + 2 skenario migrasi/kompatibilitas), `tests/typecheck.js` (ikut memeriksa `pt-lib`), `package.json` (tes baru).
+- Diuji juga sekali (tidak disimpan sebagai tes): **`index.html` versi Tahap 0 + `Code.gs` baru** → alur E2E lama lolos, kolom baru terisi default, profil `p1` dibuat.
+
+Hasil: `npm run verify` lolos (check, typecheck 28 = baseline, 30 tes).
+
+**Langkah user (wajib, sekali):**
+1. Buat salinan spreadsheet (File → Buat salinan) sebagai cadangan.
+2. Tempel `apps-script/Code.gs` baru di editor Apps Script → Simpan → *Terapkan → Kelola penerapan → ✏️ Edit → Versi: Versi baru → Terapkan*.
+3. Setelah itu `index.html` boleh live. Urutan sebaliknya juga aman (aplikasi baru + server lama tetap menyimpan, hanya titik status merah).
+
+Migrasi data di spreadsheet terjadi per akun saat akun itu pertama kali dibuka/sinkron setelah deploy (bukan sekaligus). Akun yang belum pernah dibuka tetap berformat lama dan itu aman.
+
+Status deploy: user melaporkan `Code.gs` sudah di-deploy (8 Nov 2026 17.24 WIB). Saat dicek lewat konektor Sheets tab `Profil` belum ada (belum ada akun yang membuka aplikasi setelah deploy), jadi bukti deploy berhasil = titik status hijau di aplikasi baru + tab `Profil` muncul setelah aplikasi dibuka. Kalau titik merah "Server belum diperbarui", deploy belum memakai versi baru (cek: *Kelola penerapan → Edit → Versi baru*, bukan *Penerapan baru*).

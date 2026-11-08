@@ -4,8 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { makeRuntime } = require('./gas-mock');
 
-const TASK_HEADER = ['ID', 'Tanggal', 'Hari', 'Jam mulai', 'Jam selesai', 'Kategori', 'Nama tugas', 'Detail',
+const TASK_HEADER_V1 = ['ID', 'Tanggal', 'Hari', 'Jam mulai', 'Jam selesai', 'Kategori', 'Nama tugas', 'Detail',
   'Deadline (tanggal)', 'Deadline (jam)', 'Status', 'Selesai pada', 'Dibuat', 'Diubah', 'Kode kategori'];
+const TASK_HEADER = TASK_HEADER_V1.concat(['Jenis', 'Kesulitan', 'Kegiatan induk', 'Dibuat oleh', 'Diselesaikan oleh']);
 
 const task = (id, extra) => Object.assign({
   id, cat: 'tkuliah', name: 'Tugas ' + id, detail: '', date: '2026-11-10', start: '08:00', end: '09:00',
@@ -99,10 +100,13 @@ test('validasi tugas: field tak dikenal dibuang, kategori tak dikenal jadi lain_
   ]);
   assert.deepEqual(r.tasks.map(t => t.id).sort(), ['a1', 'a3']);
   const a1 = r.tasks.find(t => t.id === 'a1');
-  assert.equal(a1.cat, 'lain_t', 'PENTING untuk Tahap 3: kategori custom saat ini dipaksa jadi lain_t');
+  assert.equal(a1.cat, 'lain_t', 'kode kategori yang bukan bawaan/custom milik akun → lain_t');
   assert.equal('extraField' in a1, false);
-  assert.equal('difficulty' in a1, false, 'PENTING untuk Tahap 1: field baru harus ditambahkan di Code.gs');
+  assert.equal('difficulty' in a1, false, 'hanya field yang terdaftar (diff, bukan difficulty) yang disimpan');
   assert.equal(r.tasks.find(t => t.id === 'a3').dlTime, '23:59', 'deadline tanpa jam = 23:59');
+  // nama kategori bawaan seperti "toString" tidak boleh dianggap kategori valid
+  const r2 = S.post('apiSync', token, [{ op: 'upsert', task: task('a4', { cat: 'toString' }) }]);
+  assert.equal(r2.tasks.find(t => t.id === 'a4').cat, 'lain_t');
 });
 
 test('sesi: token palsu ditolak; ganti PIN membatalkan token lama', () => {

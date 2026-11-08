@@ -5,8 +5,8 @@
   "scripts": {
     "check": "node tests/check.js",
     "typecheck": "node tests/typecheck.js",
-    "test": "node --test tests/server.test.js",
+    "test": "node --test tests/server.test.js tests/server-data.test.js tests/client.test.js",
     "test:e2e": "node --test tests/e2e.test.js",
-    "verify": "node tests/check.js && node tests/typecheck.js && node --test tests/server.test.js tests/e2e.test.js"
+    "verify": "node tests/check.js && node tests/typecheck.js && node --test tests/server.test.js tests/server-data.test.js tests/client.test.js tests/e2e.test.js"
   }
 }
