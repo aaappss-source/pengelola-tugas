@@ -157,3 +157,45 @@ test('alur nyata: HP dengan cache lama + antrean offline, server sudah Tahap 1 �
   // field yang memang dikenal aplikasi lama (nama, kategori bawaan, jam, …) tetap "perubahan terakhir menang" seperti sebelumnya
   assert.equal(t2.cat, 'jamkerja');
 });
+
+// ---------------- Tahap 2 ----------------
+
+test('jam & durasi: tanpa jam, durasi bawaan 1 jam, lewat tengah malam', () => {
+  assert.deepEqual([L.toMin('00:00'), L.toMin('08:30'), L.toMin('23:59')], [0, 510, 1439]);
+  assert.deepEqual([L.toMin(''), L.toMin('24:00'), L.toMin('8:30'), L.toMin(null), L.toMin('12:60')], [null, null, null, null, null]);
+  assert.deepEqual([L.fromMin(0), L.fromMin(510), L.fromMin(1440), L.fromMin(1500), L.fromMin(-30)], ['00:00', '08:30', '00:00', '01:00', '23:30']);
+  assert.equal(L.durMin('', ''), null, 'tanpa jam → tidak punya durasi');
+  assert.equal(L.durMin('', '17:00'), null, 'hanya jam selesai → tetap dianggap tanpa jam mulai');
+  assert.equal(L.durMin('08:00', ''), 60, 'jam selesai kosong → durasi bawaan 1 jam');
+  assert.equal(L.DEF_DUR, 60);
+  assert.equal(L.durMin('08:00', '09:30'), 90);
+  assert.equal(L.durMin('22:00', '01:00'), 180, 'jam selesai < jam mulai = lewat tengah malam');
+  assert.equal(L.durMin('08:00', '08:00'), 0);
+  assert.equal(L.durMin('01:00', '23:00'), 1320, 'rentang panjang di data lama');
+  assert.deepEqual([L.endAfter('08:00', 60), L.endAfter('08:15', 90), L.endAfter('23:00', 120), L.endAfter('', 60)], ['09:00', '09:45', '01:00', '']);
+  assert.deepEqual([L.crossesMidnight('22:00', '01:00'), L.crossesMidnight('08:00', '09:00'), L.crossesMidnight('08:00', ''), L.crossesMidnight('', '01:00')], [true, false, false, false]);
+  assert.deepEqual([0, 30, 60, 90, 120, 185, 1320].map(L.fmtDur), ['0 mnt', '30 mnt', '1 jam', '1 jam 30 mnt', '2 jam', '3 jam 5 mnt', '22 jam']);
+  // bolak-balik: jam mulai + durasi → jam selesai → durasi yang sama (semua menit dalam sehari, beberapa durasi)
+  for (let s = 0; s < 1440; s += 7) for (const d of [1, 30, 60, 90, 180, 600, 1439]) {
+    const st = L.fromMin(s);
+    assert.equal(L.durMin(st, L.endAfter(st, d)), d, st + ' + ' + d);
+  }
+});
+
+test('saran nama: cocok sebagian, tidak peka huruf besar/kecil, unik, maks 5, terbaru dulu', () => {
+  const T = (name, at) => ({ name, createdAt: at, updatedAt: at });
+  const list = [
+    T('Laporan praktikum', 10), T('laporan  Praktikum', 30), T('Kirim laporan', 20), T('Lapor ke dosen', 5),
+    T('Rapat tim', 1), T('Pelaporan pajak', 40), T('Laporan A', 2), T('Laporan B', 3), T('Laporan C', 4), T('(tanpa nama)', 99), null, { name: 5 }
+  ];
+  // diawali "lap" dulu (terbaru dulu), lalu kata kedua diawali "lap", lalu yang hanya mengandung "lap"; maks 5
+  assert.deepEqual(plain(L.suggestNames(list, 'lap', 5)), ['laporan Praktikum', 'Lapor ke dosen', 'Laporan C', 'Laporan B', 'Laporan A']);
+  assert.deepEqual(plain(L.suggestNames(list, 'LAPORAN', 10)), ['laporan Praktikum', 'Laporan C', 'Laporan B', 'Laporan A', 'Kirim laporan', 'Pelaporan pajak'],
+    'nama kembar (beda spasi/huruf) jadi satu, versi terbaru yang dipakai');
+  assert.deepEqual(plain(L.suggestNames(list, 'laporan praktikum', 5)), [], 'nama yang persis sama dengan ketikan tidak disarankan');
+  assert.deepEqual(plain(L.suggestNames(list, '  ', 5)), []);
+  assert.deepEqual(plain(L.suggestNames(list, 'xyz', 5)), []);
+  assert.deepEqual(plain(L.suggestNames(null, 'lap', 5)), []);
+  assert.equal(L.suggestNames(list, 'a').length, 5, 'bawaan maks 5');
+  assert.deepEqual(plain(L.suggestNames([T('Tugas (Kuliah)', 1)], 'kul', 5)), ['Tugas (Kuliah)'], 'awal kata setelah tanda baca');
+});

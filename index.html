@@ -73,33 +73,45 @@ svg{display:block}
 .chip{padding:7px 14px;border-radius:20px;border:1px solid #3d3d3d;color:var(--text2);font-size:14px;white-space:nowrap}
 .chip.on{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:500}
 .chip .n{opacity:.7;margin-left:4px}
-.dhead{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 9px;color:var(--text2);font-size:14.5px;border-bottom:1px solid var(--line);scroll-margin-top:calc(var(--hdr) + 6px)}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 7px;color:var(--text2);font-size:14.5px;border-bottom:1px solid var(--line);scroll-margin-top:calc(var(--hdr) + 6px)}
 .dhead .dl{display:flex;gap:12px;align-items:center}
 .dhead .dl b{font-weight:400;color:var(--text)}
 .badge{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--accent);color:var(--accent-ink)}
 .badge.dim{background:#3a3a3a;color:var(--text2);font-weight:500}
-.task{display:flex;gap:14px;align-items:center;padding:13px 16px;position:relative;cursor:pointer}
-.task::after{content:"";position:absolute;left:74px;right:0;bottom:0;border-bottom:1px solid var(--line)}
+/* item tugas ringkas (Tahap 2, Poin 4): ±52px per baris, area tap tetap ≥44px */
+.task{display:flex;gap:12px;align-items:center;min-height:52px;padding:7px 8px 7px 16px;position:relative;cursor:pointer}
+.task::after{content:"";position:absolute;left:64px;right:0;bottom:0;border-bottom:1px solid var(--line)}
 .task:last-child::after{display:none}
 .task:active{background:#222}
 .cat-ic{--h:200;flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(150deg,hsl(var(--h) 72% 84%),hsl(var(--h) 58% 66%));color:hsl(var(--h) 55% 22%)}
 .cat-ic svg{width:24px;height:24px}
 .cat-ic.big{width:54px;height:54px}
 .cat-ic.big svg{width:28px;height:28px}
+.task .cat-ic{width:36px;height:36px}
+.task .cat-ic svg{width:19px;height:19px}
 .task-main{flex:1;min-width:0}
-.task-name{font-size:17.5px;font-weight:400;line-height:1.3;word-break:break-word}
-.task-meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:13px;color:var(--text2)}
-.task-meta span{display:inline-flex;align-items:center;gap:4px}
-.task-meta svg{width:13px;height:13px}
-.task-dl{margin-top:4px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.task-dl svg{width:13px;height:13px;flex:none}
-.task-dl b{font-weight:500}
-.task-dl.soon{color:var(--warn)}
-.task-dl.over{color:var(--danger)}
-.task-dl.ok{color:var(--good)}
-.task-dl.late-done{color:#d9a35b}
-.check{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid #66665f;display:grid;place-items:center;transition:transform .15s,background .2s,border-color .2s}
-.check svg{width:18px;height:18px;opacity:0;transform:scale(.4);transition:all .2s;color:var(--accent-ink)}
+.task-name{font-size:15px;font-weight:400;line-height:1.3;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.task-meta{margin-top:1px;font-size:12.5px;line-height:1.35;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-meta svg{display:inline-block;width:12px;height:12px;vertical-align:-1.5px;margin-right:3px}
+.task-meta i{font-style:normal;color:var(--muted);margin:0 5px}
+.m-dl{color:var(--muted)}
+.m-dl.soon{color:var(--warn)}
+.m-dl.over{color:var(--danger)}
+.m-dl.ok{color:var(--good)}
+.m-dl.late-done{color:#d9a35b}
+.diff{display:inline-block;font-size:12px;font-weight:500;line-height:16px;padding:0 6px;border-radius:6px;margin-right:6px;vertical-align:1px}
+.diff.mudah{background:rgba(76,199,122,.16);color:var(--good)}
+.diff.sedang{background:rgba(250,178,25,.16);color:var(--warn)}
+.diff.sulit{background:rgba(255,112,112,.16);color:var(--danger)}
+.task.done .diff{opacity:.6}
+.ntbox{background:#1f1f1f;border-bottom:1px solid var(--line)}
+.ntbox .task::after{left:64px}
+.subhead{display:flex;align-items:center;gap:6px;padding:7px 16px 0;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.3px}
+.subhead svg{width:13px;height:13px}
+/* tombol centang: lingkaran 28px, area tap 46px lewat ::before */
+.check{position:relative;flex:none;width:28px;height:28px;margin:0 8px;border-radius:50%;border:2px solid #66665f;display:grid;place-items:center;transition:transform .15s,background .2s,border-color .2s}
+.check::before{content:"";position:absolute;inset:-11px;border-radius:50%}
+.check svg{width:15px;height:15px;opacity:0;transform:scale(.4);transition:all .2s;color:var(--accent-ink)}
 .task.done .check{background:var(--accent);border-color:var(--accent)}
 .task.done .check svg{opacity:1;transform:none}
 .task.done .task-name{text-decoration:line-through;color:var(--muted)}
@@ -177,9 +189,28 @@ textarea.inp{resize:vertical;min-height:76px;line-height:1.4}
 .quick{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .quick button{padding:7px 13px;border-radius:18px;border:1px solid #444;font-size:14px;color:var(--text2)}
 .quick button.on{border-color:var(--accent);color:var(--accent);background:rgba(255,212,59,.08)}
-.two{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.two{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}
+.two .inp,.two2 .inp{min-width:0}
 .two em{font-style:normal;color:var(--muted);font-size:13.5px}
 .two2{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}
+.fld>span small{color:var(--muted);font-size:12.5px}
+.fld-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.fld-head>span{font-size:13.5px;color:var(--text2)}
+.opt-switch{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text);cursor:pointer;min-height:36px}
+.hint{display:block;margin:6px 2px 0;font-size:12.5px;color:var(--muted)}
+.quick.dur{margin:8px 0 0;flex-wrap:nowrap;gap:6px}
+.quick.dur button{flex:1 1 0;min-width:0;padding:7px 0;font-size:13.5px;text-align:center;white-space:nowrap}
+.diff-pick button[data-v="mudah"].on{border-color:var(--good);color:var(--good);background:rgba(76,199,122,.1)}
+.diff-pick button[data-v="sedang"].on{border-color:var(--warn);color:var(--warn);background:rgba(250,178,25,.1)}
+.diff-pick button[data-v="sulit"].on{border-color:var(--danger);color:var(--danger);background:rgba(255,112,112,.1)}
+/* saran nama (Poin 9): ikut alur form, mendorong kolom di bawahnya, tidak menimpa */
+.sug{margin:-8px 0 14px;background:#1e1e1e;border:1px solid #3b3b3b;border-radius:12px;overflow:hidden}
+.sug-i{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 13px;text-align:left;font-size:15px;color:var(--text2);border-top:1px solid #2c2c2c}
+.sug-i:first-child{border-top:0}
+.sug-i:active{background:#2a2a2a}
+.sug-i svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.sug-i span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sug-i b{color:var(--text);font-weight:500}
 .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .switch-row small{color:var(--muted);font-size:12.5px}
 .switch-row .lbl{margin:0;color:var(--text);font-size:15px}
@@ -394,9 +425,13 @@ details.tbl th{color:var(--muted);font-weight:500}
 .dialog p{margin:0;color:var(--text2);font-size:14.5px}
 .dialog .d-actions{margin-top:20px}
 .btn-danger{flex:1;border-radius:14px;padding:13px;font-size:15.5px;font-weight:700;background:var(--danger);color:#1b1b1b}
-.toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);background:#f2f2f0;color:#1b1b1b;border-radius:14px;padding:12px 14px 12px 16px;font-size:14.5px;display:flex;gap:14px;align-items:center;opacity:0;pointer-events:none;transition:all .22s;z-index:100;width:max-content;max-width:min(92vw,440px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+/* pop-up bawah: selalu di atas tombol + (puncak FAB + cincinnya = tinggi nav + 30px) */
+.toast{position:fixed;left:50%;bottom:calc(max(70px,47px + env(safe-area-inset-bottom,0px)) + 34px);transform:translate(-50%,20px);background:#f2f2f0;color:#1b1b1b;border-radius:14px;padding:12px 14px 12px 16px;font-size:14.5px;display:flex;gap:14px;align-items:center;opacity:0;pointer-events:none;transition:all .22s;z-index:100;width:max-content;max-width:min(92vw,440px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .toast button{color:#9a6b00;font-weight:700;padding:2px 4px;white-space:nowrap}
+.toast .toast-x{width:40px;height:40px;margin:-10px -10px -10px -10px;padding:0;display:grid;place-items:center;border-radius:50%;color:#5c5c58;flex:none}
+.toast .toast-x:active{background:#dcdcd8}
+.toast .toast-x svg{width:18px;height:18px}
 /* ---- responsif: semua ukuran HP ---- */
 .wk,.cgrid{grid-template-columns:repeat(7,minmax(0,1fr))}
 .cday{min-width:0;overflow:hidden}
@@ -431,10 +466,12 @@ details.tbl th{color:var(--muted);font-weight:500}
   .cat-btn .ring{width:56px;height:56px}
   .cat-btn .ring svg{width:26px;height:26px}
   .cat-btn span{font-size:13px}
-  .task{gap:12px;padding:12px 12px}
-  .task::after{left:66px}
+  .task{gap:10px;padding:7px 4px 7px 12px}
+  .task::after,.ntbox .task::after{left:56px}
   .cat-ic{width:42px;height:42px}
-  .task-name{font-size:16.5px}
+  .task .cat-ic{width:34px;height:34px}
+  .task-name{font-size:14.5px}
+  .subhead{padding-left:12px}
   .nav button{font-size:11.5px}
 }
 </style>
@@ -543,9 +580,18 @@ details.tbl th{color:var(--muted);font-weight:500}
         <div class="grow"><small>Kategori</small><b id="f-cat-name">-</b></div>
         <button type="button" class="link" data-act="form-collapse">Ganti</button>
       </div>
-      <label class="fld"><span>Nama tugas</span><input class="inp" id="f-name" maxlength="120" placeholder="Contoh: Laporan praktikum Basis Data"></label>
-      <div class="err hidden" id="f-name-err">Nama tugas wajib diisi.</div>
-      <label class="fld"><span>Detail tugas</span><textarea class="inp" id="f-detail" rows="3" maxlength="2000" placeholder="Catatan, link, atau langkah-langkahnya (opsional)"></textarea></label>
+      <label class="fld"><span>Nama</span><input class="inp" id="f-name" maxlength="120" placeholder="Contoh: Laporan praktikum Basis Data" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f-sug"></label>
+      <div class="sug hidden" id="f-sug" role="listbox" aria-label="Saran nama dari tugas sebelumnya"></div>
+      <div class="err hidden" id="f-name-err">Nama wajib diisi.</div>
+      <label class="fld"><span>Detail</span><textarea class="inp" id="f-detail" rows="3" maxlength="2000" placeholder="Catatan, link, atau langkah-langkahnya (opsional)"></textarea></label>
+      <div class="fld">
+        <span>Tingkat kesulitan <small>(opsional)</small></span>
+        <div class="quick diff-pick" id="f-diff">
+          <button type="button" data-act="pick-diff" data-v="mudah" aria-pressed="false">Mudah</button>
+          <button type="button" data-act="pick-diff" data-v="sedang" aria-pressed="false">Sedang</button>
+          <button type="button" data-act="pick-diff" data-v="sulit" aria-pressed="false">Sulit</button>
+        </div>
+      </div>
       <div class="fld">
         <span>Tanggal dikerjakan</span>
         <div class="quick" id="f-quick">
@@ -556,8 +602,19 @@ details.tbl th{color:var(--muted);font-weight:500}
         <input class="inp" type="date" id="f-date">
       </div>
       <div class="fld">
-        <span>Jam pengerjaan</span>
-        <div class="two"><input class="inp" type="time" id="f-start" aria-label="Jam mulai"><em>sampai</em><input class="inp" type="time" id="f-end" aria-label="Jam selesai"></div>
+        <div class="fld-head"><span>Jam pengerjaan</span><label class="opt-switch">Tanpa jam<span class="switch"><input type="checkbox" id="f-notime" aria-label="Tanpa jam"><i></i></span></label></div>
+        <div id="f-time-box">
+          <div class="two"><input class="inp" type="time" id="f-start" aria-label="Jam mulai"><em>sampai</em><input class="inp" type="time" id="f-end" aria-label="Jam selesai"></div>
+          <div class="quick dur" id="f-dur" aria-label="Durasi">
+            <button type="button" data-act="pick-dur" data-m="30">30 mnt</button>
+            <button type="button" data-act="pick-dur" data-m="60">1 jam</button>
+            <button type="button" data-act="pick-dur" data-m="90">1½ jam</button>
+            <button type="button" data-act="pick-dur" data-m="120">2 jam</button>
+            <button type="button" data-act="pick-dur" data-m="180">3 jam</button>
+          </div>
+          <small class="hint" id="f-dur-txt"></small>
+        </div>
+        <small class="hint hidden" id="f-notime-txt">Hanya tanggal, tampil di bagian "Tanpa jam".</small>
       </div>
       <div class="switch-row">
         <div><span class="lbl">Deadline</span><small>Batas akhir tugas harus selesai</small></div>
@@ -633,7 +690,7 @@ details.tbl th{color:var(--muted);font-weight:500}
   </div>
 </div>
 
-<div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-btn" class="hidden"></button></div>
+<div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-btn" class="hidden"></button><button id="toast-x" class="toast-x hidden" aria-label="Tutup pop-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
 
 <script id="pt-lib">
 /* Fungsi data murni (tanpa DOM): bentuk standar tugas/kategori/profil, antrean sinkron, migrasi cache & cadangan.
@@ -751,9 +808,63 @@ function pickProfile(profiles,stored){
   if(profiles.some(p=>p.id===stored))return stored;
   return profiles.length?profiles[0].id:undefined;
 }
+
+/* ---- jam & durasi (Tahap 2). Tanpa jam = start ''. Durasi = end − start; end < start = lewat tengah malam. ---- */
+const DEF_DUR=60;               // durasi bawaan (menit) kalau jam selesai kosong
+/** "HH:MM" → menit sejak 00:00, null kalau bukan jam yang valid. */
+function toMin(t){
+  if(!okT(t))return null;
+  const h=+t.slice(0,2),m=+t.slice(3,5);
+  return h<24&&m<60?h*60+m:null;
+}
+/** menit → "HH:MM", berputar di 24 jam (1500 → "01:00"). */
+function fromMin(m){m=((Math.round(m)%1440)+1440)%1440;return (m<600?'0':'')+Math.floor(m/60)+':'+(m%60<10?'0':'')+m%60;}
+/** Durasi dalam menit. null = tanpa jam (start kosong). Jam selesai kosong → DEF_DUR. */
+function durMin(start,end){
+  const s=toMin(start);if(s==null)return null;
+  const e=toMin(end);if(e==null)return DEF_DUR;
+  return e>=s?e-s:e-s+1440;
+}
+/** Jam selesai = jam mulai + menit (bisa lewat tengah malam). '' kalau jam mulai kosong. */
+function endAfter(start,min){const s=toMin(start);return s==null?'':fromMin(s+(+min||0));}
+/** Jam selesai lebih awal dari jam mulai = selesai besok. */
+function crossesMidnight(start,end){const s=toMin(start),e=toMin(end);return s!=null&&e!=null&&e<s;}
+/** Teks durasi: "30 mnt", "1 jam", "1 jam 30 mnt". */
+function fmtDur(m){
+  m=Math.max(0,Math.round(+m||0));
+  const h=Math.floor(m/60),r=m%60;
+  return h?h+' jam'+(r?' '+r+' mnt':''):r+' mnt';
+}
+
+/* ---- saran nama tugas (Tahap 2, Poin 9) ---- */
+const normName=s=>String(s==null?'':s).replace(/\s+/g,' ').trim();
+/** Maks `limit` nama tugas lama yang cocok dengan ketikan `q` (tidak peka huruf besar/kecil, nama kembar digabung).
+ *  Urutan: diawali q → ada kata yang diawali q → mengandung q; lalu yang terbaru dipakai. Nama yang persis sama
+ *  dengan ketikan tidak ditampilkan (sudah terisi). */
+function suggestNames(list,q,limit){
+  const nq=normName(q).toLowerCase();
+  if(!nq)return [];
+  const best=Object.create(null);
+  (Array.isArray(list)?list:[]).forEach(t=>{
+    if(!t||typeof t.name!=='string')return;
+    const name=normName(t.name),k=name.toLowerCase();
+    if(!k||k===nq||name==='(tanpa nama)')return;
+    const i=k.indexOf(nq);if(i<0)return;
+    const rank=i===0?0:(/[^0-9a-zÀ-ɏ]/.test(k.charAt(i-1))?1:2);
+    const at=Math.max(+t.updatedAt||0,+t.createdAt||0);
+    const b=best[k];
+    if(!b||at>b.at)best[k]={name:name,rank:rank,at:at};
+  });
+  return Object.keys(best).map(k=>best[k])
+    .sort((a,b)=>a.rank-b.rank||b.at-a.at||(a.name<b.name?-1:a.name>b.name?1:0))
+    .slice(0,limit>0?limit:5).map(x=>x.name);
+}
+
 return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CATS,isId:isId,isProf:isProf,isCustomCat:isCustomCat,
   normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
-  migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile};
+  migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile,
+  DIFFS:DIFFS,DEF_DUR:DEF_DUR,toMin:toMin,fromMin:fromMin,durMin:durMin,endAfter:endAfter,crossesMidnight:crossesMidnight,fmtDur:fmtDur,
+  suggestNames:suggestNames};
 })();
 </script>
 <script>
@@ -1112,14 +1223,32 @@ function dlInfo(t){
 const isOver=t=>!t.done&&dlMs(t)!=null&&dlMs(t)<Date.now();
 
 /* ================= task row ================= */
+const DIFF_N={mudah:'Mudah',sedang:'Sedang',sulit:'Sulit'};
+// Item ringkas (Poin 4): nama maks 2 baris + SATU baris info [kesulitan] jam · deadline · kategori (dipotong "…").
+// Kategori ditaruh terakhir karena sudah terwakili ikon, jadi itu yang terpotong duluan.
 function taskRow(t){
   const c=catOf(t.cat),dl=dlInfo(t);
-  const time=t.start?(t.start+(t.end?' – '+t.end:'')):(t.end?'s/d '+t.end:'');
+  const time=t.start?(t.start+(t.end?'–'+t.end:'')):(t.end?'s/d '+t.end:'');
+  const parts=[];
+  if(time)parts.push(ic('clock',2)+esc(time));
+  if(dl)parts.push('<span class="m-dl '+dl.cls+'">'+ic('alarm',2)+esc(dlShort(t,dl))+'</span>');
+  parts.push(esc(c.n));
   return '<div class="task'+(t.done?' done':'')+'" data-id="'+esc(t.id)+'">'+catIc(c)+
     '<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
-    '<div class="task-meta">'+(time?'<span>'+ic('clock',2)+esc(time)+'</span>':'')+'<span>'+esc(c.n)+'</span></div>'+
-    (dl?'<div class="task-dl '+dl.cls+'">'+ic('alarm',2)+'<span>Deadline '+esc(dl.when)+'</span><b>· '+esc(dl.rel)+'</b></div>':'')+
+    '<div class="task-meta">'+(DIFF_N[t.diff]?'<span class="diff '+t.diff+'">'+DIFF_N[t.diff]+'</span>':'')+parts.join('<i>·</i>')+'</div>'+
     '</div><button class="check" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button></div>';
+}
+// Deadline versi pendek untuk baris info: yang mendesak (sisa < 1 hari / terlambat) tampil sisa waktunya,
+// yang masih lama tampil tanggalnya kalau beda dengan tanggal tugas. Teks lengkap ada di detail tugas.
+function dlShort(t,dl){
+  if(t.done)return dl.cls==='ok'?'Tepat waktu':'Selesai terlambat';
+  if(!dl.cls&&t.dlDate!==t.date)return 'DL '+fmtShort(t.dlDate);
+  return dl.rel;
+}
+// Tugas satu tanggal: bagian "Tanpa jam" (start kosong) di atas, lalu tugas berjam urut jam (Poin 3).
+function dayRows(list){
+  const nt=list.filter(t=>!t.start),tm=list.filter(t=>!!t.start);
+  return (nt.length?'<div class="ntbox"><div class="subhead">Tanpa jam</div>'+nt.map(taskRow).join('')+'</div>':'')+tm.map(taskRow).join('');
 }
 
 /* ================= HOME ================= */
@@ -1157,7 +1286,7 @@ function renderHome(){
     const g=groups[d],dn=g.filter(t=>t.done).length,dt=parseYmd(d),rel=relDay(d);
     h+='<div class="dhead" id="g-'+d+'"><div class="dl"><b>'+dt.getDate()+' '+MON_S[dt.getMonth()]+'</b><span>'+DAYS[dt.getDay()]+'</span>'+
       (rel?'<span class="badge'+(rel==='Hari ini'?'':' dim')+'">'+rel+'</span>':'')+'</div><span>'+dn+'/'+g.length+' selesai</span></div>';
-    h+=g.map(taskRow).join('');
+    h+=dayRows(g);
   });
   box.innerHTML=h;
 }
@@ -1188,7 +1317,7 @@ function renderCalendar(){
   $('#cgrid').innerHTML=h;
   const sel=state.calSel,l=onDate(sel),rel=relDay(sel);
   $('#cal-day-head').innerHTML='<div><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>';
-  $('#cal-day-list').innerHTML=l.length?l.map(taskRow).join(''):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
+  $('#cal-day-list').innerHTML=l.length?dayRows(l):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
   $('#add-here-lbl').textContent='Tambah tugas di '+fmtShort(sel);
 }
 
@@ -1391,13 +1520,15 @@ function openDetail(id){if(!tasks[id])return;state.detailId=id;renderDetail();$(
 function renderDetail(){
   const t=tasks[state.detailId];if(!t){hideLayer('detail');return;}
   const c=catOf(t.cat),dl=dlInfo(t),over=isOver(t);
-  const time=t.start?(t.start+(t.end?' – '+t.end:'')):(t.end?'Sampai '+t.end:'Tidak diatur');
-  let dur2='';if(t.start&&t.end){let a=t.start.split(':').map(Number),b=t.end.split(':').map(Number);let mm=(b[0]*60+b[1])-(a[0]*60+a[1]);if(mm<0)mm+=1440;dur2=mm>=60?Math.floor(mm/60)+' jam'+(mm%60?' '+mm%60+' menit':''):mm+' menit';}
+  const time=t.start?(t.start+(t.end?' – '+t.end:'')):(t.end?'Sampai '+t.end:'Tanpa jam');
+  const dm=t.start&&t.end?L.durMin(t.start,t.end):null;
+  const dur2=dm!=null?L.fmtDur(dm)+(L.crossesMidnight(t.start,t.end)?' · selesai besoknya':''):'';
   $('#detail').innerHTML='<div class="d-head">'+catIc(c,true)+'<div><small>'+esc(c.n)+'</small><h3>'+esc(t.name)+'</h3></div></div>'+
     '<span class="d-status '+(t.done?'done':over?'over':'')+'">'+(t.done?ic('check',3)+'Sudah selesai':over?'Lewat deadline':'Belum selesai')+'</span>'+
+    (DIFF_N[t.diff]?' <span class="diff '+t.diff+'" style="margin-left:6px;font-size:13px;line-height:24px;padding:0 10px;border-radius:12px">'+DIFF_N[t.diff]+'</span>':'')+
     (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
     '<div class="d-rows"><div class="d-row">'+ic('cal')+'<div><small>Tanggal dikerjakan</small><b>'+esc(fmtLong(t.date))+'</b>'+(relDay(t.date)?'<em>'+relDay(t.date)+'</em>':'')+'</div></div>'+
-    '<div class="d-row">'+ic('clock')+'<div><small>Jam pengerjaan</small><b>'+esc(time)+'</b>'+(dur2?'<em>Durasi '+dur2+'</em>':'')+'</div></div>'+
+    '<div class="d-row">'+ic('clock')+'<div><small>Jam pengerjaan</small><b>'+esc(time)+'</b>'+(dur2?'<em>Durasi '+esc(dur2)+'</em>':'')+'</div></div>'+
     (dl?'<div class="d-row '+dl.cls+'">'+ic('alarm')+'<div><small>Deadline</small><b>'+esc(fmtLong(t.dlDate))+' · '+esc(t.dlTime||'23:59')+'</b><em>'+esc(dl.rel)+'</em></div></div>':'<div class="d-row">'+ic('alarm')+'<div><small>Deadline</small><b>Tanpa deadline</b></div></div>')+
     '</div><button class="btn-primary" data-act="detail-toggle">'+(t.done?'Tandai belum selesai':'✓ Tandai selesai')+'</button>'+
     '<div class="d-actions"><button class="btn-sec" data-act="detail-edit">Edit</button><button class="btn-sec danger" data-act="detail-delete">Hapus</button></div>';
@@ -1409,12 +1540,12 @@ function toggleDone(id,btn){
   t.done=!t.done;t.doneAt=t.done?Date.now():null;t.doneBy=t.done?curProfile():'';t.updatedAt=Date.now();
   persist(id);
   const b=document.querySelector('.check[data-check="'+CSS.escape(id)+'"]');if(b){b.classList.add('pop');}
-  if(t.done)toast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',['Urungkan',()=>{t.done=false;t.doneAt=null;t.doneBy='';t.updatedAt=Date.now();persist(id);}]);
+  if(t.done)undoToast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',()=>{t.done=false;t.doneAt=null;t.doneBy='';t.updatedAt=Date.now();persist(id);});
 }
 function delTask(id){
   const bak=tasks[id];if(!bak)return;
   delete tasks[id];persist(id);
-  toast('Tugas dihapus',['Urungkan',()=>{tasks[id]=bak;bak.updatedAt=Date.now();persist(id);}]);
+  undoToast('Tugas dihapus',()=>{tasks[id]=bak;bak.updatedAt=Date.now();persist(id);});
 }
 
 /* ---- add / edit ---- */
@@ -1422,7 +1553,9 @@ function openAdd(opts){
   opts=opts||{};
   const ed=opts.editId?tasks[opts.editId]:null;
   const date=ed?ed.date:(opts.date||today());
-  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed?catOf(ed.cat).g:'tugas',dlTouched:!!ed};
+  // noTime: "Tanpa jam" (Poin 3). Tugas lama yang hanya punya jam selesai ("s/d 17:00") tetap dianggap berjam di form.
+  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed?catOf(ed.cat).g:'tugas',dlTouched:!!ed,
+    diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end):false};
   state.returnTo=opts.returnTo||state.view;
   $('#add-title').textContent=ed?'Edit Tugas':'Tambahkan';
   $('#add-hint').textContent=ed?'Ketuk kategori untuk mengganti':'Pilih kategori untuk tugas baru';
@@ -1431,11 +1564,13 @@ function openAdd(opts){
   $('#f-date').value=date;
   let st='08:00',en='09:00';
   if(!ed&&date===today()){const d=new Date();let h=d.getHours()+1;if(h>22)h=22;st=pad(h)+':00';en=pad(h+1)+':00';}
-  $('#f-start').value=ed?ed.start:st;$('#f-end').value=ed?ed.end:en;
+  // durasi bawaan 1 jam: tugas lama yang punya jam mulai tapi jam selesainya kosong diisi mulai + 1 jam
+  if(ed&&(ed.start||ed.end)){st=ed.start;en=ed.end||L.endAfter(ed.start,L.DEF_DUR);}
+  $('#f-start').value=st;$('#f-end').value=en;state.form.startPrev=st;
   $('#f-dl-on').checked=ed?!!ed.dlDate:true;
   $('#f-dl-date').value=ed&&ed.dlDate?ed.dlDate:date;$('#f-dl-time').value=ed&&ed.dlTime?ed.dlTime:'23:59';
   $('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');
-  syncDl();syncQuick();renderCatGrid();
+  hideSug();syncDl();syncQuick();syncDiff();syncTime();renderCatGrid();
   $('#add-screen').scrollTop=0;showLayer('add');
   if(ed)setTimeout(()=>openForm(),120);
 }
@@ -1453,16 +1588,48 @@ function openForm(){
 }
 function syncDl(){$('#f-dl-box').classList.toggle('hidden',!$('#f-dl-on').checked);}
 function syncQuick(){const d=$('#f-date').value,t=today();document.querySelectorAll('#f-quick button').forEach(b=>b.classList.toggle('on',d===addDays(t,+b.dataset.d)));}
+// Kesulitan (Poin 2): opsional, tap pilihan yang sama lagi = kosongkan
+function syncDiff(){const v=state.form?state.form.diff:'';document.querySelectorAll('#f-diff button').forEach(b=>{const on=b.getAttribute('data-v')===v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
+// Tanpa jam (Poin 3) + durasi: kolom jam & tombol durasi disembunyikan kalau "Tanpa jam" aktif
+function syncTime(){
+  const nt=!!(state.form&&state.form.noTime),s=$('#f-start').value,e=$('#f-end').value,m=L.durMin(s,e);
+  $('#f-notime').checked=nt;
+  $('#f-time-box').classList.toggle('hidden',nt);$('#f-notime-txt').classList.toggle('hidden',!nt);
+  document.querySelectorAll('#f-dur button').forEach(b=>b.classList.toggle('on',!!e&&m===+(b.getAttribute('data-m')||0)));
+  $('#f-dur-txt').textContent=m==null?'Isi jam mulai untuk menghitung durasi.':
+    (e&&m===0?'Jam selesai sama dengan jam mulai.':'Durasi '+L.fmtDur(m)+(e?'':' (bawaan)')+(L.crossesMidnight(s,e)?' · selesai besoknya':''));
+}
+/* ---- saran nama (Poin 9) ----
+   Daftar ikut alur form tepat di bawah kolom Nama (mendorong kolom lain ke bawah, tidak menimpa).
+   Tertutup saat: kolom Nama kehilangan fokus (pindah kolom / tap di luar), keyboard ditutup, Esc, saran dipilih, form ditutup.
+   mousedown di daftar dicegah supaya tap saran tidak membuat kolom Nama kehilangan fokus sebelum klik terbaca. */
+let sugList=[];
+function renderSug(){
+  const inp=$('#f-name'),f=state.form;
+  sugList=f&&document.activeElement===inp?L.suggestNames(all().filter(t=>t.id!==f.editId),inp.value,5):[];
+  if(!sugList.length){hideSug();return;}
+  const q=inp.value.replace(/\s+/g,' ').trim().toLowerCase();
+  const hl=n=>{const i=n.toLowerCase().indexOf(q);return i<0?esc(n):esc(n.slice(0,i))+'<b>'+esc(n.slice(i,i+q.length))+'</b>'+esc(n.slice(i+q.length));};
+  const box=$('#f-sug');
+  box.innerHTML=sugList.map((n,i)=>'<button type="button" class="sug-i" role="option" tabindex="-1" data-act="pick-sug" data-i="'+i+'">'+ic('clock',2)+'<span>'+hl(n)+'</span></button>').join('');
+  box.classList.remove('hidden');inp.setAttribute('aria-expanded','true');
+}
+function hideSug(){
+  const box=$('#f-sug');if(box.classList.contains('hidden')&&!sugList.length)return;
+  box.classList.add('hidden');box.innerHTML='';$('#f-name').setAttribute('aria-expanded','false');sugList=[];
+}
+const sugOpen=()=>!$('#f-sug').classList.contains('hidden');
 function closeAdd(){hideLayer('add');}
 function saveForm(e){
   if(e)e.preventDefault();
   const f=state.form;if(!f||!f.cat)return;
+  hideSug();
   const name=$('#f-name').value.trim();
   if(!name){$('#f-name-err').classList.remove('hidden');$('#f-name').classList.add('bad');$('#f-name').focus();return;}
   const date=$('#f-date').value||today();
-  const dlOn=$('#f-dl-on').checked;
+  const dlOn=$('#f-dl-on').checked,nt=!!f.noTime;
   const data={cat:f.cat,name:name.slice(0,120),detail:$('#f-detail').value.trim().slice(0,2000),date:date,
-    start:$('#f-start').value||'',end:$('#f-end').value||'',
+    start:nt?'':($('#f-start').value||''),end:nt?'':($('#f-end').value||''),diff:DIFF_N[f.diff]?f.diff:'',
     dlDate:dlOn?($('#f-dl-date').value||date):'',dlTime:dlOn?($('#f-dl-time').value||'23:59'):''};
   const now=Date.now();let id;
   if(f.editId&&tasks[f.editId]){id=f.editId;Object.assign(tasks[id],data,{updatedAt:now});}
@@ -1491,6 +1658,7 @@ function showLayer(id){
 function hideLayer(id){
   const i=layers.indexOf(id);if(i<0)return false;
   if(id==='add'&&isOpen('form'))hideLayer('form');
+  if(id==='form')hideSug();
   layers.splice(layers.indexOf(id),1);
   const el=$(LAYER_EL[id]);el.classList.remove('open');el.setAttribute('aria-hidden','true');
   if(id==='add')state.form=null;
@@ -1525,13 +1693,23 @@ if(GH){try{GH.setChangeHandler(onBack);}catch(e){}}
 window.addEventListener('popstate',onBack);
 let cfCb=null;
 function confirmBox(title,msg,yes,cb){$('#cf-title').textContent=title;$('#cf-msg').textContent=msg;$('#cf-yes').textContent=yes;cfCb=cb;showLayer('confirm');}
+/* ---- pop-up bawah ----
+   toast(pesan)                    : info singkat, hilang sendiri setelah 2,4 dtk
+   toast(pesan, [label, fungsi])   : + tombol aksi dan tombol × (4,5 dtk)
+   undoToast(pesan, urungkan)      : pop-up "Urungkan" yang dipakai ulang (hapus, centang, nanti geser tanggal di Tahap 6).
+   Aksinya SUDAH dijalankan sebelum pop-up muncul: "Urungkan" membaliknya, × hanya menutup pop-up (aksi tetap).
+   Pop-up baru selalu menggantikan yang lama (urungkan milik pop-up lama tidak bisa dipakai lagi). */
 let toastT=null,toastCb=null;
 function toast(msg,action){
   const el=$('#toast');$('#toast-msg').textContent=msg;const b=$('#toast-btn');
   if(action){b.textContent=action[0];b.classList.remove('hidden');toastCb=action[1];}else{b.classList.add('hidden');toastCb=null;}
-  el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),action?4500:2400);
+  $('#toast-x').classList.toggle('hidden',!action);
+  el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(hideToast,action?4500:2400);
 }
-$('#toast-btn').addEventListener('click',()=>{const cb=toastCb;toastCb=null;$('#toast').classList.remove('on');if(cb)cb();});
+function undoToast(msg,undo){toast(msg,['Urungkan',undo]);}
+function hideToast(){clearTimeout(toastT);toastCb=null;$('#toast').classList.remove('on');}
+$('#toast-btn').addEventListener('click',()=>{const cb=toastCb;hideToast();if(cb)cb();});
+$('#toast-x').addEventListener('click',hideToast);
 
 function renderMonthPicker(){
   const y=state.pickYear,cur=mkey(today());
@@ -1618,6 +1796,13 @@ function handle(a,el,e){
       break;}
     case 'form-collapse':hideLayer('form');break;
     case 'quick-date':{const d=addDays(today(),+el.dataset.d);setFormDate(d);break;}
+    case 'pick-diff':{const v=el.dataset.v;state.form.diff=state.form.diff===v?'':v;syncDiff();break;}
+    case 'pick-dur':{const s=$('#f-start').value;
+      if(!s){try{$('#f-start').focus();}catch(_){}break;}
+      $('#f-end').value=L.endAfter(s,+el.dataset.m);syncTime();break;}
+    case 'pick-sug':{const n=sugList[+el.dataset.i];if(n==null)break;
+      const inp=$('#f-name');inp.value=n;hideSug();$('#f-name-err').classList.add('hidden');inp.classList.remove('bad');
+      try{if(document.activeElement!==inp)inp.focus({preventScroll:true});inp.setSelectionRange(n.length,n.length);}catch(_){}break;}
     case 'search':$('#search-q').value='';renderSearch();showLayer('search');setTimeout(()=>$('#search-q').focus(),250);break;
     case 'close-search':hideLayer('search');break;
     case 'home-filter':state.homeFilter=el.dataset.f;renderHome();break;
@@ -1690,12 +1875,31 @@ $('#f-date').addEventListener('change',()=>{const v=$('#f-date').value;if(!v)ret
 $('#f-dl-on').addEventListener('change',()=>{state.form.dlTouched=true;syncDl();});
 $('#f-dl-date').addEventListener('change',()=>{state.form.dlTouched=true;});
 $('#f-dl-time').addEventListener('change',()=>{state.form.dlTouched=true;});
-$('#f-name').addEventListener('input',()=>{$('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');});
-$('#f-start').addEventListener('change',()=>{const s=$('#f-start').value,e=$('#f-end').value;
-  if(s&&(!e||e<=s)){const [h,m]=s.split(':').map(Number);const nh=Math.min(23,h+1);$('#f-end').value=pad(nh)+':'+pad(nh===23&&h===23?59:m);}});
+$('#f-name').addEventListener('input',()=>{$('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');renderSug();});
+// Kolom Nama kehilangan fokus → saran ditutup SETELAH tap/klik selesai. Kalau ditutup seketika, form bergeser naik
+// di bawah jari sebelum klik terbaca dan tap jatuh ke kolom lain (mis. tap "Sedang" tidak terpilih).
+let sugT=null,ptrDown=false;
+document.addEventListener('pointerdown',()=>{ptrDown=true;},true);
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{ptrDown=false;},true));
+function onNameBlur(){
+  clearTimeout(sugT);
+  const later=()=>{clearTimeout(sugT);sugT=setTimeout(()=>{if(document.activeElement!==$('#f-name'))hideSug();},250);};
+  if(ptrDown){document.addEventListener('pointerup',later,{once:true,capture:true});document.addEventListener('pointercancel',later,{once:true,capture:true});}
+  else later();
+}
+$('#f-name').addEventListener('blur',onNameBlur);
+$('#f-sug').addEventListener('mousedown',e=>e.preventDefault());
+// keyboard HP ditutup (tombol back/turunkan keyboard) → layar terlihat membesar → tutup saran
+if(window.visualViewport){let vvh=visualViewport.height;visualViewport.addEventListener('resize',()=>{const h=visualViewport.height;if(h>vvh+80)hideSug();vvh=h;});}
+// ganti jam mulai → jam selesai ikut bergeser, durasi tetap (bawaan 1 jam)
+$('#f-start').addEventListener('change',()=>{const f=state.form,s=$('#f-start').value;if(!f)return;
+  if(s){const d=L.durMin(f.startPrev,$('#f-end').value);$('#f-end').value=L.endAfter(s,d?d:L.DEF_DUR);}
+  f.startPrev=s;syncTime();});
+$('#f-end').addEventListener('change',syncTime);
+$('#f-notime').addEventListener('change',()=>{if(state.form){state.form.noTime=$('#f-notime').checked;syncTime();}});
 $('#task-form').addEventListener('submit',saveForm);
 $('#search-q').addEventListener('input',renderSearch);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&layers.length)goBack();});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(sugOpen()){hideSug();return;}if(layers.length)goBack();});
 let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(state.view==='grafik')renderStats();updateHdr();},150);});
 // refresh countdowns every minute
 setInterval(()=>{if(!document.hidden&&!isOpen('add')){const y=SC.scrollTop;render();SC.scrollTo(0,y);}},60000);

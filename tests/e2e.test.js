@@ -237,3 +237,179 @@ test('E2E aplikasi baru + server lama (Code.gs belum di-deploy): tetap jalan dan
     await close();
   }
 });
+
+test('E2E Tahap 2: item ringkas, pop-up ×, label, kesulitan, tanpa jam, saran nama, durasi', { skip: !pw && 'Playwright tidak terpasang', timeout: 180000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date: '2026-11-10', start: '08:00', end: '09:00', dlDate: '', dlTime: '', done: false, doneAt: null, createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  const names = ['Laporan 1', 'Laporan 2', 'Laporan 3', 'Laporan 4', 'Laporan 5', 'Laporan 6', 'Rapat tim', 'Kirim laporan', 'Belajar', 'Olahraga', 'Baca jurnal', 'Cuci motor'];
+  S.post('apiSync', reg.token, names.map((n, i) => ({ op: 'upsert', task: T('t' + i, n, { start: String(7 + i).padStart(2, '0') + ':00', end: String(8 + i).padStart(2, '0') + ':00', createdAt: 1762740000000 + i * 3600000, updatedAt: 1762740000000 + i * 3600000 }) }))
+    .concat([{ op: 'upsert', task: T('tlama', 'Tanpa jam selesai', { date: '2026-11-12', start: '08:00', end: '' }) }]));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const row = id => S.sheet('@adit').objects().find(o => o.ID === id);
+  const rowByName = n => S.sheet('@adit').objects().find(o => o['Nama tugas'] === n);
+  const rect = sel => p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height }; }, sel);
+  const sugState = () => p.evaluate(() => ({ open: !document.getElementById('f-sug').classList.contains('hidden'), items: [...document.querySelectorAll('#f-sug .sug-i')].map(b => b.textContent.trim()), focus: document.activeElement && document.activeElement.id }));
+  async function openForm(cat) {
+    await p.tap('.nav .fab'); await wait(300);
+    await p.tap(`[data-act="pick-cat"][data-k="${cat || 'tkuliah'}"]`); await wait(450);
+  }
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ---- Poin 4: item ringkas ----
+    const m = await p.evaluate(() => {
+      const rows = [...document.querySelectorAll('#home-list .task')];
+      const top = document.getElementById('home-top').getBoundingClientRect().bottom, navTop = document.querySelector('.nav').getBoundingClientRect().top;
+      const cs = el => getComputedStyle(el);
+      const r0 = rows[0], ck = r0.querySelector('.check').getBoundingClientRect();
+      const hit = document.elementFromPoint(ck.left + ck.width / 2 + 18, ck.top + ck.height / 2);
+      return {
+        n: rows.length,
+        heights: rows.map(r => Math.round(r.getBoundingClientRect().height)),
+        visible: rows.filter(r => { const b = r.getBoundingClientRect(); return b.top >= top - 1 && b.bottom <= navTop + 1; }).length,
+        nameFont: parseFloat(cs(r0.querySelector('.task-name')).fontSize),
+        metaFont: parseFloat(cs(r0.querySelector('.task-meta')).fontSize),
+        metaOneLine: rows.every(r => { const mm = r.querySelector('.task-meta'); return cs(mm).whiteSpace === 'nowrap' && cs(mm).textOverflow === 'ellipsis' && mm.getBoundingClientRect().height < 20; }),
+        checkHit: !!hit && !!hit.closest('.check')
+      };
+    });
+    assert.equal(m.n, 13, '12 tugas 10 Nov + 1 tugas 12 Nov');
+    assert.ok(m.heights.every(h => h >= 44 && h <= 56), 'tinggi item 44–56px: ' + m.heights.join(','));
+    assert.ok(m.visible >= 8 && m.visible <= 12, 'jumlah item yang terlihat penuh di layar 390×844: ' + m.visible);
+    assert.ok(m.nameFont >= 14 && m.metaFont >= 12, 'font nama ≥14, detail ≥12');
+    assert.equal(m.metaOneLine, true, 'baris info 1 baris + "…"');
+    assert.equal(m.checkHit, true, 'area tap tombol centang lebih lebar dari lingkarannya (≥44px)');
+    await shot('t2-01-item-ringkas');
+
+    // ---- Poin 5: pop-up Urungkan + tombol × ----
+    await p.tap('#home-list .task[data-id="t6"] .check'); await wait(300);
+    assert.equal(await p.isVisible('#toast-btn'), true);
+    assert.equal(await p.isVisible('#toast-x'), true, 'tombol × tampil');
+    const tr = await rect('#toast'), fab = await rect('.nav .fab'), nav = await rect('.nav');
+    assert.ok(tr.bottom <= fab.top - 6 && tr.bottom <= nav.top, 'pop-up tidak menutupi tombol + / navigasi: ' + JSON.stringify({ toast: tr.bottom, fab: fab.top, nav: nav.top }));
+    await shot('t2-02-toast');
+    await p.tap('#toast-x'); await wait(260);
+    assert.equal(await p.evaluate(() => document.getElementById('toast').classList.contains('on')), false, '× langsung menutup pop-up');
+    await wait(1200);
+    assert.equal(row('t6')['Status'], 'Selesai', '× tidak membatalkan centang');
+    // aksi baru saat pop-up masih tampil → pop-up diganti; Urungkan hanya membatalkan aksi terakhir
+    await p.tap('#home-list .task[data-id="t7"] .check'); await wait(200);
+    await p.tap('#home-list .task[data-id="t8"] .check'); await wait(200);
+    assert.match(await p.textContent('#toast-msg'), /Belajar/, 'pop-up lama diganti yang baru');
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.deepEqual([row('t7')['Status'], row('t8')['Status']], ['Selesai', 'Belum']);
+    // hapus + Urungkan memakai komponen yang sama
+    await p.tap('#home-list .task[data-id="t9"] .task-name'); await wait(350);
+    await p.tap('[data-act="detail-delete"]'); await wait(300);
+    await p.tap('#cf-yes'); await wait(300);
+    assert.equal((await p.textContent('#toast-msg')).trim(), 'Tugas dihapus');
+    assert.equal(await p.isVisible('#toast-x'), true);
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.ok(row('t9'), 'Urungkan hapus mengembalikan tugas');
+
+    // ---- Poin 1 + Poin 9: label & saran nama ----
+    await openForm();
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#task-form .fld > span')].slice(0, 2).map(s => s.textContent.trim())), ['Nama', 'Detail']);
+    await p.focus('#f-name'); await p.keyboard.type('lap'); await wait(150);
+    let sg = await sugState();
+    assert.equal(sg.open, true, 'saran muncul saat mengetik');
+    assert.equal(sg.items.length, 5, 'maks 5 saran');
+    assert.ok(sg.items.every(x => /lap/i.test(x)), 'semua saran cocok: ' + sg.items.join(' | '));
+    assert.equal(sg.items[0], 'Laporan 6', 'yang terbaru dulu');
+    const sr = await rect('#f-sug'), nr = await rect('#f-name'), dr = await rect('#f-detail');
+    assert.ok(sr.top >= nr.bottom && sr.bottom <= dr.top, 'daftar saran tidak menutupi kolom Nama/Detail');
+    await shot('t2-03-saran');
+    await p.tap('#f-sug .sug-i:nth-child(2)'); await wait(300);
+    assert.equal(await p.inputValue('#f-name'), 'Laporan 5', 'tap saran mengisi nama');
+    assert.equal((await sugState()).open, false);
+    await p.keyboard.type(' x'); await p.keyboard.press('Backspace'); await p.keyboard.press('Backspace'); await wait(100);
+    await p.fill('#f-name', ''); await p.focus('#f-name'); await p.keyboard.type('rap'); await wait(150);
+    assert.deepEqual((await sugState()).items, ['Rapat tim']);
+    await p.keyboard.press('Escape'); await wait(150);
+    assert.equal((await sugState()).open, false, 'Esc menutup saran');
+    assert.equal(await p.evaluate(() => document.getElementById('form-wrap').classList.contains('open')), true, 'Esc tidak menutup form');
+    await p.keyboard.type('a'); await wait(150);
+    assert.equal((await sugState()).open, true);
+    await p.tap('#f-detail'); await wait(400);
+    sg = await sugState();
+    assert.deepEqual([sg.open, sg.focus], [false, 'f-detail'], 'pindah kolom menutup saran, fokus pindah ke Detail');
+    await p.evaluate(() => { const v = window.visualViewport; if (v) v.dispatchEvent(new Event('resize')); });
+
+    // ---- Poin 2: kesulitan (tap saat saran terbuka tetap kena tombolnya) ----
+    await p.fill('#f-name', ''); await p.focus('#f-name'); await p.keyboard.type('Lap'); await wait(150);
+    assert.equal((await sugState()).open, true);
+    await p.tap('[data-act="pick-diff"][data-v="sulit"]'); await wait(400);
+    assert.equal((await sugState()).open, false);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#f-diff .on')].map(b => b.dataset.v)), ['sulit'], 'tap Sulit saat saran terbuka tetap memilih Sulit');
+    await p.tap('[data-act="pick-diff"][data-v="mudah"]'); await p.tap('[data-act="pick-diff"][data-v="mudah"]');
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#f-diff .on')].length), 0, 'tap lagi = kosongkan (opsional)');
+    await p.tap('[data-act="pick-diff"][data-v="sulit"]');
+
+    // ---- isian durasi ----
+    assert.deepEqual([await p.inputValue('#f-start'), await p.inputValue('#f-end')], ['10:00', '11:00'], 'bawaan 1 jam');
+    assert.equal((await p.textContent('#f-dur-txt')).trim(), 'Durasi 1 jam');
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#f-dur .on')].map(b => b.dataset.m)), ['60']);
+    await p.tap('[data-act="pick-dur"][data-m="120"]');
+    assert.equal(await p.inputValue('#f-end'), '12:00');
+    await p.fill('#f-start', '13:30'); await wait(100);
+    assert.equal(await p.inputValue('#f-end'), '15:30', 'ganti jam mulai: durasi tetap 2 jam');
+    await p.fill('#f-start', '23:00'); await wait(100);
+    assert.equal(await p.inputValue('#f-end'), '01:00');
+    assert.match(await p.textContent('#f-dur-txt'), /Durasi 2 jam · selesai besoknya/);
+    await p.fill('#f-end', '23:45'); await wait(100);
+    assert.equal((await p.textContent('#f-dur-txt')).trim(), 'Durasi 45 mnt');
+    await p.fill('#f-name', 'Laporan baru');
+    await shot('t2-04-form');
+    await p.tap('#f-save'); await wait(1500);
+    let r = rowByName('Laporan baru');
+    assert.deepEqual([r['Kesulitan'], r['Jam mulai'], r['Jam selesai']], ['Sulit', '23:00', '23:45']);
+    assert.equal(await p.textContent(`#home-list .task[data-id="${r.ID}"] .diff.sulit`), 'Sulit', 'label kesulitan di item');
+
+    // ---- Poin 3: tanpa jam ----
+    await openForm('belajar');
+    await p.fill('#f-name', 'Baca bab 3');
+    assert.equal(await p.isVisible('#f-time-box'), true);
+    await p.tap('.opt-switch'); await wait(150);
+    assert.equal(await p.isVisible('#f-time-box'), false, 'kolom jam & durasi disembunyikan');
+    assert.equal(await p.isVisible('#f-notime-txt'), true);
+    await p.tap('#f-save'); await wait(1500);
+    r = rowByName('Baca bab 3');
+    assert.deepEqual([r['Jam mulai'], r['Jam selesai'], r['Kesulitan']], ['', '', ''], 'tersimpan tanpa jam, kesulitan kosong');
+    const grp = await p.evaluate(id => {
+      const el = document.querySelector('#home-list .task[data-id="' + id + '"]'), box = el.closest('.ntbox');
+      return { inBox: !!box, head: box && box.querySelector('.subhead').textContent.trim(), firstInDay: !!box && box.previousElementSibling.classList.contains('dhead'),
+        meta: el.querySelector('.task-meta').textContent.trim() };
+    }, r.ID);
+    assert.deepEqual(grp, { inBox: true, head: 'Tanpa jam', firstInDay: true, meta: 'Sisa 14 jam·Belajar' }, 'tampil di bagian "Tanpa jam" di atas tugas berjam');
+    await shot('t2-05-tanpa-jam');
+    await p.tap(`#home-list .task[data-id="${r.ID}"] .task-name`); await wait(350);
+    assert.match(await p.textContent('#detail'), /Jam pengerjaanTanpa jam/);
+    await p.tap('[data-act="detail-edit"]'); await wait(600);
+    assert.equal(await p.isChecked('#f-notime'), true, 'edit: Tanpa jam tetap aktif');
+    await p.tap('.opt-switch'); await wait(100);
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(rowByName('Baca bab 3')['Jam mulai'], '08:00', 'Tanpa jam dimatikan → jam tersimpan lagi');
+    // kalender: bagian Tanpa jam juga ada
+    await openForm('belajar');
+    await p.fill('#f-name', 'Tanpa jam kalender'); await p.tap('.opt-switch'); await p.tap('#f-save'); await wait(800);
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+    assert.equal(await p.locator('#cal-day-list .ntbox .task').count(), 1);
+
+    // ---- edit tugas lama berjam mulai tanpa jam selesai → durasi bawaan 1 jam ----
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+    await p.tap('#home-list .task[data-id="tlama"] .task-name'); await wait(350);
+    await p.tap('[data-act="detail-edit"]'); await wait(600);
+    assert.deepEqual([await p.inputValue('#f-start'), await p.inputValue('#f-end'), (await p.textContent('#f-dur-txt')).trim()], ['08:00', '09:00', 'Durasi 1 jam']);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#f-diff .on')].length), 0);
+    await p.tap('#form-wrap .sheet-top [data-act="form-collapse"]'); await wait(200);
+    await p.tap('[data-act="add-cancel"]'); await wait(300);
+    assert.equal(row('tlama')['Jam selesai'], '', 'tanpa disimpan, data lama tidak berubah');
+
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally {
+    await close();
+  }
+});

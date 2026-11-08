@@ -9,7 +9,7 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 |---|---|---|---|
 | 0 | Pemetaan, alat uji, PROGRESS.md | ✅ selesai (8 Nov 2026) | `Tahap 0: …` |
 | 1 | Fondasi data + migrasi | ✅ selesai (8 Nov 2026), `Code.gs` di-deploy user 8 Nov 17.24 WIB, lalu `index.html` live | `Tahap 1: …` |
-| 2 | Poin 4 → 5 → 1 → 2 → 3 → 9 → durasi | belum | – |
+| 2 | Poin 4 → 5 → 1 → 2 → 3 → 9 → durasi | ✅ selesai (8 Nov 2026), hanya `index.html` (tanpa deploy server) | `Tahap 2: …` |
 | 3 | Poin 10 → 8 (kategori) | belum | – |
 | 4 | Poin 12 → 13 (banyak tugas sekaligus) | belum | – |
 | 5 | Poin 15 (multi-hari) | belum | – |
@@ -36,7 +36,7 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 
 ## 1. Peta struktur kode
 
-Nomor baris = posisi di commit Tahap 0 (sudah bergeser ±130 baris sejak Tahap 1 karena `<script id="pt-lib">`). Cari pakai nama fungsi/ID, jangan hanya nomor baris.
+Nomor baris = posisi di commit Tahap 0 (sudah bergeser ±130 baris sejak Tahap 1 karena `<script id="pt-lib">`, dan ±200 lagi sejak Tahap 2). Cari pakai nama fungsi/ID, jangan hanya nomor baris. Kolom "sejak Tahap 2" di bawah menjelaskan bagian yang berubah.
 
 ### File
 
@@ -53,9 +53,9 @@ Nomor baris = posisi di commit Tahap 0 (sudah bergeser ±130 baris sejak Tahap 1
 
 | Bagian | Markup (`index.html`) | CSS | JS |
 |---|---|---|---|
-| **Form buat/edit tugas** | Layar kategori `#add-screen` (519): toggle `#add-seg` **Tugas \| Kegiatan** + `#cat-grid`. Form `#form-wrap` → `#task-form` (540): `#f-name` (label "Nama tugas"), `#f-detail` ("Detail tugas"), `#f-quick` (Hari ini/Besok/Lusa), `#f-date` ("Tanggal dikerjakan"), `#f-start`/`#f-end` ("Jam pengerjaan"), switch `#f-dl-on` + `#f-dl-date`/`#f-dl-time` ("Deadline"), `#f-save` | `.cat-grid` `.cat-btn` `.fld` `.inp` `.quick` `.two` `.switch-row` `.btn-primary` | `openAdd(opts)` 1295, `renderCatGrid` 1316, `openForm` 1322, `saveForm` 1331, `setFormDate` + listener form 1554–1567, case `pick-cat`/`add-group`/`quick-date` di `handle` |
-| **Item tugas** | dibuat JS | `.task` 81 (padding 13px 16px, gap 14px), `.task-name` 90 (17.5px), `.task-meta` 91 (13px), `.task-dl` 94 (12.5px), `.check` 101 (34px), `.cat-ic` | `taskRow(t)` 989 — dipakai di Home, Kalender, Pencarian. Tap baris → `openDetail`; tap `.check` → `toggleDone` |
-| **Pop-up "Urungkan"** | `#toast` > `#toast-msg` + `#toast-btn` (636) | `.toast` 397 (`bottom:88px`) | `toast(msg, [label, cb])` 1403 (4,5 dtk kalau ada aksi, 2,4 dtk tanpa aksi; panggilan baru menimpa yang lama; `showLayer` menyembunyikan toast). Dipakai `toggleDone` 1281 dan `delTask` 1288. **Belum ada tombol ×** |
+| **Form buat/edit tugas** | Layar kategori `#add-screen` (519): toggle `#add-seg` **Tugas \| Kegiatan** + `#cat-grid`. Form `#form-wrap` → `#task-form` (540). **Sejak Tahap 2:** `#f-name` (label "Nama", + daftar saran `#f-sug`), `#f-detail` ("Detail"), `#f-diff` (kesulitan, `data-act="pick-diff"`), switch `#f-notime` ("Tanpa jam") yang menyembunyikan `#f-time-box` (jam + tombol durasi `#f-dur` `data-act="pick-dur"` + teks `#f-dur-txt`). Sebelumnya: `#f-name` (label "Nama tugas"), `#f-detail` ("Detail tugas"), `#f-quick` (Hari ini/Besok/Lusa), `#f-date` ("Tanggal dikerjakan"), `#f-start`/`#f-end` ("Jam pengerjaan"), switch `#f-dl-on` + `#f-dl-date`/`#f-dl-time` ("Deadline"), `#f-save` | `.cat-grid` `.cat-btn` `.fld` `.inp` `.quick` `.two` `.switch-row` `.btn-primary` | `openAdd(opts)` 1295, `renderCatGrid` 1316, `openForm` 1322, `saveForm` 1331, `setFormDate` + listener form 1554–1567, case `pick-cat`/`add-group`/`quick-date` di `handle` |
+| **Item tugas** | dibuat JS | **Sejak Tahap 2:** `.task` min-height 52px (padding 7px), `.task .cat-ic` 36px, `.task-name` 15px maks 2 baris, `.task-meta` 12.5px **1 baris + "…"** (`nowrap`/`ellipsis`), label `.diff.mudah/.sedang/.sulit`, `.m-dl` (warna deadline), `.check` 28px + `::before` area tap 50px. Bagian `.ntbox` + `.subhead` "Tanpa jam" | `taskRow(t)` — dipakai di Home, Kalender, Pencarian. Baris info: `[kesulitan] jam · deadline pendek (dlShort) · kategori` (kategori terakhir supaya yang terpotong duluan). **`dayRows(list)`** (Home + Kalender): tugas tanpa jam (`start===''`) di bagian "Tanpa jam" di atas, lalu tugas berjam. Tap baris → `openDetail`; tap `.check` → `toggleDone` |
+| **Pop-up "Urungkan"** | `#toast` > `#toast-msg` + `#toast-btn` + **`#toast-x`** (Tahap 2) | `.toast` `bottom: tinggi nav + 34px` (di atas FAB), `.toast-x` 40px | `toast(msg, [label, cb])` (4,5 dtk kalau ada aksi + tombol ×; 2,4 dtk tanpa aksi), **`undoToast(msg, urungkan)`** = komponen pakai ulang (dipakai `toggleDone`, `delTask`; dipakai lagi Tahap 6), `hideToast()`. Aksi sudah dijalankan sebelum pop-up muncul: Urungkan membalik, × hanya menutup. Pop-up baru menimpa yang lama. `showLayer` menyembunyikan toast |
 | **Kalender** | `#v-kalender` (467): `#cgrid` (grid bulan), `#cal-day-head`, `#cal-day-list`, tombol `.add-here` | `.cgrid` `.cday` 224 | `renderCalendar` 1051, case `cal-prev`/`cal-next`/`cal-day`/`add-on-date` |
 | **Menu Grafik** | `#v-grafik` (486): filter `#st-filter`, tab bulan `#mtabs` (geser horizontal), `#stats-body` | `.donut-*` `.tiles` `.card` `.hbars` `.chart-box` `.clist`/`.crow` | `renderStats` 1084 (donut % kategori, ubin, tanggal tersibuk, kurva per tanggal `drawCurve` 1176, daftar "Per kategori" `.crow` — **belum bisa di-tap**), `donutSvg` 1141, `bindDonut` |
 | **Menu "Saya"** | `#v-saya` (503) > `#me-body` | `.me-card` `.menu` `.tiles` | `renderMe` 1226: kartu profil (`.av.big` = huruf awal), ubin statistik, menu Akun (ganti akun, ubah nama, ubah PIN, keluar), menu Data (muat ulang, cadangan, pulihkan, hapus selesai, hapus semua), Tips |
@@ -66,7 +66,7 @@ Nomor baris = posisi di commit Tahap 0 (sudah bergeser ±130 baris sejak Tahap 1
 
 - Helper (642): `$`, `esc`, tanggal (`today`, `mkey`, `parseYmd`, `addDays`, `fmt*`), ikon `P` + `ic()` (668).
 - **Kategori** `CATS` (709–738), `CAT`, `catOf(k)`, `catIc(c)`.
-- **Pustaka data `PT_LIB`** (script `pt-lib`, sejak Tahap 1): `normTask`, `toDoc`, `normCat`, `normProfile`, `opKey`/`enqueue` (antrean), `mergeServer`, `migrateCache`, `makeBackup`/`parseBackup`, `serverIsCurrent`, `pickProfile`. Logika data baru taruh di sini + beri tes di `tests/client.test.js`.
+- **Pustaka data `PT_LIB`** (script `pt-lib`, sejak Tahap 1): `normTask`, `toDoc`, `normCat`, `normProfile`, `opKey`/`enqueue` (antrean), `mergeServer`, `migrateCache`, `makeBackup`/`parseBackup`, `serverIsCurrent`, `pickProfile`. **Sejak Tahap 2:** jam & durasi `DEF_DUR` (60), `toMin`, `fromMin`, `durMin(start,end)` (null = tanpa jam; jam selesai kosong = 60; end < start = lewat tengah malam), `endAfter(start,menit)`, `crossesMidnight`, `fmtDur`; saran nama `suggestNames(list, q, limit)`. **Tahap 7 (Time Blocking) sebaiknya memakai `durMin`/`toMin` yang sama.** Logika data baru taruh di sini + beri tes di `tests/client.test.js`.
 - **Data store**: `API_URL`, `tasks`, `ops`, **`cats`** (kategori custom), **`profiles`**, `accounts`, `me`, `isBuiltinCat`, `lsGet/lsSet`, `saveLocal`/`loadLocalFor` (cache v2), **`curProfile()`**, `api()`, `queueOp` (tugas), **`queueMeta(op)`** (kategori/profil), `persist`, `flush`, `applyServer(res)`, `load`, status sinkron `STATUS`/**`syncState()`**/`renderSync` (titik merah "Server belum diperbarui" kalau server belum Tahap 1).
 - **Akun** (856–900) dan **layar masuk/daftar** (902–950).
 - `state` 951 (view aktif, bulan per tampilan, filter, form).
@@ -113,6 +113,7 @@ Keamanan: token HMAC `userId.versi.kedaluwarsa.tanda` (`auth_` 199, `makeToken_`
 - ID profil: `p[a-z0-9]{1,20}`; profil pertama tiap akun = **`p1`** (dibuat otomatis oleh migrasi).
 
 - Tugas baru dari `saveForm` (sejak Tahap 1): `kind:'tugas', diff:'', parent:'', by:curProfile(), doneBy:''`. `toggleDone` mengisi `doneBy` = profil aktif saat dicentang, `''` saat dibatalkan. (Dulu `kind:'task'` hanya tersimpan di cache HP; `normTask` mengubahnya jadi `'tugas'`.)
+- Sejak Tahap 2 form mengisi `diff` (kosong kalau tidak dipilih) dan menyimpan `start:''`/`end:''` kalau "Tanpa jam" aktif. Edit tugas lama berjam mulai tanpa jam selesai → form mengisi jam selesai = mulai + 1 jam (baru tersimpan kalau user menekan Simpan). Ganti jam mulai → jam selesai ikut bergeser dengan durasi tetap.
 - Default form: jam = jam berikutnya s/d +1 jam (hari ini) atau 08:00–09:00; deadline **ON** untuk kategori kelompok Tugas, **OFF** untuk kelompok Kegiatan (case `pick-cat`), tanggal deadline ikut tanggal tugas sampai diubah manual.
 
 ### Kategori
@@ -158,8 +159,9 @@ Tidak memakai Firebase. Padanannya ada di `Code.gs`: whitelist field di `cleanTa
 1. ~~Tahap 1 – kompatibilitas aplikasi lama~~ → **beres di Tahap 1**: server mempertahankan field yang tidak dikirim (lihat §2). Arah sebaliknya (aplikasi baru, server lama) ditangani dengan `schema`: aplikasi menampilkan titik merah "Server belum diperbarui" tapi tetap menyimpan.
 2. ~~Tahap 1 – migrasi di 3 tempat~~ → **beres**: sheet (`openAccount_`/`normRows_`, otomatis per akun), cache HP (`migrateCache`), cadangan (`parseBackup`).
 3. Tanpa jam & durasi memakai field yang ada (dipakai Tahap 2 dan 7).
-4. **Tahap 2 – Poin 4:** tinggi item sekarang 72 px (tanpa deadline) dan 91 px (dengan deadline; lebih tinggi lagi kalau baris deadline terlipat, mis. "Selesai tepat waktu" di layar 390 px). Di HP 390×844 daftar mulai di y≈306 px, jadi hanya 5–6 item terlihat. Item tidak menampilkan teks detail; "detail" di Poin 4 ditafsirkan sebagai baris info (jam · kategori · deadline) yang digabung jadi 1 baris.
-5. **Tahap 2 – Poin 5:** `.toast` `bottom:88px` sedikit menimpa bagian atas FAB (puncak FAB 93 px dari bawah layar). Aksi sudah dijalankan seketika dan "Urungkan" membalikkannya, jadi tombol × cukup menyembunyikan toast.
+4. ~~Tahap 2 – Poin 4~~ → **beres di Tahap 2**: item 52 px (nama 1 baris) / ±71 px (nama 2 baris), 8 item terlihat penuh di 390×844 pada posisi awal. "Detail" di Poin 4 = baris info (jam · deadline · kategori) jadi 1 baris; teks detail tugas tetap hanya di layar detail.
+5. ~~Tahap 2 – Poin 5~~ → **beres**: toast dipindah di atas FAB + tombol ×.
+5a. **Dari Tahap 2, untuk tahap berikutnya:** tugas lama yang hanya punya jam selesai (`start:''`, `end:'17:00'`) tampil di bagian "Tanpa jam" dengan teks "s/d 17:00" (definisi tanpa jam = `start===''`), tapi di form tetap dianggap berjam supaya jam selesainya tidak hilang. Data nyata tidak punya kasus ini. Tahap 7 perlu memutuskan tempatnya di Time Blocking (saran: area "Tanpa jam").
 6. **Tahap 3 – Poin 10:** server sudah siap (Tahap 1). Yang tersisa di klien: UI kelola kategori, `catOf()` mengenali kategori custom (`cats`), pemilih kategori menampilkan custom, palet hue, hapus kategori lokal → tugasnya `lain_t` (server juga melakukannya), pakai `queueMeta({op:'cat'…})`/`{op:'cat-del'}`.
 7. **Tahap 7 – Poin 16:** Home menampilkan daftar **per bulan**, sedangkan Time Blocking per **hari** → perlu pemilih hari. Tugas yang lewat tengah malam (end < start) perlu aturan tampilan.
 8. **Tahap 8 – Poin 17 bentrok dengan yang sudah ada:** layar "+" sudah punya toggle **Tugas | Kegiatan**, tapi itu hanya memfilter kelompok kategori dan mengatur default deadline. Lihat Q2.
@@ -175,11 +177,11 @@ Tidak memakai Firebase. Padanannya ada di `Code.gs`: whitelist field di `cleanTa
 
 | Perintah | Isi | Hasil Tahap 0 |
 |---|---|---|
-| `npm run check` (`node tests/check.js`) | Pengganti lint: sintaks JS di `index.html`/`sw.js`/`Code.gs`, manifest + ikon ada, id HTML unik, setiap `$('#id')` punya elemen, setiap `data-act` punya `case` di `handle()`, file SHELL `sw.js` ada | lolos (90 rujukan id, 47 data-act) |
+| `npm run check` (`node tests/check.js`) | Pengganti lint: sintaks JS di `index.html`/`sw.js`/`Code.gs`, manifest + ikon ada, id HTML unik, setiap `$('#id')` punya elemen, setiap `data-act` punya `case` di `handle()`, file SHELL `sw.js` ada | lolos (90 rujukan id, 47 data-act; Tahap 2: 98 id, 50 data-act) |
 | `npm run typecheck` (`node tests/typecheck.js`) | `tsc --checkJs` mode tidak ketat atas script `pt-lib` + script utama. Kode tidak bertipe jadi ada derau bawaan (Element vs HTMLElement, `api()` pakai `arguments`); gagal hanya jika jumlah error **naik** dari `tests/typecheck-baseline.json`. Lewati otomatis kalau `tsc` tidak ada | baseline index.html 28, sw.js 7 (Tahap 1: tetap 28, `pt-lib` 0 error) |
 | `npm test` | `tests/server.test.js` (10 tes dasar `Code.gs` lewat mock Apps Script `tests/gas-mock.js`) + **`tests/server-data.test.js`** (Tahap 1: migrasi dari data server lama `tests/fixtures/Code-v1.gs`, idempoten, kompatibilitas aplikasi lama, field baru, kategori custom, profil, urutan kolom, baris manual, tab kurang kolom) + **`tests/client.test.js`** (Tahap 1: `PT_LIB` diambil dari `index.html` dan dijalankan di Node: migrasi cache v1→v2, normTask, antrean, gabung data server, cadangan v1/v2, alur cache lama → server baru) | 27/27 lolos |
 | `npm run test:e2e` (`node --test tests/e2e.test.js`) | Chromium (Playwright) membuka `index.html` dari repo; panggilan ke Apps Script dicegat dan dijawab `Code.gs` di mock (spreadsheet asli tidak tersentuh); font Google dibalas CSS kosong (sandbox tanpa internet). 3 skenario: (1) daftar → tambah → centang + Urungkan → offline/online → back HP → tata letak → reload → semua menu → ganti akun (+ cek kolom baru & cache v2); (2) **HP dengan cache v1 + antrean offline, data dari server lama → server baru** (migrasi penuh); (3) **aplikasi baru + server lama** (tetap simpan, titik merah). `SHOTS=1` menyimpan tangkapan layar ke `tests/.shots/` | 3/3 lolos (±25 dtk) |
-| `npm run verify` | semua di atas | lolos (30 tes, Tahap 1) |
+| `npm run verify` | semua di atas | lolos (30 tes, Tahap 1; **33 tes, Tahap 2**: + 2 tes `client.test.js` + 1 E2E Tahap 2) |
 
 Kebutuhan: Node ≥ 18. E2E butuh Playwright + Chromium; dicari di `node_modules` lalu folder global (`npm root -g`), kalau tidak ada tes E2E di-skip. Di sandbox Claude registry npm biasanya terblokir, jadi pakai Playwright global yang sudah ada; jangan `npm install`.
 
@@ -237,3 +239,29 @@ Hasil: `npm run verify` lolos (check, typecheck 28 = baseline, 30 tes).
 Migrasi data di spreadsheet terjadi per akun saat akun itu pertama kali dibuka/sinkron setelah deploy (bukan sekaligus). Akun yang belum pernah dibuka tetap berformat lama dan itu aman.
 
 Status deploy: user melaporkan `Code.gs` sudah di-deploy (8 Nov 2026 17.24 WIB). Saat dicek lewat konektor Sheets tab `Profil` belum ada (belum ada akun yang membuka aplikasi setelah deploy), jadi bukti deploy berhasil = titik status hijau di aplikasi baru + tab `Profil` muncul setelah aplikasi dibuka. Kalau titik merah "Server belum diperbarui", deploy belum memakai versi baru (cek: *Kelola penerapan → Edit → Versi baru*, bukan *Penerapan baru*).
+
+**Deploy terverifikasi (8 Nov 2026 17.34 WIB, lewat konektor Sheets):** tab `Profil` sudah ada (baris `adit / p1 / Adit`), tab `@adit` 20 kolom, semua Jenis = Tugas, Dibuat oleh = p1, Diselesaikan oleh = p1 hanya untuk yang selesai. User sudah mengetes di HP (titik hijau, tambah/centang/urungkan/hapus, cadangan v2, mode pesawat). 7 akun lain termigrasi otomatis saat dibuka. Branch `tahap-1` di GitHub sudah tidak dipakai (aman dihapus).
+
+### Tahap 2 — Item tugas, pop-up, form dasar (8 Nov 2026)
+
+Urutan: Poin 4 → 5 → 1 → 2 → 3 → 9 → isian durasi. **Hanya `index.html` yang berubah; `Code.gs` tidak berubah (tidak perlu deploy server).** Tidak ada field data baru: `diff` dan "tanpa jam" (`start===''`) sudah disiapkan di Tahap 1.
+
+Tidak ada pertanyaan baru di awal tahap: semua poin sudah jelas dari dokumen + keputusan Tahap 0/1.
+
+File diubah:
+- `index.html`
+  - **Poin 4** — CSS `.task`/`.task-name`/`.task-meta`/`.check` diringkas (lihat §1). Baris deadline yang dulu terpisah digabung ke baris info lewat `dlShort()` (mendesak: "Sisa 14 jam"/"Terlambat …"; masih lama: "DL 13 Nov"; selesai: "Tepat waktu"/"Selesai terlambat"). Teks deadline lengkap tetap di detail. Media query layar kecil ikut disesuaikan.
+  - **Poin 5** — tombol `#toast-x`, `undoToast()`, `hideToast()`; posisi toast di atas FAB (`bottom` dihitung dari tinggi nav + safe-area).
+  - **Poin 1** — label "Nama", "Detail", pesan error "Nama wajib diisi."
+  - **Poin 2** — pemilih `#f-diff` (tap pilihan yang sama = kosongkan), label kecil di item dan di detail.
+  - **Poin 3** — switch "Tanpa jam" (`#f-notime`), `dayRows()` untuk bagian "Tanpa jam" di Home & Kalender, detail menulis "Tanpa jam".
+  - **Poin 9** — `#f-sug` + `renderSug()`/`hideSug()`. Daftar **ikut alur form** (mendorong kolom di bawahnya), jadi tidak pernah menutupi kolom lain. Tertutup saat kolom Nama blur (ditunda sampai jari diangkat supaya tap ke kolom lain tidak meleset karena layout bergeser), Esc, saran dipilih, form ditutup, keyboard HP ditutup (`visualViewport` membesar > 80px). Sumber saran = semua tugas akun aktif (kecuali yang sedang diedit).
+  - **Isian durasi** — tombol 30 mnt / 1 jam / 1½ jam / 2 jam / 3 jam + teks "Durasi …" (+ "selesai besoknya" kalau lewat tengah malam). Detail tugas memakai `L.durMin`/`L.fmtDur`.
+  - `.two` memakai `minmax(0,1fr)`: di layar 360px kolom jam kanan dulu keluar layar, sekarang muat.
+  - `pt-lib`: fungsi jam/durasi + `suggestNames` (lihat §1).
+- `tests/client.test.js` — tes jam & durasi (termasuk bolak-balik semua menit × beberapa durasi) dan saran nama.
+- `tests/e2e.test.js` — skenario E2E Tahap 2 (tinggi item 44–56px, 8–12 item terlihat, font, 1 baris, area tap centang; toast × tidak membatalkan aksi, toast di atas FAB/nav, pop-up diganti, urungkan hapus; label; saran maks 5 + tidak menutupi kolom + Esc + pindah kolom + tap Kesulitan saat saran terbuka; durasi; tanpa jam di Home/Kalender/detail/edit; tugas lama tanpa jam selesai).
+
+Hasil: `npm run verify` lolos (check 98 id/50 data-act, typecheck 28 = baseline, 33 tes). Dicek juga lewat tangkapan layar di 390×844 dan 360×740.
+
+Belum bisa diuji dari sesi: tampilan di HP asli (keyboard Android/iOS, format jam 24 jam, notch/safe-area), gestur tutup keyboard.
