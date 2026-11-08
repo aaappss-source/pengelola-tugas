@@ -1,0 +1,12 @@
+{
+  "name": "pengelola-tugas",
+  "private": true,
+  "description": "PWA jadwal & checklist tugas. Tidak ada build dan tidak ada dependensi: npm hanya dipakai sebagai penjalan skrip tes.",
+  "scripts": {
+    "check": "node tests/check.js",
+    "typecheck": "node tests/typecheck.js",
+    "test": "node --test tests/server.test.js",
+    "test:e2e": "node --test tests/e2e.test.js",
+    "verify": "node tests/check.js && node tests/typecheck.js && node --test tests/server.test.js tests/e2e.test.js"
+  }
+}
