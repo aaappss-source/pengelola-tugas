@@ -486,3 +486,200 @@ test('E2E mode coba: tanpa daftar, data contoh, tidak menyentuh server maupun ak
     await close();
   }
 });
+
+test('E2E Tahap 3: kategori custom (tambah, pakai, ubah, hapus + urungkan) dan riwayat per kategori di Grafik', { skip: !pw && 'Playwright tidak terpasang', timeout: 180000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, cat, date, start, extra) => Object.assign({ id, cat, name: 'Tugas ' + id, detail: '', date, start, end: start ? String(+start.slice(0, 2) + 1).padStart(2, '0') + ':00' : '', dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '', createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  const D = { done: true, doneAt: 1762740000000, doneBy: 'p1' };
+  S.post('apiSync', reg.token, [
+    T('t1', 'tkuliah', '2026-11-03', '08:00', D),
+    T('t2', 'tkuliah', '2026-11-05', '10:00', { dlDate: '2026-11-06', dlTime: '23:59' }),   // lewat deadline (sekarang 10 Nov)
+    T('t3', 'tkuliah', '2026-11-12', '09:00'),
+    T('t4', 'tkuliah', '2026-11-12', ''),                                                    // tanpa jam
+    T('t5', 'tkerja', '2026-11-10', '13:00', D),
+    T('t6', 'tkuliah', '2026-10-28', '08:00', D)                                             // bulan lalu → tidak ikut
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const isOpen = sel => p.evaluate(s => document.querySelector(s).classList.contains('open'), sel);
+  const serverCats = () => (S.sheet('Kategori') ? S.sheet('Kategori').objects().map(o => [o['Nama'], o['Warna (hue)']]) : []);
+  const rowByName = n => S.sheet('@adit').objects().find(o => o['Nama tugas'] === n);
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();   // selektor Playwright (:has-text, :text-is)
+  const catTiles = () => p.evaluate(() => [...document.querySelectorAll('#cat-grid .cat-btn.cu > span')].map(s => s.textContent));
+  const back = async () => { await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(350); };
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ---- Poin 10: tambah dari menu Saya → Kategori saya ----
+    await p.click('#nav [data-view="saya"]'); await wait(300);
+    await p.tap('#me-body [data-act="cats-manage"]'); await wait(400);
+    assert.equal(await isOpen('#cats-wrap'), true);
+    assert.match(await txt('#cats-body'), /Belum ada kategori buatanmu/);
+    await p.tap('#cats-body [data-act="cat-new"]'); await wait(400);
+    assert.equal(await isOpen('#import-wrap'), true, 'editor kategori terbuka di atas daftar');
+    assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), 'kc-name', 'kolom nama langsung fokus');
+    assert.equal(await p.locator('#kc-hues .hue.on').count(), 1, 'satu warna terpilih (bawaan)');
+    await p.tap('[data-act="kc-save"]'); await wait(200);
+    assert.match(await txt('#kc-err'), /wajib/);
+    await p.fill('#kc-name', '  lainnya '); await p.tap('[data-act="kc-save"]'); await wait(200);
+    assert.match(await txt('#kc-err'), /kategori bawaan/, 'nama kategori bawaan ditolak');
+    await p.fill('#kc-name', 'Freelance'); await wait(100);
+    assert.equal(await p.isVisible('#kc-err'), false, 'pesan error hilang saat mengetik');
+    assert.equal(await txt('#kc-ic'), 'F', 'pratinjau huruf awal');
+    await p.tap('#kc-hues [data-h="212"]'); await wait(100);
+    assert.equal(await p.getAttribute('#kc-hues [data-h="212"]', 'aria-pressed'), 'true');
+    await shot('t3-01-editor-kategori');
+    await p.tap('[data-act="kc-save"]'); await wait(1500);
+    assert.equal(await isOpen('#import-wrap'), false);
+    assert.match(await txt('#cats-body'), /Freelance\s*0 tugas/);
+    assert.deepEqual(serverCats(), [['Freelance', '212']], 'tersimpan di tab Kategori');
+    // nama kembar dengan kategori custom lain ditolak (tidak peka huruf besar/kecil)
+    await p.tap('#cats-body [data-act="cat-new"]'); await wait(400);
+    await p.fill('#kc-name', 'FREELANCE'); await p.press('#kc-name', 'Enter'); await wait(200);
+    assert.match(await txt('#kc-err'), /Sudah ada kategori bernama "Freelance"/);
+    await back();
+    assert.equal(await isOpen('#import-wrap'), false, 'back HP menutup editor');
+    assert.equal(await isOpen('#cats-wrap'), true, 'daftar masih terbuka');
+    await back();
+    assert.equal(await isOpen('#cats-wrap'), false, 'back HP menutup daftar');
+    assert.match(await txt('#me-body'), /1 kategori buatanmu/);
+
+    // ---- layar +: kategori custom tampil di kedua tab; "Baru" langsung dipakai untuk tugas ----
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+    await p.tap('.nav .fab'); await wait(400);
+    assert.deepEqual(await catTiles(), ['Freelance']);
+    await p.tap('#add-seg [data-g="kegiatan"]'); await wait(150);
+    assert.deepEqual(await catTiles(), ['Freelance'], 'tampil juga di tab Kegiatan');
+    await p.tap('#add-seg [data-g="tugas"]'); await wait(150);
+    await shot('t3-02-layar-plus');
+    await p.tap('#cat-grid [data-act="cat-new"]'); await wait(400);
+    await p.fill('#kc-name', 'Les Privat'); await p.tap('[data-act="kc-save"]'); await wait(600);
+    assert.equal(await isOpen('#form-wrap'), true, 'form langsung terbuka dengan kategori baru');
+    assert.equal(await txt('#f-cat-name'), 'Les Privat');
+    assert.equal(await txt('#f-cat-ic'), 'L');
+    await p.fill('#f-name', 'Les matematika Rina'); await p.tap('#f-save'); await wait(1500);
+    const lesRow = '#home-list .task:has(.task-name:text-is("Les matematika Rina"))';
+    assert.equal(await txt(lesRow + ' .cat-ic .cat-l'), 'L', 'ikon huruf awal di item tugas');
+    assert.match(await txt(lesRow + ' .task-meta'), /Les Privat/);
+    assert.equal(rowByName('Les matematika Rina')['Kategori'], 'Les Privat', 'server menyimpan nama kategori custom');
+    assert.match(rowByName('Les matematika Rina')['Kode kategori'], /^c_[a-z0-9]+$/);
+    // pakai kategori yang sudah ada
+    await p.tap('.nav .fab'); await wait(400);
+    await p.tap('#cat-grid .cat-btn.cu:has-text("Freelance")'); await wait(450);
+    await p.fill('#f-name', 'Desain logo kedai'); await p.tap('#f-save'); await wait(1500);
+    assert.equal(rowByName('Desain logo kedai')['Kategori'], 'Freelance');
+    await shot('t3-04-beranda');
+
+    // ---- ubah nama + warna (dari "Kelola" di layar +) ----
+    await p.tap('.nav .fab'); await wait(400);
+    await p.tap('#cat-grid [data-act="cats-manage"]'); await wait(400);
+    assert.equal(await isOpen('#cats-wrap'), true, 'Kelola membuka daftar di atas layar +');
+    await p.tap('#cats-body .acc-row:has-text("Freelance")'); await wait(400);
+    assert.equal(await p.inputValue('#kc-name'), 'Freelance');
+    assert.match(await txt('#import-body'), /1 tugas memakai kategori ini/);
+    await p.fill('#kc-name', 'Freelance Desain'); await p.tap('#kc-hues [data-h="140"]'); await p.tap('[data-act="kc-save"]'); await wait(300);
+    assert.deepEqual(await catTiles(), ['Freelance Desain', 'Les Privat'], 'grid layar + ikut berubah');
+    await back(); await back();
+    assert.equal(await isOpen('#add-screen'), false);
+    await wait(1200);
+    assert.match(await txt('#home-list .task:has(.task-name:text-is("Desain logo kedai")) .task-meta'), /Freelance Desain/, 'item tugas ikut nama baru');
+    assert.equal(rowByName('Desain logo kedai')['Kategori'], 'Freelance Desain', 'kolom Kategori di sheet ikut nama baru');
+    assert.deepEqual(serverCats(), [['Freelance Desain', '140'], ['Les Privat', '0']], 'warna bawaan Les Privat = warna palet pertama yang belum dipakai');
+
+    // ---- hapus: tugas pindah ke "Lainnya", bisa diurungkan ----
+    await p.click('#nav [data-view="saya"]'); await wait(300);
+    await p.tap('#me-body [data-act="cats-manage"]'); await wait(400);
+    await shot('t3-05-kategori-saya');
+    await p.tap('#cats-body .acc-row:has-text("Les Privat")'); await wait(400);
+    await p.tap('[data-act="kc-del"]'); await wait(300);
+    assert.equal(await isOpen('#confirm-wrap'), true);
+    await shot('t3-06-konfirmasi-hapus');
+    assert.match(await txt('#cf-msg'), /1 tugas di dalamnya pindah ke kategori "Lainnya"/);
+    await p.tap('#cf-yes'); await wait(300);
+    assert.equal(await isOpen('#import-wrap'), false);
+    assert.doesNotMatch(await txt('#cats-body'), /Les Privat/);
+    assert.equal(await p.isVisible('#toast-btn'), true, 'pop-up Urungkan');
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.match(await txt('#cats-body'), /Les Privat\s*1 tugas/, 'urungkan: kategori dan tugasnya kembali');
+    assert.equal(rowByName('Les matematika Rina')['Kategori'], 'Les Privat');
+    await p.tap('#cats-body .acc-row:has-text("Les Privat")'); await wait(400);
+    await p.tap('[data-act="kc-del"]'); await wait(300); await p.tap('#cf-yes'); await wait(300);
+    await p.tap('#toast-x'); await wait(1500);
+    assert.deepEqual(serverCats(), [['Freelance Desain', '140']], 'kategori terhapus di server');
+    const moved = rowByName('Les matematika Rina');
+    assert.ok(moved, 'tugasnya TIDAK ikut terhapus');
+    assert.deepEqual([moved['Kode kategori'], moved['Kategori']], ['lain_t', 'Lainnya']);
+    await back();
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+    assert.match(await txt('#home-list .task:has(.task-name:text-is("Les matematika Rina")) .task-meta'), /Lainnya/);
+
+    // ---- Poin 8: riwayat per kategori di Grafik ----
+    await p.click('#nav [data-view="grafik"]'); await wait(500);
+    const crows = await p.evaluate(() => [...document.querySelectorAll('#stats-body .crow')].map(b => ({ tag: b.tagName, k: b.dataset.k, n: b.querySelector('.l1 b').textContent, h: b.getBoundingClientRect().height })));
+    assert.ok(crows.length >= 3 && crows.every(c => c.tag === 'BUTTON' && c.h >= 44), 'setiap baris Per kategori bisa di-tap: ' + JSON.stringify(crows));
+    assert.equal(crows.find(c => c.k === 'tkuliah').n, '4 tugas', 't6 (Oktober) tidak ikut');
+    if (SHOTS) { await p.evaluate(() => document.querySelector('#stats-body .sec-title').scrollIntoView()); await wait(200); await shot('t3-07-grafik-per-kategori'); }
+    await p.tap('#stats-body .crow[data-k="tkuliah"]'); await wait(450);
+    assert.equal(await isOpen('#cathist-screen'), true);
+    const hist = () => p.evaluate(() => [...document.querySelectorAll('#ch-list .hrow')].map(r => ({ id: r.dataset.id, name: r.querySelector('b').textContent, when: r.querySelector('small').textContent, st: r.querySelector('.h-st').textContent })));
+    let h = await hist();
+    assert.deepEqual(h.map(r => r.id), ['t4', 't3', 't2', 't1'], 'terbaru dulu');
+    assert.deepEqual(h.map(r => r.st), ['Belum', 'Belum', 'Terlambat', 'Selesai'], 'status tiap item');
+    assert.deepEqual([h[0].name, h[1].when, h[3].when], ['Tugas t4', 'Kam, 12 Nov 2026 · 09:00', 'Sel, 3 Nov 2026 · 08:00'], 'nama + tanggal');
+    assert.match(await txt('#ch-title'), /Tugas Kuliah\s*November 2026 · 4 tugas · 1 selesai/);
+    await shot('t3-03-riwayat-kategori');
+    // tap item → detail (di atas riwayat); centang dari detail → riwayat ikut berubah
+    await p.tap('#ch-list .hrow[data-id="t3"]'); await wait(400);
+    assert.equal(await isOpen('#detail-wrap'), true);
+    await p.tap('[data-act="detail-toggle"]'); await wait(300);
+    await back();
+    assert.equal(await isOpen('#detail-wrap'), false);
+    assert.equal(await isOpen('#cathist-screen'), true, 'back pertama hanya menutup detail');
+    h = await hist();
+    assert.equal(h.find(r => r.id === 't3').st, 'Selesai');
+    // Edit dari riwayat → layar + tampil DI DEPAN riwayat
+    await p.tap('#ch-list .hrow[data-id="t4"]'); await wait(400);
+    await p.tap('[data-act="detail-edit"]'); await wait(700);
+    assert.equal(await isOpen('#form-wrap'), true);
+    await p.tap('#form-wrap .sheet-top [data-act="form-collapse"]'); await wait(400);
+    assert.equal(await p.evaluate(() => !!document.elementFromPoint(195, 420).closest('#add-screen')), true, 'layar + di atas riwayat');
+    await p.tap('[data-act="add-cancel"]'); await wait(400);
+    assert.equal(await isOpen('#cathist-screen'), true);
+    // tombol kembali
+    await p.tap('[data-act="close-cathist"]'); await wait(350);
+    assert.equal(await isOpen('#cathist-screen'), false);
+    // periode & filter mengikuti grafik
+    await p.tap('#st-filter [data-f="belum"]'); await wait(300);
+    assert.equal(await p.evaluate(() => document.querySelector('#stats-body .crow[data-k="tkuliah"] .l1 b').textContent), '2 tugas');
+    await p.tap('#stats-body .crow[data-k="tkuliah"]'); await wait(400);
+    h = await hist();
+    assert.deepEqual(h.map(r => r.id), ['t4', 't2'], 'filter Belum: hanya yang belum selesai');
+    assert.match(await txt('#ch-title'), /2 belum selesai/);
+    await back();
+    assert.equal(await isOpen('#cathist-screen'), false, 'back HP menutup riwayat');
+    await p.tap('#st-filter [data-f="semua"]'); await wait(200);
+    await p.tap('#mtabs [data-m="2026-10"]'); await wait(300);
+    await p.tap('#stats-body .crow[data-k="tkuliah"]'); await wait(400);
+    h = await hist();
+    assert.deepEqual(h.map(r => r.id), ['t6'], 'periode Oktober');
+    await back();
+    // kategori custom muncul di Grafik dan riwayatnya bisa dibuka
+    await p.tap('#mtabs [data-m="2026-11"]'); await wait(300);
+    const fk = await p.evaluate(() => { const b = [...document.querySelectorAll('#stats-body .crow')].find(x => /Freelance Desain/.test(x.textContent)); return b && b.dataset.k; });
+    assert.match(fk || '', /^c_/, 'kategori custom tampil di Per kategori');
+    await p.tap('#stats-body .crow[data-k="' + fk + '"]'); await wait(400);
+    assert.deepEqual((await hist()).map(r => r.name), ['Desain logo kedai']);
+    assert.equal(await txt('#ch-title .cat-ic'), 'F');
+
+    // tetap tersimpan setelah muat ulang
+    await p.reload(); await wait(1500);
+    await p.click('#nav [data-view="saya"]'); await wait(300);
+    assert.match(await txt('#me-body'), /1 kategori buatanmu/);
+
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally {
+    await close();
+  }
+});

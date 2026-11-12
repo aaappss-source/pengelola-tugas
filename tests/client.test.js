@@ -253,3 +253,135 @@ test('mode coba: data contoh valid, tanggal relatif hari ini, server palsu menyi
   const pin = call('apiChangePin', [L.DEMO_TOKEN, '1234', '5678']);
   assert.equal(pin.ok, false); assert.match(pin.message, /mode coba/);
 });
+
+// ---------------- Tahap 3 ----------------
+
+// kategori bawaan di aplikasi (CATS di script utama) dan di server (CATS di Code.gs) harus sama persis
+function appBuiltinCats() {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  return [...html.matchAll(/\{k:'([a-z_]+)', n:'([^']+)'/g)].map(m => ({ k: m[1], n: m[2] }));
+}
+
+test('kategori bawaan aplikasi = kategori bawaan server (kode & nama)', () => {
+  const app = appBuiltinCats();
+  const server = plain(vm.runInContext('CATS', makeRuntime()));
+  assert.equal(app.length, 27);
+  assert.deepEqual(Object.fromEntries(app.map(c => [c.k, c.n])), server);
+});
+
+test('nama kategori custom: wajib, dirapikan, tidak boleh kembar dengan bawaan maupun custom lain', () => {
+  const builtin = [...new Set(appBuiltinCats().map(c => c.n))];
+  const cats = [{ id: 'c_a', name: 'Freelance', hue: 0 }, { id: 'c_b', name: 'Les Privat', hue: 18 }];
+  const chk = (n, self) => plain(L.checkCatName(n, builtin, cats, self || null));
+  assert.deepEqual(chk('  Jualan   online '), { name: 'Jualan online', error: '' }, 'spasi dirapikan');
+  assert.match(chk('').error, /wajib/);
+  assert.match(chk('   ').error, /wajib/);
+  assert.match(chk('\u0007').error, /wajib/, 'karakter kontrol saja = kosong');
+  assert.match(chk('lainnya').error, /kategori bawaan/, 'tidak peka huruf besar/kecil');
+  assert.match(chk('UJIAN /  KUIS').error, /kategori bawaan/, 'spasi ganda dirapikan sebelum dibandingkan');
+  assert.match(chk('freelance').error, /Sudah ada kategori bernama "Freelance"/);
+  assert.equal(chk('freelance', 'c_a').error, '', 'mengubah huruf besar/kecil nama sendiri boleh');
+  assert.match(chk('les privat', 'c_a').error, /Les Privat/, 'mengganti nama jadi nama kategori lain tidak boleh');
+  assert.equal(chk('x'.repeat(40)).name.length, L.CAT_NAME_MAX, 'maks 30 huruf');
+  assert.equal(chk('a'.repeat(29) + ' bcd').name, 'a'.repeat(29), 'potongan 30 huruf tidak berakhiran spasi');
+  assert.equal(chk('Kerja Sambilan').error, '');
+  // aturan yang sama dengan server: nama yang lolos di HP tidak diganti server
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const ok = chk('  Kedai   Kopi ');
+  const res = S.post('apiSync', tok, [{ op: 'cat', cat: { id: 'c_k', name: ok.name, hue: 52 } }]);
+  assert.deepEqual(plain(res.cats), [{ id: 'c_k', name: 'Kedai Kopi', hue: 52 }]);
+});
+
+test('warna kategori baru: palet yang belum dipakai, lalu berputar', () => {
+  assert.equal(L.CAT_HUES.length, 12);
+  assert.ok(L.CAT_HUES.every(h => Number.isInteger(h) && h >= 0 && h < 360));
+  assert.equal(L.nextCatHue([]), L.CAT_HUES[0]);
+  assert.equal(L.nextCatHue([{ hue: L.CAT_HUES[0] }, { hue: 77 }]), L.CAT_HUES[1]);
+  const full = L.CAT_HUES.map((h, i) => ({ id: 'c_' + i, hue: h }));
+  assert.equal(L.nextCatHue(full), L.CAT_HUES[0], 'semua terpakai → berputar');
+  assert.equal(L.nextCatHue(full.concat([{ hue: 5 }])), L.CAT_HUES[1]);
+  assert.equal(L.nextCatHue(null), L.CAT_HUES[0]);
+});
+
+test('hapus kategori custom: tugasnya pindah ke Lainnya (tidak terhapus), hasil HP = hasil server', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const T = (id, cat) => ({ id, cat, name: 'Tugas ' + id, detail: '', date: '2026-11-1' + id.slice(1), start: '08:00', end: '09:00', dlDate: '', dlTime: '', done: id === 't2', doneAt: id === 't2' ? 5 : null, createdAt: 1, updatedAt: 1, kind: 'tugas', diff: '', parent: '', by: 'p1', doneBy: id === 't2' ? 'p1' : '' });
+  // HP: buat kategori + 3 tugas di dalamnya + 1 tugas bawaan dalam SATU antrean (server memproses op kategori lebih dulu)
+  let ops = [];
+  [T('t1', 'c_free'), T('t2', 'c_free'), T('t3', 'tkuliah'), T('t4', 'c_free')].forEach(t => { ops = L.enqueue(ops, { op: 'upsert', task: t }); });
+  ops = L.enqueue(ops, { op: 'cat', cat: { id: 'c_free', name: 'Freelance', hue: 212 } });
+  let res = S.post('apiSync', tok, ops);
+  let m = L.mergeServer(res, [], { cats: [], profiles: [] }, isBuiltin);
+  assert.deepEqual(Object.values(plain(m.tasks)).map(t => t.cat).sort(), ['c_free', 'c_free', 'c_free', 'tkuliah']);
+  assert.equal(S.sheet('@adit').objects().find(o => o.ID === 't1')['Kategori'], 'Freelance', 'nama kategori custom tertulis di sheet');
+
+  // HP menghapus kategori (seperti deleteCatNow di aplikasi)
+  const list = Object.values(m.tasks);
+  const r = L.deleteCat(list, m.cats, 'c_free', 99);
+  assert.deepEqual(plain(r.cats), []);
+  assert.deepEqual(plain(r.moved).sort(), ['t1', 't2', 't4']);
+  assert.ok(list.filter(t => r.moved.includes(t.id)).every(t => t.cat === 'lain_t' && t.updatedAt === 99));
+  assert.equal(m.tasks.t3.cat, 'tkuliah', 'tugas kategori lain tidak tersentuh');
+  assert.equal(m.tasks.t2.done, true, 'status tugas tetap');
+  ops = [];
+  r.moved.forEach(id => { ops = L.enqueue(ops, { op: 'upsert', task: L.toDoc(m.tasks[id]) }); });
+  ops = L.enqueue(ops, { op: 'cat-del', id: 'c_free' });
+  res = S.post('apiSync', tok, ops);
+  assert.deepEqual(plain(res.cats), []);
+  assert.equal(res.tasks.length, 4, 'tidak ada tugas yang hilang');
+  assert.deepEqual(res.tasks.map(t => [t.id, t.cat]).sort(), [['t1', 'lain_t'], ['t2', 'lain_t'], ['t3', 'tkuliah'], ['t4', 'lain_t']]);
+
+  // HP lain yang masih offline menghapus kategori TANPA memindahkan tugas (mis. versi lama): server tetap memindahkan
+  const S2 = makeRuntime();
+  const tok2 = S2.post('apiRegister', 'budi', '1234', 'Budi').token;
+  S2.post('apiSync', tok2, [{ op: 'cat', cat: { id: 'c_x', name: 'X', hue: 0 } }, { op: 'upsert', task: T('t1', 'c_x') }]);
+  const res2 = S2.post('apiSync', tok2, [{ op: 'cat-del', id: 'c_x' }]);
+  assert.equal(res2.tasks[0].cat, 'lain_t');
+
+  // urungkan hapus: kategori dibuat lagi dengan ID yang sama, tugasnya kembali
+  ops = [];
+  ops = L.enqueue(ops, { op: 'cat', cat: { id: 'c_free', name: 'Freelance', hue: 212 } });
+  ['t1', 't2', 't4'].forEach(id => { ops = L.enqueue(ops, { op: 'upsert', task: Object.assign(T(id, 'c_free'), { updatedAt: 100 }) }); });
+  res = S.post('apiSync', tok, ops);
+  assert.deepEqual(plain(res.cats), [{ id: 'c_free', name: 'Freelance', hue: 212 }]);
+  assert.deepEqual(res.tasks.filter(t => t.cat === 'c_free').map(t => t.id).sort(), ['t1', 't2', 't4']);
+});
+
+test('hapus kategori di HP sebelum sempat terkirim: op cat diganti cat-del, tugas tidak memakai kode yang hilang', () => {
+  let ops = [];
+  ops = L.enqueue(ops, { op: 'cat', cat: { id: 'c_baru', name: 'Baru', hue: 0 } });
+  const t = { id: 'tx', cat: 'c_baru', updatedAt: 1 };
+  const r = L.deleteCat([t], [{ id: 'c_baru', name: 'Baru', hue: 0 }], 'c_baru', 2);
+  ops = L.enqueue(ops, { op: 'upsert', task: Object.assign({ name: 'x', date: '2026-11-10' }, t) });
+  ops = L.enqueue(ops, { op: 'cat-del', id: 'c_baru' });
+  assert.deepEqual(plain(r.moved), ['tx']);
+  assert.deepEqual(plain(ops).map(o => o.op), ['upsert', 'cat-del'], 'satu op per kategori');
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const res = S.post('apiSync', tok, ops);
+  assert.equal(res.ok, true);
+  assert.deepEqual([res.cats.length, res.tasks[0].cat], [0, 'lain_t']);
+});
+
+test('riwayat per kategori: terbaru dulu (tanggal, jam, lalu yang dibuat terakhir)', () => {
+  const t = (id, date, start, createdAt) => ({ id, date, start, createdAt });
+  const list = [t('a', '2026-11-01', '08:00', 1), t('b', '2026-11-03', '07:00', 1), t('c', '2026-11-03', '19:00', 1),
+    t('d', '2026-11-03', '', 1), t('e', '2026-11-02', '10:00', 1), t('f', '2026-11-02', '10:00', 5)];
+  assert.deepEqual(list.slice().sort(L.byTime).map(x => x.id), ['a', 'e', 'f', 'b', 'c', 'd'], 'urutan biasa: tanpa jam di akhir harinya');
+  assert.deepEqual(list.slice().sort(L.newestFirst).map(x => x.id), ['d', 'c', 'b', 'f', 'e', 'a'], 'riwayat = kebalikannya');
+});
+
+test('mode coba: kategori custom bisa dibuat, dipakai, dan dihapus (tugas pindah ke Lainnya)', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const APP_CATS = new Set([...html.matchAll(/\{k:'([a-z_]+)'/g)].map(m => m[1]));
+  const call = L.demoServer(L.demoSeed('2026-11-10', 1762740000000), k => APP_CATS.has(k));
+  const t = Object.assign({}, call('apiLoad', [L.DEMO_TOKEN]).tasks[0], { cat: 'c_kopi' });
+  let r = call('apiSync', [L.DEMO_TOKEN, [{ op: 'cat', cat: { id: 'c_kopi', name: 'Kopi', hue: 38 } }, { op: 'upsert', task: t }]]);
+  assert.deepEqual(plain(r.cats), [{ id: 'c_kopi', name: 'Kopi', hue: 38 }]);
+  assert.equal(r.tasks.find(x => x.id === t.id).cat, 'c_kopi');
+  r = call('apiSync', [L.DEMO_TOKEN, [{ op: 'cat-del', id: 'c_kopi' }]]);
+  assert.deepEqual(plain(r.cats), []);
+  assert.equal(r.tasks.find(x => x.id === t.id).cat, 'lain_t', 'seperti Code.gs');
+});

@@ -172,6 +172,31 @@ svg{display:block}
 .cat-btn .ring svg{width:30px;height:30px}
 .cat-btn span{font-size:14.5px;line-height:1.2;color:var(--text)}
 .cat-btn.on .ring{background:var(--accent);color:var(--accent-ink)}
+/* kategori custom (Tahap 3, Poin 10): ikon = huruf awal di lingkaran warna pilihan */
+.cat-l{font-weight:700;font-size:19px;line-height:1}
+.task .cat-ic .cat-l{font-size:16px}
+.cat-ic.big .cat-l{font-size:23px}
+.cat-sec{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;min-height:44px;margin:4px 6px -8px;padding-top:6px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.cat-sec .link{text-transform:none;letter-spacing:0;font-size:14.5px;min-height:44px;padding:8px 6px}
+.cat-btn.cu .ring{background:hsl(var(--h) 34% 25%);color:hsl(var(--h) 85% 82%)}
+.cat-btn.cu.on .ring{background:var(--accent);color:var(--accent-ink)}
+.cat-btn.cu .ring .cat-l{font-size:26px}
+.cat-btn.cu span{max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.cat-btn.new .ring{background:none;border:1.5px dashed #5a5a5a;color:var(--accent)}
+.cat-btn.new span{color:var(--accent)}
+#add-screen{z-index:58}   /* di atas layar Cari (55) & Riwayat kategori (56): Edit dari sana membuka layar + di depan */
+#cats-wrap{z-index:75}     /* di atas form (70), di bawah editor kategori (#import-wrap 80) */
+.kc-prev{display:flex;align-items:center;gap:14px;padding:2px 0 16px}
+.kc-prev .grow{flex:1;min-width:0}
+.kc-prev small{display:block;color:var(--muted);font-size:12.5px}
+.kc-prev b{display:block;font-size:17px;font-weight:500;overflow-wrap:anywhere}
+.hues{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;justify-items:center}
+.hue{width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
+.hue i{width:34px;height:34px;border-radius:50%;background:linear-gradient(150deg,hsl(var(--h) 72% 84%),hsl(var(--h) 58% 66%));transition:box-shadow .15s}
+.hue.on i{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--text)}
+.kc-note{margin:12px 2px 0;color:var(--muted);font-size:13px;text-align:center}
+.kc-intro{margin:0 0 4px;color:var(--text2);font-size:14px}
+.acc-row .chev{margin-left:auto}
 
 /* form */
 .form-cat{display:flex;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px}
@@ -340,6 +365,29 @@ details.tbl th{color:var(--muted);font-weight:500}
 .crow .l2 i{display:block;height:9px;border-radius:0 5px 5px 0;min-width:5px}
 .crow .l2 span{font-size:13px;color:var(--text2);white-space:nowrap}
 .sec-title{padding:22px 16px 4px;font-size:16.5px;font-weight:500;margin:0}
+.sec-sub{margin:0;padding:0 16px 2px;font-size:12.5px;color:var(--muted)}
+/* Per kategori bisa di-tap → riwayat (Tahap 3, Poin 8) */
+button.crow{width:100%;text-align:left}
+.crow:active{background:#262626}
+.crow .chev{margin-right:-6px}
+.chev{flex:none;color:var(--muted);display:grid;place-items:center}
+.chev svg{width:20px;height:20px}
+.ch-head{display:flex;align-items:center;gap:6px;min-height:64px;padding:6px 12px 6px 4px;background:var(--bg2);position:sticky;top:0;z-index:2}
+.ch-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px}
+.ch-title .grow{flex:1;min-width:0}
+.ch-title b{display:block;font-size:18px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-title small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.ch-title .cat-ic{width:40px;height:40px}
+.ch-title .cat-ic svg{width:21px;height:21px}
+.hrow{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 16px;text-align:left;border-bottom:1px solid var(--line)}
+.hrow:active{background:#262626}
+.hrow .grow{flex:1;min-width:0}
+.hrow b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-weight:400;font-size:15px;line-height:1.3}
+.hrow.done b{color:var(--text2)}
+.hrow small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.h-st{flex:none;font-size:12px;font-weight:500;padding:3px 9px;border-radius:12px;background:#333;color:var(--text2)}
+.h-st.done{background:rgba(76,199,122,.14);color:var(--good)}
+.h-st.over{background:rgba(255,112,112,.13);color:var(--danger)}
 
 /* ---------- me ---------- */
 .me-card{display:flex;gap:14px;align-items:center;margin:16px;background:var(--card);border-radius:18px;padding:16px}
@@ -660,6 +708,21 @@ details.tbl th{color:var(--muted);font-weight:500}
   <div class="sheet"><div class="sheet-top"><button class="back-btn" data-act="close-accounts" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><b>Akun</b></div><div id="acct-body"></div></div>
 </div>
 
+<!-- kategori saya: daftar kategori custom (Tahap 3, Poin 10) -->
+<div class="sheet-wrap" id="cats-wrap">
+  <div class="backdrop" data-act="close-cats"></div>
+  <div class="sheet"><div class="sheet-top"><button class="back-btn" data-act="close-cats" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><b>Kategori saya</b></div><div id="cats-body"></div></div>
+</div>
+
+<!-- riwayat tugas per kategori dari menu Grafik (Tahap 3, Poin 8) -->
+<div class="screen" id="cathist-screen" aria-hidden="true" style="z-index:56">
+  <div class="ch-head">
+    <button class="icon-btn" data-act="close-cathist" aria-label="Kembali ke grafik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button>
+    <div class="ch-title" id="ch-title"></div>
+  </div>
+  <div id="ch-list"></div>
+</div>
+
 <!-- login / daftar -->
 <div class="auth" id="auth" aria-hidden="true">
   <div class="auth-in">
@@ -862,6 +925,45 @@ function suggestNames(list,q,limit){
     .slice(0,limit>0?limit:5).map(x=>x.name);
 }
 
+/* ---- kategori custom (Tahap 3, Poin 10) ---- */
+/** Palet warna kategori custom: hue 0–359, digambar dengan gaya yang sama dengan kategori bawaan (keputusan 1a). */
+const CAT_HUES=[0,18,38,52,95,140,165,190,212,240,275,320];
+const catKeyName=s=>cleanName(s,CAT_NAME_MAX).toLowerCase();
+/** Cek nama kategori custom → {name: nama yang dirapikan, error: '' | pesan}. builtinNames = nama kategori bawaan,
+ *  cats = kategori custom akun, selfId = id kategori yang sedang diubah (null = kategori baru).
+ *  Aturannya sama dengan server (uniqueCatName_): spasi dirapikan, maks 30 huruf, tidak boleh sama dengan nama
+ *  kategori bawaan maupun kategori custom lain (tidak peka huruf besar/kecil). */
+function checkCatName(raw,builtinNames,cats,selfId){
+  const name=cleanName(raw,CAT_NAME_MAX).trim(),k=name.toLowerCase();   // trim lagi: potongan 30 huruf bisa berakhiran spasi
+  if(!name)return {name:name,error:'Nama kategori wajib diisi.'};
+  if((Array.isArray(builtinNames)?builtinNames:[]).some(n=>catKeyName(n)===k))return {name:name,error:'"'+name+'" sudah dipakai kategori bawaan.'};
+  const dup=(Array.isArray(cats)?cats:[]).find(c=>c&&c.id!==selfId&&catKeyName(c.name)===k);
+  if(dup)return {name:name,error:'Sudah ada kategori bernama "'+dup.name+'".'};
+  return {name:name,error:''};
+}
+/** Warna untuk kategori baru: warna palet pertama yang belum dipakai kategori custom lain (kalau habis, berputar). */
+function nextCatHue(cats){
+  cats=Array.isArray(cats)?cats:[];
+  const used=cats.map(c=>c&&c.hue),free=CAT_HUES.filter(h=>used.indexOf(h)<0);
+  return free.length?free[0]:CAT_HUES[cats.length%CAT_HUES.length];
+}
+/** Hapus kategori custom `id`. Tugas di dalamnya pindah ke "Lainnya" (lain_t), sama seperti server (normRows_).
+ *  Tugas diubah di tempat (cat + updatedAt). → {cats: daftar tanpa kategori itu, moved: [id tugas yang dipindah]}. */
+function deleteCat(taskList,cats,id,now){
+  const moved=[];
+  (Array.isArray(taskList)?taskList:[]).forEach(t=>{if(t&&t.cat===id){t.cat='lain_t';t.updatedAt=now;moved.push(t.id);}});
+  return {cats:(Array.isArray(cats)?cats:[]).filter(c=>c.id!==id),moved:moved};
+}
+/** Urutan daftar biasa: tanggal, lalu jam mulai (tanpa jam di akhir hari), lalu yang dibuat lebih dulu. */
+function byTime(a,b){
+  if(a.date!==b.date)return a.date<b.date?-1:1;
+  const sa=a.start||'99:99',sb=b.start||'99:99';
+  if(sa!==sb)return sa<sb?-1:1;
+  return (a.createdAt||0)-(b.createdAt||0);
+}
+/** Riwayat per kategori (Poin 8) dan pencarian: kebalikan byTime = terbaru dulu. */
+const newestFirst=(a,b)=>byTime(b,a);
+
 /* ---- Mode coba (dibuka dari portofolio): tanpa daftar, tanpa server, tanpa localStorage ---- */
 /** Token sesi mode coba. Ada tanda '-', jadi tidak mungkin sama dengan username (argumen pertama apiLogin/apiRegister). */
 const DEMO_TOKEN='mode-coba';
@@ -907,7 +1009,9 @@ function demoServer(seed,isBuiltinCat){
     if(fn==='apiLoad')return bundle();
     if(fn==='apiSync'){
       const m=mergeServer(db,Array.isArray(args[1])?args[1]:[],{cats:db.cats,profiles:db.profiles},isBuiltinCat);
-      db={tasks:Object.keys(m.tasks).map(k=>toDoc(m.tasks[k])),cats:m.cats,profiles:m.profiles};
+      // seperti Code.gs: tugas yang kategori custom-nya sudah tidak ada → "Lainnya"
+      const known=Object.create(null);m.cats.forEach(c=>{known[c.id]=1;});
+      db={tasks:Object.keys(m.tasks).map(k=>{const d=toDoc(m.tasks[k]);if(isCustomCat(d.cat)&&!known[d.cat])d.cat='lain_t';return d;}),cats:m.cats,profiles:m.profiles};
       return bundle();
     }
     if(fn==='apiProfile'){user.name=cleanName(args[1],40)||user.username;return out();}
@@ -919,7 +1023,9 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
   migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile,
   DIFFS:DIFFS,DEF_DUR:DEF_DUR,toMin:toMin,fromMin:fromMin,durMin:durMin,endAfter:endAfter,crossesMidnight:crossesMidnight,fmtDur:fmtDur,
-  suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer};
+  suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer,
+  CAT_NAME_MAX:CAT_NAME_MAX,CAT_HUES:CAT_HUES,checkCatName:checkCatName,nextCatHue:nextCatHue,deleteCat:deleteCat,
+  byTime:byTime,newestFirst:newestFirst};
 })();
 </script>
 <script>
@@ -989,7 +1095,8 @@ const P={
  cloud:'<path d="M7 18.5A4.5 4.5 0 0 1 6.4 9.5 6 6 0 0 1 18 10a4.3 4.3 0 0 1-.5 8.5z"/>',
  user:'<circle cx="12" cy="8" r="4.2"/><path d="M4 21c.8-4 4.1-6.5 8-6.5s7.2 2.5 8 6.5"/>',
  phone:'<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
- alarm:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 4.5 6.5 2.5M20 4.5l-2.5-2"/>'
+ alarm:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 4.5 6.5 2.5M20 4.5l-2.5-2"/>',
+ chev:'<path d="m9.5 6 6 6-6 6"/>'
 };
 const ic=(k,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||1.7)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[k]||'')+'</svg>';
 
@@ -1025,15 +1132,28 @@ const CATS=[
 ];
 const CAT={};CATS.forEach(c=>CAT[c.k]=c);
 const isBuiltinCat=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(CAT,k);
-const catOf=k=>isBuiltinCat(k)?CAT[k]:CAT.lain_t;      // kode custom (c_…) tampil "Lainnya" sampai Tahap 3
-const catIc=(c,big)=>'<div class="cat-ic'+(big?' big':'')+'" style="--h:'+c.h+'">'+ic(c.i)+'</div>';
+const BUILTIN_NAMES=CATS.map(c=>c.n).filter((n,i,a)=>a.indexOf(n)===i);
+/* Kategori custom milik akun (Tahap 3, Poin 10): {id:'c_…', name, hue} di `cats`. Ditampilkan dalam bentuk yang sama
+   dengan kategori bawaan ({k, n, h, …}) + custom:true; ikonnya = huruf awal nama di lingkaran warna pilihan. */
+function customCat(k){
+  if(!L.isCustomCat(k))return null;
+  const c=cats.find(x=>x.id===k);
+  return c?{k:c.id,n:c.name,g:'',h:c.hue,i:'',custom:true}:null;
+}
+const catOf=k=>isBuiltinCat(k)?CAT[k]:(customCat(k)||CAT.lain_t);   // kode yang tidak dikenal tampil "Lainnya"
+// kunci pengelompokan (grafik, riwayat): kode custom yang sudah tidak ada digabung ke "Lainnya", sama seperti tampilannya
+const catKey=k=>isBuiltinCat(k)||customCat(k)?k:'lain_t';
+const catLetter=n=>(Array.from(String(n||'').trim())[0]||'?').toUpperCase();
+const catGlyph=(c,sw)=>c.custom?'<span class="cat-l">'+esc(catLetter(c.n))+'</span>':ic(c.i,sw);
+const catIc=(c,big)=>'<div class="cat-ic'+(big?' big':'')+'" style="--h:'+c.h+'">'+catGlyph(c)+'</div>';
+const newCatId=()=>'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 /* ================= data store (Google Apps Script + spreadsheet) ================= */
 const API_URL='https://script.google.com/macros/s/AKfycbxd5t15V5dDg42HldXBx91JbiPxUZQp6zttDX4JwhjU_pI-d0ceNlitVTFXtvQ1wlFAGg/exec';   // URL aplikasi web Apps Script (…/exec)
 const HAS_GAS=/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(API_URL)||API_URL.indexOf('http://localhost')===0;
 let tasks={};          // id -> task (akun yang sedang aktif)
 let ops=[];            // perubahan yang belum terkirim ke server (tugas, kategori custom, profil)
-let cats=[];           // kategori custom akun aktif [{id:'c_…', name, hue}] (UI di Tahap 3)
+let cats=[];           // kategori custom akun aktif [{id:'c_…', name, hue}] (Tahap 3)
 let profiles=[];       // profil di akun aktif [{id:'p…', name, avatar}] (UI di Tahap 9)
 let accounts=[];       // akun yang tersimpan di HP ini
 let me=null;           // akun aktif
@@ -1273,17 +1393,14 @@ const state={
   calMonth:mkey(today()),calSel:today(),
   statMonth:mkey(today()),statFilter:'semua',statFocus:null,
   pickYear:new Date().getFullYear(),
-  form:null,detailId:null,returnTo:null
+  form:null,detailId:null,returnTo:null,
+  catEd:null,     // editor kategori custom yang terbuka: {id|null, hue, from:'add'|'list'}
+  histKey:null    // kategori yang riwayatnya dibuka dari Grafik (Poin 8)
 };
 const all=()=>Object.values(tasks);
 const inMonth=mk=>all().filter(t=>t.date.slice(0,7)===mk);
 const onDate=d=>all().filter(t=>t.date===d).sort(byTime);
-function byTime(a,b){
-  if(a.date!==b.date)return a.date<b.date?-1:1;
-  const sa=a.start||'99:99',sb=b.start||'99:99';
-  if(sa!==sb)return sa<sb?-1:1;
-  return (a.createdAt||0)-(b.createdAt||0);
-}
+function byTime(a,b){return L.byTime(a,b);}   // urutan tanggal → jam → dibuat (PT_LIB, diuji di Node)
 function dlMs(t){if(!t.dlDate)return null;const d=parseYmd(t.dlDate);const tm=(t.dlTime||'23:59').split(':').map(Number);d.setHours(tm[0],tm[1],0,0);return d.getTime();}
 function dur(ms){
   const m=Math.max(1,Math.round(ms/60000));
@@ -1429,13 +1546,13 @@ function renderStats(){
     return;
   }
   // per category
-  const byCat={};list.forEach(t=>{byCat[t.cat]=(byCat[t.cat]||0)+1;});
-  const cats=Object.keys(byCat).map(k=>({k:k,n:byCat[k],d:list.filter(t=>t.cat===k&&t.done).length})).sort((a,b)=>b.n-a.n||catOf(a.k).n.localeCompare(catOf(b.k).n));
+  const byCat={},doneCat={};list.forEach(t=>{const k=catKey(t.cat);byCat[k]=(byCat[k]||0)+1;if(t.done)doneCat[k]=(doneCat[k]||0)+1;});
+  const crows=Object.keys(byCat).map(k=>({k:k,n:byCat[k],d:doneCat[k]||0})).sort((a,b)=>b.n-a.n||catOf(a.k).n.localeCompare(catOf(b.k).n));
   const total=list.length;
   let segs;
-  if(cats.length<=5)segs=cats.map((c,i)=>({label:catOf(c.k).n,n:c.n,color:SLOT[i],keys:[c.k]}));
-  else{segs=cats.slice(0,4).map((c,i)=>({label:catOf(c.k).n,n:c.n,color:SLOT[i],keys:[c.k]}));
-    const rest=cats.slice(4);segs.push({label:'Lainnya',n:rest.reduce((s,c)=>s+c.n,0),color:'var(--sx)',keys:rest.map(c=>c.k),other:true});}
+  if(crows.length<=5)segs=crows.map((c,i)=>({label:catOf(c.k).n,n:c.n,color:SLOT[i],keys:[c.k]}));
+  else{segs=crows.slice(0,4).map((c,i)=>({label:catOf(c.k).n,n:c.n,color:SLOT[i],keys:[c.k]}));
+    const rest=crows.slice(4);segs.push({label:'Lainnya',n:rest.reduce((s,c)=>s+c.n,0),color:'var(--sx)',keys:rest.map(c=>c.k),other:true});}
   const colorOf={};segs.forEach(s=>s.keys.forEach(k=>colorOf[k]=s.color));
   // per day
   const n=dim(mk),per=Array(n).fill(0),perDone=Array(n).fill(0);
@@ -1465,10 +1582,12 @@ function renderStats(){
     '<details class="tbl"><summary>Lihat sebagai tabel</summary><table><thead><tr><th>Tanggal</th><th>'+(showDone?'Total':'Jumlah')+'</th>'+(showDone?'<th>Selesai</th>':'')+'</tr></thead><tbody>'+
     per.map((v,i)=>v||(showDone&&perDone[i])?'<tr><td>'+(i+1)+' '+MON_S[+mk.slice(5)-1]+'</td><td>'+v+'</td>'+(showDone?'<td>'+perDone[i]+'</td>':'')+'</tr>':'').join('')+'</tbody></table></details></section>';
   // category list
-  const maxC=cats[0].n;
-  h+='<h3 class="sec-title">Per kategori</h3><div class="clist">'+cats.map(c=>{const cc=catOf(c.k);
-    return '<div class="crow">'+catIc(cc)+'<div class="grow"><div class="l1"><span>'+esc(cc.n)+'</span><b>'+c.n+' tugas</b></div>'+
-    '<div class="l2"><i style="width:'+Math.max(4,c.n/maxC*72)+'%;background:'+colorOf[c.k]+'"></i><span>'+fmtPct(c.n/total*100)+(state.statFilter==='semua'?' · '+c.d+' selesai':'')+'</span></div></div></div>';}).join('')+'</div>';
+  const maxC=crows[0].n;
+  // setiap baris bisa di-tap → riwayat tugas kategori itu (Poin 8)
+  h+='<h3 class="sec-title">Per kategori</h3><p class="sec-sub">Ketuk kategori untuk melihat daftar tugasnya</p><div class="clist">'+crows.map(c=>{const cc=catOf(c.k);
+    return '<button class="crow" data-act="cat-hist" data-k="'+esc(c.k)+'" aria-label="'+esc(cc.n)+': '+c.n+' tugas, lihat daftar">'+catIc(cc)+'<div class="grow"><div class="l1"><span>'+esc(cc.n)+'</span><b>'+c.n+' tugas</b></div>'+
+    '<div class="l2"><i style="width:'+Math.max(4,c.n/maxC*72)+'%;background:'+colorOf[c.k]+'"></i><span>'+fmtPct(c.n/total*100)+(state.statFilter==='semua'?' · '+c.d+' selesai':'')+'</span></div></div>'+
+    '<span class="chev">'+ic('chev',2)+'</span></button>';}).join('')+'</div>';
   body.innerHTML=h;
   bindDonut(segs,total,fl);
   drawCurve($('#curve'),mk,per,showDone?perDone:null);
@@ -1563,7 +1682,7 @@ function renderMe(){
   if(!me){$('#me-body').innerHTML='';return;}
   const canInstall=!!installEvt&&!isStandalone();
   const l=all(),d=l.filter(t=>t.done).length;
-  const byCat={};l.forEach(t=>byCat[t.cat]=(byCat[t.cat]||0)+1);
+  const byCat={};l.forEach(t=>{const k=catKey(t.cat);byCat[k]=(byCat[k]||0)+1;});
   const fav=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a])[0];
   const st=syncState();
   let h='<div class="me-card"><span class="av big">'+esc(initial(me))+'</span><div><b>'+esc(me.name||me.username)+'</b><p style="margin-top:1px">@'+esc(me.username)+'</p>'+
@@ -1571,6 +1690,8 @@ function renderMe(){
   h+='<div class="tiles" style="grid-template-columns:repeat(3,1fr)">'+tile('Semua tugas',l.length,'tercatat')+tile('Selesai',d,pct(d,l.length).toString().replace('.',',')+'%')+
     tile('Paling sering',fav?catOf(fav).n:'-',fav?byCat[fav]+' tugas':'belum ada')+'</div>';
   if(canInstall)h+='<div class="menu" style="margin-top:14px"><button data-act="install">'+ic('phone')+'<div>Pasang sebagai aplikasi<small>Ikon di layar utama, terbuka penuh tanpa bilah browser</small></div></button></div>';
+  h+='<div class="menu-h">Kategori</div><div class="menu">'+
+    '<button data-act="cats-manage">'+ic('layers')+'<div>Kategori saya<small>'+(cats.length?cats.length+' kategori buatanmu · tambah, ubah, hapus':'Buat kategori sendiri dengan nama dan warna')+'</small></div></button></div>';
   h+='<div class="menu-h">Akun</div><div class="menu">'+
     '<button data-act="accounts">'+ic('people')+'<div>Ganti akun<small>'+accounts.length+' akun tersimpan di HP ini</small></div></button>'+
     '<button data-act="edit-name">'+ic('user')+'<div>Ubah nama tampilan<small>'+esc(me.name||me.username)+'</small></div></button>'+
@@ -1635,7 +1756,7 @@ function openAdd(opts){
   const ed=opts.editId?tasks[opts.editId]:null;
   const date=ed?ed.date:(opts.date||today());
   // noTime: "Tanpa jam" (Poin 3). Tugas lama yang hanya punya jam selesai ("s/d 17:00") tetap dianggap berjam di form.
-  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed?catOf(ed.cat).g:'tugas',dlTouched:!!ed,
+  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed&&catOf(ed.cat).g||'tugas',dlTouched:!!ed,
     diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end):false};
   state.returnTo=opts.returnTo||state.view;
   $('#add-title').textContent=ed?'Edit Tugas':'Tambahkan';
@@ -1655,15 +1776,28 @@ function openAdd(opts){
   $('#add-screen').scrollTop=0;showLayer('add');
   if(ed)setTimeout(()=>openForm(),120);
 }
+// Grid kategori: kategori bawaan sesuai tab Tugas | Kegiatan, lalu bagian "Kategori saya" (custom, tampil di kedua tab)
+// dengan tombol "Kelola" dan "Baru".
 function renderCatGrid(){
-  const f=state.form;
+  const f=state.form;if(!f)return;
   document.querySelectorAll('#add-seg button').forEach(b=>b.classList.toggle('on',b.dataset.g===f.group));
-  $('#cat-grid').innerHTML=CATS.filter(c=>c.g===f.group).map(c=>
-    '<button class="cat-btn'+(f.cat===c.k?' on':'')+'" data-act="pick-cat" data-k="'+c.k+'"><div class="ring">'+ic(c.i,1.5)+'</div><span>'+esc(c.n)+'</span></button>').join('');
+  const btn=c=>'<button class="cat-btn'+(f.cat===c.k?' on':'')+(c.custom?' cu':'')+'" data-act="pick-cat" data-k="'+esc(c.k)+'" style="--h:'+c.h+'"><div class="ring">'+catGlyph(c,1.5)+'</div><span>'+esc(c.n)+'</span></button>';
+  $('#cat-grid').innerHTML=CATS.filter(c=>c.g===f.group).map(btn).join('')+
+    '<div class="cat-sec"><span>Kategori saya</span>'+(cats.length?'<button type="button" class="link" data-act="cats-manage">Kelola</button>':'')+'</div>'+
+    cats.map(c=>btn(catOf(c.id))).join('')+
+    (cats.length<L.MAX_CATS?'<button class="cat-btn new" data-act="cat-new" data-from="add"><div class="ring">'+ic('plus',2)+'</div><span>Baru</span></button>':'');
+}
+function pickCat(k){
+  const f=state.form;if(!f||(!isBuiltinCat(k)&&!customCat(k)))return;
+  f.cat=k;
+  // deadline bawaan: ON untuk kelompok Tugas, OFF untuk Kegiatan. Kategori custom mengikuti tab yang sedang dipilih.
+  if(!f.dlTouched&&!f.editId){$('#f-dl-on').checked=(isBuiltinCat(k)?CAT[k].g:f.group)==='tugas';syncDl();}
+  renderCatGrid();openForm();
+  if(!f.editId&&!$('#f-name').value)setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}} ,320);
 }
 function openForm(){
   const c=catOf(state.form.cat);
-  const fi=$('#f-cat-ic');fi.style.setProperty('--h',c.h);fi.innerHTML=ic(c.i);
+  const fi=$('#f-cat-ic');fi.style.setProperty('--h',c.h);fi.innerHTML=catGlyph(c);
   $('#f-cat-name').textContent=c.n;
   $('#form-wrap .sheet').scrollTop=0;showLayer('form');
 }
@@ -1727,9 +1861,112 @@ function saveForm(e){
   toast(wasEdit?'Perubahan disimpan':'Tugas ditambahkan ke '+fmtShort(date));
 }
 
+/* ---- kategori custom (Tahap 3, Poin 10) ----
+   Editor memakai panel #import-wrap (openPanel); daftar "Kategori saya" = lapisan 'cats' (dari menu Saya atau "Kelola"
+   di layar +). Tambah/ubah → op 'cat'; hapus → op 'cat-del' + tugasnya pindah ke "Lainnya" (op upsert per tugas).
+   Semua lewat antrean biasa, jadi tetap jalan offline. Server memproses op kategori lebih dulu daripada op tugas. */
+const HUE_N={0:'Merah',18:'Jingga',38:'Oranye',52:'Kuning',95:'Hijau muda',140:'Hijau',165:'Toska',190:'Biru muda',212:'Biru',240:'Nila',275:'Ungu',320:'Merah muda'};
+const catCount=id=>all().filter(t=>t.cat===id).length;
+function openCatEditor(id,from){
+  const c=id?cats.find(x=>x.id===id):null;
+  if(id&&!c){toast('Kategori sudah tidak ada');refreshCats();return;}
+  if(!c&&cats.length>=L.MAX_CATS){toast('Maksimal '+L.MAX_CATS+' kategori');return;}
+  const n=c?catCount(c.id):0;
+  openPanel(c?'Ubah kategori':'Kategori baru',
+    '<div class="kc-prev"><div class="cat-ic big" id="kc-ic"></div><div class="grow"><small>Pratinjau</small><b id="kc-prev-n"></b></div></div>'+
+    '<label class="fld"><span>Nama kategori</span><input class="inp" id="kc-name" maxlength="'+L.CAT_NAME_MAX+'" placeholder="Contoh: Freelance" enterkeyhint="done" autocomplete="off" value="'+esc(c?c.name:'')+'"></label>'+
+    '<div class="err hidden" id="kc-err"></div>'+
+    '<div class="fld"><span>Warna</span><div class="hues" id="kc-hues">'+L.CAT_HUES.map(h=>
+      '<button type="button" class="hue" data-act="kc-hue" data-h="'+h+'" style="--h:'+h+'" aria-label="'+(HUE_N[h]||'Warna')+'" aria-pressed="false"><i></i></button>').join('')+'</div></div>'+
+    '<button class="btn-primary" data-act="kc-save">'+(c?'Simpan':'Buat kategori')+'</button>'+
+    (c?'<p class="kc-note">'+(n?n+' tugas memakai kategori ini.':'Belum ada tugas di kategori ini.')+'</p><div class="d-actions"><button class="btn-sec danger" data-act="kc-del">Hapus kategori</button></div>'
+      :'<p class="kc-note">Hanya terlihat di akunmu, dipakai bersama semua profil.</p>'));
+  state.catEd={id:c?c.id:null,hue:c?c.hue:L.nextCatHue(cats),from:from};   // setelah openPanel (showLayer tidak mengosongkannya)
+  syncCatEditor();
+  if(!c)setTimeout(()=>{try{$('#kc-name').focus({preventScroll:true});}catch(_){}} ,320);
+}
+function syncCatEditor(){
+  const ed=state.catEd,inp=$('#kc-name');if(!ed||!inp)return;
+  const box=$('#kc-ic'),nm=inp.value.trim();
+  box.style.setProperty('--h',ed.hue);box.innerHTML='<span class="cat-l">'+esc(catLetter(nm))+'</span>';
+  $('#kc-prev-n').textContent=nm||'Nama kategori';
+  document.querySelectorAll('#kc-hues .hue').forEach(b=>{const on=+(b.getAttribute('data-h')||0)===ed.hue;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+}
+function catErr(msg){const er=$('#kc-err'),inp=$('#kc-name');er.textContent=msg;er.classList.toggle('hidden',!msg);inp.classList.toggle('bad',!!msg);}
+function saveCat(){
+  const ed=state.catEd;if(!ed)return;
+  const r=L.checkCatName($('#kc-name').value,BUILTIN_NAMES,cats,ed.id);
+  if(r.error){catErr(r.error);try{$('#kc-name').focus();}catch(_){}return;}
+  const i=ed.id?cats.findIndex(x=>x.id===ed.id):-1;
+  if(ed.id&&i<0){hideLayer('import');toast('Kategori sudah tidak ada');refreshCats();return;}
+  if(!ed.id&&cats.length>=L.MAX_CATS){catErr('Maksimal '+L.MAX_CATS+' kategori.');return;}
+  const cat={id:ed.id||newCatId(),name:r.name,hue:ed.hue},isNew=!ed.id,from=ed.from;
+  if(i>=0)cats[i]=cat;else cats.push(cat);
+  queueMeta({op:'cat',cat:cat});
+  hideLayer('import');
+  refreshCats();
+  // dibuat lewat tombol "Baru" di layar + → langsung dipakai untuk tugas yang sedang dibuat
+  if(isNew&&from==='add'&&state.form&&isOpen('add')&&!isOpen('cats')){pickCat(cat.id);return;}
+  toast(isNew?'Kategori "'+cat.name+'" dibuat':'Kategori disimpan');
+}
+function deleteCatAsk(id){
+  const c=cats.find(x=>x.id===id);if(!c)return;
+  const n=catCount(id);
+  confirmBox('Hapus kategori?','"'+c.name+'" akan dihapus. '+(n?n+' tugas di dalamnya pindah ke kategori "Lainnya", tidak ikut terhapus.':'Belum ada tugas di kategori ini.'),'Hapus',()=>deleteCatNow(id));
+}
+function deleteCatNow(id){
+  const idx=cats.findIndex(x=>x.id===id);if(idx<0)return;
+  const c=cats[idx],r=L.deleteCat(all(),cats,id,Date.now());
+  cats=r.cats;
+  r.moved.forEach(tid=>queueOp(tid));
+  queueMeta({op:'cat-del',id:id});
+  const f=state.form;if(f&&f.cat===id)f.cat=f.editId?'lain_t':null;
+  hideLayer('import');refreshCats();
+  undoToast('"'+c.name+'" dihapus'+(r.moved.length?' · '+r.moved.length+' tugas ke Lainnya':''),()=>{
+    if(cats.some(x=>x.id===id))return;
+    if(cats.length>=L.MAX_CATS){toast('Maksimal '+L.MAX_CATS+' kategori');return;}
+    cats.splice(Math.min(idx,cats.length),0,c);queueMeta({op:'cat',cat:c});
+    const now=Date.now();
+    r.moved.forEach(tid=>{const t=tasks[tid];if(t&&t.cat==='lain_t'){t.cat=id;t.updatedAt=now;queueOp(tid);}});
+    refreshCats();toast('Kategori dikembalikan');
+  });
+}
+// gambar ulang semua tempat yang menampilkan daftar kategori custom
+function refreshCats(){render();if(isOpen('add'))renderCatGrid();}
+function renderCatsList(){
+  const cnt={};all().forEach(t=>{cnt[t.cat]=(cnt[t.cat]||0)+1;});
+  let h='<p class="kc-intro">Kategori buatanmu sendiri, hanya terlihat di akun ini. Kategori bawaan tidak bisa diubah atau dihapus.</p>';
+  if(cats.length<L.MAX_CATS)h+='<button class="acc-act" data-act="cat-new">'+ic('plus',2)+'Kategori baru</button>';
+  h+=cats.length?cats.map(c=>'<button class="acc-row" data-act="cat-edit" data-id="'+esc(c.id)+'">'+catIc(catOf(c.id))+
+      '<div class="grow"><b>'+esc(c.name)+'</b><small>'+(cnt[c.id]||0)+' tugas</small></div><span class="chev">'+ic('chev',2)+'</span></button>').join('')
+    :'<div class="empty" style="padding:26px 16px 8px"><p style="margin:0">Belum ada kategori buatanmu. Contoh: Freelance, Les privat, Jualan online.</p></div>';
+  h+='<p class="kc-note">'+cats.length+' dari '+L.MAX_CATS+' kategori</p>';
+  $('#cats-body').innerHTML=h;
+}
+
+/* ---- riwayat per kategori (Tahap 3, Poin 8) ----
+   Daftar tugas satu kategori dari menu Grafik, terbaru dulu. Periode (bulan) DAN filter Semua/Selesai/Belum sama dengan
+   grafik yang sedang dipilih, jadi jumlahnya selalu sama dengan angka di baris "Per kategori". */
+function openCatHist(k){if(!k)return;state.histKey=k;renderCatHist();$('#cathist-screen').scrollTop=0;showLayer('cathist');}
+function renderCatHist(){
+  const k=state.histKey;if(!k)return;
+  const c=catOf(k),fl=state.statFilter;
+  const list=statList().filter(t=>catKey(t.cat)===k).sort(L.newestFirst);
+  const done=list.filter(t=>t.done).length;
+  const sum=fl==='semua'?list.length+' tugas · '+done+' selesai':list.length+(fl==='selesai'?' selesai':' belum selesai');
+  $('#ch-title').innerHTML=catIc(c)+'<div class="grow"><b>'+esc(c.n)+'</b><small>'+esc(fmtMonth(state.statMonth))+' · '+sum+'</small></div>';
+  $('#ch-list').innerHTML=list.length?list.map(t=>{
+      const d=parseYmd(t.date),over=isOver(t);
+      const when=DAYS[d.getDay()].slice(0,3)+', '+d.getDate()+' '+MON_S[d.getMonth()]+' '+d.getFullYear()+(t.start?' · '+t.start:'');
+      return '<button class="hrow'+(t.done?' done':'')+'" data-act="ch-open" data-id="'+esc(t.id)+'"><div class="grow"><b>'+esc(t.name)+'</b><small>'+esc(when)+'</small></div>'+
+        '<span class="h-st '+(t.done?'done':over?'over':'')+'">'+(t.done?'Selesai':over?'Terlambat':'Belum')+'</span></button>';}).join('')
+    :'<div class="empty"><p>Tidak ada tugas di kategori ini untuk bulan dan filter grafik yang dipilih.</p></div>';
+}
+
 /* ---- overlays ---- */
 /* Layers (screens & sheets) + browser history so the phone's back button closes them */
-const LAYER_EL={auth:'#auth',accounts:'#acct-wrap',add:'#add-screen',form:'#form-wrap',detail:'#detail-wrap',search:'#search-screen',month:'#month-wrap',import:'#import-wrap',confirm:'#confirm-wrap'};
+const LAYER_EL={auth:'#auth',accounts:'#acct-wrap',add:'#add-screen',form:'#form-wrap',detail:'#detail-wrap',search:'#search-screen',month:'#month-wrap',import:'#import-wrap',confirm:'#confirm-wrap',
+  cats:'#cats-wrap',cathist:'#cathist-screen'};
 const layers=[];
 function isOpen(id){return layers.indexOf(id)>=0;}
 function showLayer(id){
@@ -1745,6 +1982,8 @@ function hideLayer(id){
   if(id==='add')state.form=null;
   if(id==='detail')state.detailId=null;
   if(id==='confirm')cfCb=null;
+  if(id==='import')state.catEd=null;
+  if(id==='cathist')state.histKey=null;
   syncHist();return true;
 }
 function goBack(){
@@ -1849,6 +2088,9 @@ function render(){
   else renderMe();
   if(isOpen('detail'))renderDetail();
   if(isOpen('search'))renderSearch();
+  if(isOpen('cathist'))renderCatHist();
+  if(isOpen('cats'))renderCatsList();
+  if(isOpen('add')&&state.form)renderCatGrid();   // kategori custom bisa berubah setelah sinkron
 }
 
 document.addEventListener('click',e=>{
@@ -1869,12 +2111,19 @@ function handle(a,el,e){
     case 'add-cancel':closeAdd();break;
     case 'back':goBack();break;
     case 'add-group':state.form.group=el.dataset.g;renderCatGrid();break;
-    case 'pick-cat':{
-      const k=el.dataset.k,f=state.form;f.cat=k;
-      if(!f.dlTouched&&!f.editId){$('#f-dl-on').checked=CAT[k].g==='tugas';syncDl();}
-      renderCatGrid();openForm();
-      if(!f.editId&&!$('#f-name').value)setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}} ,320);
-      break;}
+    case 'pick-cat':pickCat(el.dataset.k);break;
+    // ---- kategori custom (Poin 10) ----
+    case 'cat-new':openCatEditor(null,el.dataset.from||'list');break;
+    case 'cat-edit':openCatEditor(el.dataset.id,'list');break;
+    case 'cats-manage':renderCatsList();$('#cats-wrap .sheet').scrollTop=0;showLayer('cats');break;
+    case 'close-cats':hideLayer('cats');break;
+    case 'kc-hue':if(state.catEd){state.catEd.hue=+el.dataset.h;syncCatEditor();}break;
+    case 'kc-save':saveCat();break;
+    case 'kc-del':if(state.catEd&&state.catEd.id)deleteCatAsk(state.catEd.id);break;
+    // ---- riwayat per kategori di Grafik (Poin 8) ----
+    case 'cat-hist':openCatHist(el.dataset.k);break;
+    case 'close-cathist':hideLayer('cathist');break;
+    case 'ch-open':openDetail(el.dataset.id);break;
     case 'form-collapse':hideLayer('form');break;
     case 'quick-date':{const d=addDays(today(),+el.dataset.d);setFormDate(d);break;}
     case 'pick-diff':{const v=el.dataset.v;state.form.diff=state.form.diff===v?'':v;syncDiff();break;}
@@ -1982,6 +2231,10 @@ $('#f-start').addEventListener('change',()=>{const f=state.form,s=$('#f-start').
 $('#f-end').addEventListener('change',syncTime);
 $('#f-notime').addEventListener('change',()=>{if(state.form){state.form.noTime=$('#f-notime').checked;syncTime();}});
 $('#task-form').addEventListener('submit',saveForm);
+// editor kategori custom (isinya dibuat ulang setiap dibuka, jadi listener dipasang di document)
+const isKcName=t=>!!t&&t===$('#kc-name');
+document.addEventListener('input',e=>{if(isKcName(e.target)){catErr('');syncCatEditor();}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&isKcName(e.target)){e.preventDefault();saveCat();}});
 $('#search-q').addEventListener('input',renderSearch);
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(sugOpen()){hideSug();return;}if(layers.length)goBack();});
 let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(state.view==='grafik')renderStats();updateHdr();},150);});
