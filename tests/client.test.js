@@ -199,3 +199,57 @@ test('saran nama: cocok sebagian, tidak peka huruf besar/kecil, unik, maks 5, te
   assert.equal(L.suggestNames(list, 'a').length, 5, 'bawaan maks 5');
   assert.deepEqual(plain(L.suggestNames([T('Tugas (Kuliah)', 1)], 'kul', 5)), ['Tugas (Kuliah)'], 'awal kata setelah tanda baca');
 });
+
+test('mode coba: data contoh valid, tanggal relatif hari ini, server palsu menyimpan perubahan hanya di memori', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const APP_CATS = new Set([...html.matchAll(/\{k:'([a-z_]+)'/g)].map(m => m[1]));
+  const anyCat = k => APP_CATS.has(k);
+  assert.ok(!/^[a-z0-9_.]{3,20}$/.test(L.DEMO_TOKEN), 'token mode coba tidak mungkin sama dengan username');
+
+  const seed = L.demoSeed('2026-11-10', 1762740000000);
+  assert.ok(seed.tasks.length >= 8);
+  assert.equal(new Set(seed.tasks.map(t => t.id)).size, seed.tasks.length, 'ID unik');
+  seed.tasks.forEach(t => {
+    assert.ok(APP_CATS.has(t.cat), 'kategori bawaan: ' + t.cat);
+    assert.deepEqual(plain(L.normTask(t, t.id, anyCat)), plain(t), 'sudah berbentuk standar: ' + t.name);
+    if (t.dlDate) assert.ok(t.dlDate >= t.date, 'deadline tidak sebelum tanggal: ' + t.name);
+  });
+  const dates = seed.tasks.map(t => t.date);
+  ['2026-11-09', '2026-11-10', '2026-11-11'].forEach(d => assert.ok(dates.includes(d), 'ada tugas ' + d));
+  assert.ok(seed.tasks.some(t => t.done) && seed.tasks.some(t => !t.done));
+  assert.ok(L.demoSeed('2026-12-30', 0).tasks.some(t => t.date === '2027-01-01'), 'tanggal melewati akhir bulan/tahun');
+  const now = new Date(2026, 10, 10, 9, 15).getTime();   // 10 Nov 09.15 (jam lokal)
+  L.demoSeed('2026-11-10', now).tasks.filter(t => t.done).forEach(t => {
+    assert.ok(t.doneAt <= now, 'dicentang tidak di masa depan: ' + t.name);
+    if (t.dlDate) { const [y, m, d] = t.dlDate.split('-').map(Number), [hh, mm] = t.dlTime.split(':').map(Number);
+      assert.ok(t.doneAt <= new Date(y, m - 1, d, hh, mm).getTime(), 'selesai sebelum deadline: ' + t.name); }
+  });
+
+  const call = L.demoServer(seed, anyCat);
+  assert.equal(call('apiLoad', ['token-lain']).error, 'auth', 'hanya menerima token mode coba');
+  const r0 = call('apiLoad', [L.DEMO_TOKEN]);
+  assert.equal(r0.ok, true); assert.equal(r0.user.name, 'Tamu');
+  assert.equal(L.serverIsCurrent(r0), true, 'schema terbaru → tidak ada peringatan server lama');
+  assert.equal(r0.tasks.length, seed.tasks.length);
+  r0.tasks[0].name = 'diubah di luar';   // jawaban = salinan, bukan data di memori
+  assert.notEqual(call('apiLoad', [L.DEMO_TOKEN]).tasks[0].name, 'diubah di luar');
+
+  const baru = Object.assign({}, seed.tasks[0], { id: 'tbaru', name: 'Tugas pengunjung', done: false, doneAt: null, doneBy: '' });
+  const r1 = call('apiSync', [L.DEMO_TOKEN, [{ op: 'upsert', task: baru }, { op: 'delete', id: 'coba2' },
+    { op: 'upsert', task: Object.assign({}, seed.tasks[3], { done: true, doneAt: 5, doneBy: 'p1' }) }]]);
+  assert.equal(r1.ok, true);
+  const byId = Object.fromEntries(call('apiLoad', [L.DEMO_TOKEN]).tasks.map(t => [t.id, t]));
+  assert.equal(byId.tbaru.name, 'Tugas pengunjung');
+  assert.equal(byId.coba2, undefined, 'hapus tersimpan');
+  assert.equal(byId[seed.tasks[3].id].done, true, 'centang tersimpan');
+  assert.equal(Object.keys(byId).length, seed.tasks.length);
+  assert.equal(seed.tasks.find(t => t.id === 'coba2').name, 'Belanja bulanan', 'data contoh asli tidak ikut berubah');
+
+  const m = L.mergeServer(r1, [], { cats: [], profiles: [] }, anyCat);   // jalur yang sama dengan applyServer di aplikasi
+  assert.equal(Object.keys(m.tasks).length, seed.tasks.length);
+  assert.deepEqual(plain(m.profiles), [{ id: 'p1', name: 'Tamu', avatar: '' }]);
+
+  assert.equal(call('apiProfile', [L.DEMO_TOKEN, '  Budi  ']).user.name, 'Budi');
+  const pin = call('apiChangePin', [L.DEMO_TOKEN, '1234', '5678']);
+  assert.equal(pin.ok, false); assert.match(pin.message, /mode coba/);
+});

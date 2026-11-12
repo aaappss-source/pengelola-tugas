@@ -19,6 +19,8 @@ File ini wajib dibaca di awal setiap sesi dan diperbarui di akhir setiap tahap.
 | 9 | Poin 6 → 18 (avatar, profil) | belum | – |
 | 10 | Poin 11 → 7 (geser, logo) | belum | – |
 
+Di luar tahap: **Mode coba** (12 Nov 2026, hanya `index.html`, tanpa deploy server) — lihat §7 "Mode coba".
+
 ---
 
 ## 0. Cara kerja untuk sesi baru (baca dulu)
@@ -265,3 +267,17 @@ File diubah:
 Hasil: `npm run verify` lolos (check 98 id/50 data-act, typecheck 28 = baseline, 33 tes). Dicek juga lewat tangkapan layar di 390×844 dan 360×740.
 
 Belum bisa diuji dari sesi: tampilan di HP asli (keyboard Android/iOS, format jam 24 jam, notch/safe-area), gestur tutup keyboard.
+
+### Mode coba — tanpa daftar, untuk portofolio (12 Nov 2026, di luar rencana tahap)
+
+Permintaan user: aplikasi dipajang di portofolio (`aaappss-source.github.io/Adhitya-Arya-Putra`) dan bisa langsung dicoba pengunjung tanpa membuat akun di spreadsheet. **Hanya `index.html` yang berubah; `Code.gs` tidak berubah (tidak perlu deploy server).**
+
+- Cara masuk: alamat **`…/pengelola-tugas/?coba`** (link di portofolio) atau tombol **"Coba dulu tanpa daftar"** (`#auth-try`, `data-act="demo"`) di layar masuk. Tombol disembunyikan kalau sudah ada akun aktif.
+- `pt-lib`: `DEMO_TOKEN` (`'mode-coba'`, ada `-` jadi tidak bisa sama dengan username), `demoSeed(hariIni, now)` = 12 contoh tugas dengan tanggal relatif hari ini (kemarin–minggu depan, ada yang selesai, ada yang lewat deadline, ada yang tanpa jam), `demoServer(seed)` = "server" di memori yang menjawab `apiLoad`/`apiSync`/`apiProfile` dengan bentuk yang sama seperti `Code.gs` (memakai `mergeServer`/`toDoc` yang sama); fungsi lain (mis. ubah PIN) dijawab "tidak tersedia di mode coba".
+- Script utama: akun mode coba = `{id:'coba', token: DEMO_TOKEN, demo:true}`. `api()` mengalihkan panggilan bertoken `DEMO_TOKEN` ke `demoServer` (tidak pernah `fetch`). `saveAccounts`/`saveLocal`/`loadLocalFor` **tidak menulis/membaca localStorage** untuk akun mode coba, dan `pt.current` tidak diubah → akun asli di HP yang sama tetap seperti semula. Data contoh hilang saat muat ulang (muat ulang dengan `?coba` = data contoh baru).
+- Status sinkron di mode coba: titik hijau "Mode coba: berisi contoh tugas dan tidak disimpan ke server". Pop-up awal punya tombol **Daftar**.
+- Keluar mode coba (`sign-out`, tanpa konfirmasi) atau pindah ke akun asli → `?coba` dibuang dari alamat (`dropDemoParam`; dibuang ulang setelah `history.back()` penjaga sheet) supaya muat ulang kembali ke aplikasi biasa.
+- Tes: `client.test.js` + 1 tes (data contoh valid & kategori bawaan, deadline/centang masuk akal, server palsu: token, salinan, upsert/hapus/centang, profil, ubah PIN ditolak); `e2e.test.js` + skenario "mode coba" (`?coba` saat HP punya akun asli → 12 tugas, **0 panggilan Apps Script**, spreadsheet kosong, localStorage akun asli tidak berubah & tanpa kunci `coba`, ubah PIN ditolak, keluar → akun asli + `?coba` hilang + muat ulang tetap akun asli, tombol di layar masuk).
+
+Hasil: `npm run verify` lolos (typecheck 28 = baseline, **35 tes**). Tangkapan layar mode coba (390×844) dipakai untuk kartu di portofolio.
+

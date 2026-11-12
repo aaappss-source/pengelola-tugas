@@ -396,6 +396,7 @@ details.tbl th{color:var(--muted);font-weight:500}
 .inp.pin{letter-spacing:6px;font-size:20px}
 .auth-note{color:var(--text2);font-size:13px;line-height:1.55;margin:16px 2px 0}
 .auth-saved{margin-top:24px}
+.auth-try{display:block;width:100%;margin-top:18px;padding:13px;border-radius:14px;border:1px solid var(--line);color:var(--text);font-size:15.5px;font-weight:600}
 .acc-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left}
 .acc-row .grow{flex:1;min-width:0}
 .acc-row b{display:block;font-weight:500;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -676,6 +677,7 @@ details.tbl th{color:var(--muted);font-weight:500}
       <button type="submit" class="btn-primary" id="a-submit">Masuk</button>
     </form>
     <p class="auth-note" id="auth-note"></p>
+    <button type="button" class="auth-try" id="auth-try" data-act="demo">Coba dulu tanpa daftar</button>
     <div class="auth-saved" id="auth-saved"></div>
   </div>
 </div>
@@ -860,11 +862,64 @@ function suggestNames(list,q,limit){
     .slice(0,limit>0?limit:5).map(x=>x.name);
 }
 
+/* ---- Mode coba (dibuka dari portofolio): tanpa daftar, tanpa server, tanpa localStorage ---- */
+/** Token sesi mode coba. Ada tanda '-', jadi tidak mungkin sama dengan username (argumen pertama apiLogin/apiRegister). */
+const DEMO_TOKEN='mode-coba';
+const ymdAdd=(ymd,n)=>{const p=String(ymd).split('-').map(Number);return new Date(Date.UTC(p[0],p[1]-1,p[2]+n)).toISOString().slice(0,10);};
+/** Data contoh mode coba. Tanggal relatif ke `todayYmd` (YYYY-MM-DD) supaya selalu ada tugas kemarin, hari ini, dan
+ *  minggu ini. `now` (ms) dipakai untuk createdAt/updatedAt/doneAt. */
+function demoSeed(todayYmd,now){
+  // [geser hari, kategori, nama, detail, mulai, selesai, deadline (geser hari | null), jam deadline, selesai?, kesulitan]
+  const rows=[
+    [-3,'tkuliah','Rangkum materi Manajemen Keuangan','Bab 4 dan 5, cukup satu halaman.','19:00','21:00',null,'',true,'sedang'],
+    [-2,'belanja','Belanja bulanan','Beras, minyak, sabun, kopi.','10:00','11:00',null,'',true,'mudah'],
+    [-1,'tkerja','Rekap stok mingguan','','13:00','15:00',-1,'17:00',true,'sedang'],
+    [-1,'tagihan','Bayar tagihan internet','','','',-1,'23:59',false,'mudah'],
+    [0,'tkerja','Kirim laporan pembelian','Lampirkan file Excel rekap minggu ini.','09:00','10:00',0,'12:00',true,'sedang'],
+    [0,'olahraga','Lari sore','','16:30','17:15',null,'',false,''],
+    [0,'kuliah','Kuliah Sistem Informasi','Ruang 3.2','18:00','20:30',null,'',false,''],
+    [1,'ujian','Kuis Statistika','Materi distribusi normal.','08:00','09:30',1,'08:00',false,'sulit'],
+    [2,'proyek','Desain halaman toko online','Revisi warna dan foto produk.','13:00','16:00',4,'17:00',false,'sedang'],
+    [3,'meeting','Rapat organisasi','','19:30','21:00',null,'',false,''],
+    [5,'tkuliah','Tugas kelompok Digital Entrepreneurship','Bagian analisis pasar.','','',6,'23:59',false,'sedang'],
+    [7,'rumah','Bersih-bersih kamar','','08:00','09:00',null,'',false,'mudah']
+  ];
+  // tugas selesai dicentang pada jam selesainya (paling lambat sekarang) supaya tidak tampil "selesai terlambat"
+  const localMs=(ymd,hm)=>{const d=ymd.split('-').map(Number),t=(hm||'12:00').split(':').map(Number);return new Date(d[0],d[1]-1,d[2],t[0],t[1]).getTime();};
+  const tasks=rows.map((r,i)=>{const date=ymdAdd(todayYmd,r[0]),done=r[8];
+    const doneAt=done?Math.min(localMs(date,r[5]||r[4]),now):null,at=Math.min(now-(rows.length-i)*3600000,done?doneAt:Infinity);
+    return {id:'coba'+(i+1),cat:r[1],name:r[2],detail:r[3],date:date,start:r[4],end:r[5],
+      dlDate:r[6]==null?'':ymdAdd(todayYmd,r[6]),dlTime:r[6]==null?'':r[7],done:done,doneAt:doneAt,createdAt:at,updatedAt:done?doneAt:at,
+      kind:'tugas',diff:r[9],parent:'',by:'p1',doneBy:done?'p1':''};});
+  return {user:{id:'coba',username:'coba',name:'Tamu'},tasks:tasks,cats:[],profiles:[{id:'p1',name:'Tamu',avatar:''}]};
+}
+/** "Server" mode coba: data hanya di memori, jawabannya berbentuk sama dengan Code.gs (apiLoad/apiSync/apiProfile).
+ *  Tidak pernah memakai jaringan. Mengembalikan fungsi (fn, args) → jawaban. */
+function demoServer(seed,isBuiltinCat){
+  const copy=x=>Object.assign({},x);
+  let db={tasks:seed.tasks.map(copy),cats:seed.cats.map(copy),profiles:seed.profiles.map(copy)};
+  const user=copy(seed.user);
+  const out=()=>({ok:true,user:copy(user)});
+  const bundle=()=>Object.assign(out(),{tasks:db.tasks.map(copy),cats:db.cats.map(copy),profiles:db.profiles.map(copy),schema:SCHEMA});
+  return function(fn,args){
+    args=Array.isArray(args)?args:[];
+    if(args[0]!==DEMO_TOKEN)return {ok:false,error:'auth',message:'Sesi mode coba berakhir.'};
+    if(fn==='apiLoad')return bundle();
+    if(fn==='apiSync'){
+      const m=mergeServer(db,Array.isArray(args[1])?args[1]:[],{cats:db.cats,profiles:db.profiles},isBuiltinCat);
+      db={tasks:Object.keys(m.tasks).map(k=>toDoc(m.tasks[k])),cats:m.cats,profiles:m.profiles};
+      return bundle();
+    }
+    if(fn==='apiProfile'){user.name=cleanName(args[1],40)||user.username;return out();}
+    return {ok:false,message:'Fitur ini tidak tersedia di mode coba. Daftar akun untuk memakainya.'};
+  };
+}
+
 return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CATS,isId:isId,isProf:isProf,isCustomCat:isCustomCat,
   normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
   migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile,
   DIFFS:DIFFS,DEF_DUR:DEF_DUR,toMin:toMin,fromMin:fromMin,durMin:durMin,endAfter:endAfter,crossesMidnight:crossesMidnight,fmtDur:fmtDur,
-  suggestNames:suggestNames};
+  suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer};
 })();
 </script>
 <script>
@@ -989,17 +1044,20 @@ const toDoc=L.toDoc;
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
-function saveAccounts(){lsSet('pt.accounts',accounts);lsSet('pt.current',me?me.id:null);}
-function saveLocal(){if(me)lsSet('pt.cache.'+me.id,{v:L.CACHE_V,tasks:tasks,ops:ops,cats:cats,profiles:profiles});}
+// akun mode coba (me.demo) tidak pernah ditulis ke localStorage: akun & data asli di HP ini tetap seperti semula
+function saveAccounts(){lsSet('pt.accounts',accounts.filter(a=>!a.demo));if(!(me&&me.demo))lsSet('pt.current',me?me.id:null);}
+function saveLocal(){if(me&&!me.demo)lsSet('pt.cache.'+me.id,{v:L.CACHE_V,tasks:tasks,ops:ops,cats:cats,profiles:profiles});}
 // cache lama (versi 1, sebelum Tahap 1) dimigrasi di sini; antrean yang belum terkirim tetap ikut
 function loadLocalFor(acc){
-  const c=L.migrateCache(lsGet('pt.cache.'+acc.id,{}),isBuiltinCat);
+  const c=L.migrateCache(acc.demo?{}:lsGet('pt.cache.'+acc.id,{}),isBuiltinCat);
   tasks=c.tasks;ops=c.ops;cats=c.cats;profiles=c.profiles;
 }
 // profil yang dipakai di HP ini untuk akun aktif (pemilih profil dibuat di Tahap 9)
 function curProfile(){return me?L.pickProfile(profiles,lsGet('pt.prof.'+me.id,null)):undefined;}
 function api(fn){
   const args=[].slice.call(arguments,1);
+  // mode coba: dijawab "server" di memori (PT_LIB.demoServer), tidak pernah ke Apps Script
+  if(args[0]===L.DEMO_TOKEN)return demoCall?Promise.resolve(demoCall(fn,args)):Promise.reject(new Error('offline'));
   if(!HAS_GAS)return Promise.reject(new Error('offline'));
   const ctl=typeof AbortController!=='undefined'?new AbortController():null;
   const t=setTimeout(()=>{if(ctl)ctl.abort();},30000);
@@ -1066,6 +1124,7 @@ function apiErr(res){
   setNet('error',(res&&res.message)||'Gagal menyimpan.');
 }
 function setNet(st,msg){net.status=st;net.msg=msg||'';renderSync();if(state.view==='saya')renderMe();}
+const DEMO_MSG='Mode coba: berisi contoh tugas dan tidak disimpan ke server';
 const OLD_SERVER_MSG='Server belum diperbarui: terapkan Code.gs terbaru (Versi baru) supaya data baru ikut tersimpan';
 const STATUS={
   idle:['',''],
@@ -1077,6 +1136,7 @@ const STATUS={
 };
 // [kelas titik status, teks status]
 function syncState(){
+  if(me&&me.demo)return ['ok',DEMO_MSG];
   const st=STATUS[net.status]||STATUS.idle;
   if(net.status==='error'&&net.msg)return [st[0],net.msg];
   if(net.oldServer&&net.status==='saved')return ['bad',OLD_SERVER_MSG];
@@ -1097,6 +1157,7 @@ function initAccounts(){
   me=accounts.find(a=>a.id===cur)||null;
 }
 function useAccount(acc,fresh){
+  if(!acc.demo)dropDemoParam();
   me=acc;saveAccounts();loadLocalFor(acc);
   state.homeMonth=mkey(today());state.homeFilter='semua';state.calMonth=mkey(today());state.calSel=today();state.statMonth=mkey(today());
   while(layers.length)hideLayer(layers[layers.length-1]);
@@ -1115,6 +1176,7 @@ function addAccount(res){
   if(ops.length)scheduleFlush(200);
 }
 function signOut(id,expired){
+  if(me&&me.demo&&me.id===id)dropDemoParam();
   accounts=accounts.filter(a=>a.id!==id);lsDel('pt.cache.'+id);lsDel('pt.prof.'+id);
   if(me&&me.id===id){me=null;tasks={};ops=[];cats=[];profiles=[];clearTimeout(net.timer);net.status='idle';net.oldServer=false;}
   saveAccounts();
@@ -1123,6 +1185,24 @@ function signOut(id,expired){
     if(accounts.length)useAccount(accounts[0]);
     else{goView('tugas');showAuth('masuk',expired?'Sesi berakhir. Silakan masuk lagi.':'');}
   }else render();
+}
+/* ---- mode coba: tanpa daftar, data contoh di memori, tidak menyentuh server maupun localStorage ---- */
+const DEMO_RE=/[?&]coba(?:[=&]|$)/;   // alamat …/?coba membuka mode coba langsung (dipakai di portofolio)
+let demoCall=null;
+function startDemo(){
+  const seed=L.demoSeed(today(),Date.now());
+  demoCall=L.demoServer(seed,isBuiltinCat);
+  useAccount({id:'coba',username:seed.user.username,name:seed.user.name,token:L.DEMO_TOKEN,demo:true});
+  toast('Mode coba: berisi contoh tugas dan tidak disimpan.',['Daftar',()=>showAuth('daftar')]);
+}
+// keluar dari mode coba → buang ?coba dari alamat supaya muat ulang tidak membuka mode coba lagi.
+// Kalau ada sheet yang terbuka, entri "penjaga" riwayat ditutup dengan history.back() dan alamat lama (?coba) kembali,
+// jadi dibuang sekali lagi setelah popstate itu.
+function dropDemoParam(){
+  if(!DEMO_RE.test(location.search))return;
+  const clean=()=>{if(DEMO_RE.test(location.search))try{history.replaceState(history.state,'',location.pathname+location.hash);}catch(e){}};
+  clean();
+  window.addEventListener('popstate',function once(){window.removeEventListener('popstate',once);clean();});
 }
 function renderAccounts(){
   const others=accounts.filter(a=>!me||a.id!==me.id);
@@ -1144,6 +1224,7 @@ function showAuth(tab,msg){
   ['a-pin','a-pin2'].forEach(i=>$('#'+i).value='');
   setAuthTab(tab||'masuk');
   const saved=accounts.filter(a=>!me||a.id!==me.id);
+  $('#auth-try').classList.toggle('hidden',!!me);
   $('#auth-saved').innerHTML=saved.length?'<div class="menu-h" style="margin:0 2px 6px">Akun di HP ini</div>'+saved.map(a=>accRow(a,false)).join(''):'';
   if(msg){const e=$('#a-err');e.textContent=msg;e.classList.remove('hidden');}
   if(me){if(!isOpen('auth'))showLayer('auth');}
@@ -1837,7 +1918,10 @@ function handle(a,el,e){
     case 'add-account':hideLayer('accounts');showAuth('masuk');break;
     case 'auth-tab':setAuthTab(el.dataset.t);break;
     case 'auth-cancel':hideAuth();break;
-    case 'sign-out':{if(!me)break;const n=ops.length,u=me.username,id=me.id;
+    case 'demo':startDemo();break;
+    case 'sign-out':{if(!me)break;
+      if(me.demo){signOut(me.id);toast('Mode coba ditutup');break;}
+      const n=ops.length,u=me.username,id=me.id;
       confirmBox('Keluar dari @'+u+'?',(n?n+' perubahan belum terkirim ke server dan akan hilang. ':'')+'Kamu bisa masuk lagi kapan saja dengan username dan PIN.','Keluar',()=>{signOut(id);toast('Keluar dari @'+u);});break;}
     case 'sync-now':if(ops.length)flush();load();toast('Memuat ulang…');break;
     case 'edit-name':openPanel('Ubah nama tampilan','<label class="fld"><span>Nama tampilan</span><input class="inp" id="nm-in" maxlength="40" value="'+esc(me.name||'')+'"></label><div class="err hidden" id="nm-err"></div><button class="btn-primary" data-act="name-save">Simpan</button>');break;
@@ -1914,7 +1998,8 @@ $('#auth-form').addEventListener('submit',submitAuth);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me){if(ops.length)flush();if(Date.now()-net.lastLoad>30000)load();}});
 window.addEventListener('online',()=>{if(me&&ops.length)flush();});
 initAccounts();
-if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(()=>scrollToDate(today(),false));load();}
+if(DEMO_RE.test(location.search))startDemo();
+else if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(()=>scrollToDate(today(),false));load();}
 else{render();showAuth(accounts.length?'masuk':'daftar');}
 })();
 </script>

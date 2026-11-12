@@ -413,3 +413,76 @@ test('E2E Tahap 2: item ringkas, pop-up ×, label, kesulitan, tanpa jam, saran n
     await close();
   }
 });
+
+test('E2E mode coba: tanpa daftar, data contoh, tidak menyentuh server maupun akun asli di HP', { skip: !pw && 'Playwright tidak terpasang', timeout: 120000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const realLs = { 'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id };
+  const { p, base, st, errs, close, wait } = await open(S, { localStorage: realLs });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const ls = () => p.evaluate(() => Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])));
+  const authOpen = () => p.evaluate(() => document.getElementById('auth').classList.contains('open'));
+  const sheetRows = () => (S.sheet('@adit') ? S.sheet('@adit').objects().length : 0);
+  try {
+    // 1. alamat ?coba langsung membuka mode coba, walau HP ini punya akun asli
+    await p.goto(base + '?coba'); await wait(1200);
+    assert.equal(await authOpen(), false, 'tanpa layar masuk');
+    assert.equal(await p.locator('#home-list .task').count(), 12, '12 contoh tugas (7–17 Nov)');
+    assert.equal(await p.getAttribute('#sync-dot', 'title'), 'Mode coba: berisi contoh tugas dan tidak disimpan ke server');
+    assert.equal((await p.textContent('#hdr-av')).trim(), 'T');
+    assert.equal(await p.isVisible('#toast-btn'), true, 'pop-up mode coba punya tombol Daftar');
+    await shot('coba-01-beranda');
+
+    // 2. centang + tambah tugas berjalan normal, tanpa satu pun panggilan ke Apps Script
+    await p.tap('#home-list .task[data-id="coba6"] .check'); await wait(1200);
+    assert.equal(await p.evaluate(() => document.querySelector('#home-list .task[data-id="coba6"]').classList.contains('done')), true);
+    await p.tap('.nav .fab'); await wait(300);
+    await p.tap('[data-act="pick-cat"][data-k="tkuliah"]'); await wait(450);
+    await p.fill('#f-name', 'Tugas dari pengunjung'); await p.tap('#f-save'); await wait(1200);
+    assert.equal(await p.locator('#home-list .task-name', { hasText: 'Tugas dari pengunjung' }).count(), 1);
+    assert.equal(st.calls, 0, 'mode coba tidak pernah memanggil Apps Script');
+    assert.equal(sheetRows(), 0, 'spreadsheet tidak tersentuh');
+
+    // 3. localStorage akun asli tidak berubah dan tidak ada data mode coba yang tersimpan
+    const after = await ls();
+    assert.equal(after['pt.accounts'], JSON.stringify(realLs['pt.accounts']));
+    assert.equal(after['pt.current'], JSON.stringify(reg.user.id));
+    assert.deepEqual(Object.keys(after).filter(k => /coba/.test(k)), [], 'tidak ada kunci mode coba di localStorage');
+
+    // 4. fitur akun yang butuh server ditolak dengan pesan jelas
+    await p.click('#nav [data-view="saya"]'); await wait(300);
+    await p.tap('#me-body [data-act="change-pin"]'); await wait(400);
+    await p.fill('#pin-old', '1234'); await p.fill('#pin-new', '5678'); await p.fill('#pin-new2', '5678');
+    await p.tap('[data-act="pin-save"]'); await wait(400);
+    assert.match(await p.textContent('#pin-err'), /mode coba/);
+    await p.keyboard.press('Escape'); await wait(300);
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+
+    // 5. keluar dari mode coba → kembali ke akun asli, ?coba hilang dari alamat
+    await p.tap('#hdr-av'); await wait(400);
+    await p.tap('#acct-body [data-act="sign-out"]'); await wait(1500);
+    assert.equal(new URL(p.url()).search, '', '?coba dibuang');
+    assert.equal((await p.textContent('#hdr-av')).trim(), 'A', 'akun asli aktif lagi');
+    assert.ok(st.calls > 0, 'akun asli memuat dari server seperti biasa');
+    assert.equal(await p.locator('#home-list .task').count(), 0, 'data contoh tidak bocor ke akun asli');
+    await p.reload(); await wait(1200);
+    assert.equal((await p.textContent('#hdr-av')).trim(), 'A', 'muat ulang tetap di akun asli');
+
+    // 6. pengunjung tanpa akun: tombol "Coba dulu tanpa daftar" di layar masuk
+    await p.tap('#hdr-av'); await wait(400);
+    await p.tap('#acct-body [data-act="sign-out"]'); await wait(400);
+    await p.tap('#cf-yes'); await wait(800);
+    assert.equal(await authOpen(), true);
+    assert.equal(await p.isVisible('#auth-try'), true);
+    await shot('coba-02-layar-masuk');
+    const calls = st.calls;
+    await p.tap('#auth-try'); await wait(1200);
+    assert.equal(await authOpen(), false);
+    assert.equal(await p.locator('#home-list .task').count(), 12);
+    assert.equal(st.calls, calls, 'tetap tanpa panggilan server');
+
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally {
+    await close();
+  }
+});
