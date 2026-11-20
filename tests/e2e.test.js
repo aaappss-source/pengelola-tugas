@@ -1372,3 +1372,234 @@ test('E2E Tahap 6: Mode Edit kalender, tekan lama + tarik tugas ke tanggal lain 
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });
+
+test('E2E Tahap 7: tampilan Time Blocking di menu Tugas (Poin 16)', { skip: !pw && 'Playwright tidak terpasang', timeout: 240000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, date, start, end, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date, start, end, dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '',
+    createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  S.post('apiSync', reg.token, [
+    T('kerja', 'Jam kerja kantor', '2026-11-10', '08:00', '17:00', { cat: 'jamkerja' }),        // seperti data nyata: rentang jam panjang
+    T('rapat', 'Rapat operasional', '2026-11-10', '09:00', '10:30', { cat: 'meeting' }),
+    T('lap', 'Kirim laporan', '2026-11-10', '09:30', '10:00', { cat: 'tkerja', dlDate: '2026-11-10', dlTime: '09:00' }),   // lewat deadline
+    T('mkn', 'Makan siang', '2026-11-10', '12:00', '12:45', { cat: 'makan', done: true, doneAt: 1762740000000, doneBy: 'p1' }),
+    T('m1', 'Makalah DE', '2026-11-09', '13:00', '15:00', { dlDate: '2026-11-11', dlTime: '23:59' }),    // multi-hari 9–11 Nov
+    T('pendek', 'Telepon ibu', '2026-11-10', '07:00', '07:10', { cat: 'keluarga' }),
+    T('malam', 'Shift malam', '2026-11-10', '22:00', '02:00', { cat: 'istirahat' }),                    // lewat tengah malam
+    T('kmrn', 'Begadang', '2026-11-09', '23:00', '01:30', { cat: 'hiburan' }),                          // lanjutan di pagi 10 Nov
+    T('nt', 'Bayar internet', '2026-11-10', '', '', { cat: 'tagihan' }),
+    T('nt2', 'Beli sabun', '2026-11-10', '', '', { cat: 'belanja', done: true, doneAt: 1762740000000, doneBy: 'p1' }),
+    T('sd', 'Tugas lama', '2026-11-10', '', '17:00'),                                                   // hanya jam selesai → "Tanpa jam"
+    T('bsk', 'Kuis', '2026-11-11', '08:00', '09:00', { cat: 'ujian' })
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const row = id => S.sheet('@adit').objects().find(o => o.ID === id);
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();
+  const isOpen = sel => p.evaluate(s => document.querySelector(s).classList.contains('open'), sel);
+  const hidden = sel => p.evaluate(s => { const e = document.querySelector(s); return !e || e.classList.contains('hidden') || !e.offsetParent; }, sel);
+  const ls = () => p.evaluate(() => localStorage.getItem('pt.homeView'));
+  // semua blok hari yang tampil: posisi relatif ke garis 00:00 (menit = px)
+  const blocks = () => p.evaluate(() => {
+    const g = document.getElementById('tb-grid').getBoundingClientRect(), o = {};
+    document.querySelectorAll('#tb-body .tb-b').forEach(b => {
+      const r = b.getBoundingClientRect(), k = b.dataset.id + (b.classList.contains('prev') ? '<' : '');
+      o[k] = { top: Math.round(r.top - g.top - 10 - 1), h: Math.round(r.height), l: r.left, r: r.right, cls: b.className.replace('tb-b', '').trim(), text: b.querySelector('.tb-m').textContent,
+        chk: !!b.querySelector('.check'), od: !!b.querySelector('.tb-od') };
+    });
+    return o;
+  });
+  const strip = () => p.evaluate(() => [...document.querySelectorAll('#tb-bar .tb-day')].map(b => b.dataset.d.slice(8) + (b.classList.contains('sel') ? '*' : '') + (b.classList.contains('today') ? 't' : '') + (b.querySelector('i') ? '•' : '')));
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ---- bawaan: To Do List seperti dulu; tombol tampilan di kepala halaman (tidak memakan baris daftar) ----
+    assert.equal(await p.getAttribute('#home-view', 'data-v'), 'tb');
+    assert.equal(await p.getAttribute('#home-view', 'aria-label'), 'Ganti ke tampilan Time Blocking');
+    assert.equal(await hidden('#tb'), true);
+    assert.ok(await p.locator('#home-list .task').count() > 5);
+    assert.equal(await p.evaluate(() => document.getElementById('home-view').closest('#home-top') !== null), true, 'menempel di kepala halaman');
+    assert.equal(await ls(), null);
+
+    // ---- ganti ke Time Blocking ----
+    await p.click('#home-view'); await wait(400);
+    assert.equal(await hidden('#tb'), false);
+    assert.deepEqual([await hidden('#home-list'), await hidden('#home-chips'), await p.locator('#home-list .task').count()], [true, true, 0]);
+    assert.equal(await txt('#toast-msg'), 'Tampilan: Time Blocking');
+    assert.equal(await ls(), '"tb"', 'pilihan disimpan di HP');
+    assert.deepEqual([await p.getAttribute('#home-view', 'data-v'), await p.getAttribute('#home-view', 'aria-label')], ['list', 'Ganti ke tampilan To Do List']);
+    await shot('t7-01-tb');
+
+    // strip 7 hari Senin–Minggu: hari ini terpilih, titik = ada tugas
+    assert.deepEqual(await strip(), ['09•', '10*t•', '11•', '12', '13', '14', '15']);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#tb-bar .tb-day small')].map(x => x.textContent)), ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']);
+    assert.equal(await p.getAttribute('#tb-bar .tb-day.sel', 'aria-current'), 'date');
+    assert.equal(await txt('#tb-bar .tb-st'), 'Hari ini, 10 Nov · 10 tugas, 2 selesai');
+
+    // tanpa jam: area terpisah di atas garis waktu (termasuk tugas lama yang hanya punya jam selesai)
+    assert.equal(await txt('#tb-nt .subhead'), 'Tanpa jam');
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#tb-nt .task')].map(r => r.dataset.id)), ['nt', 'nt2', 'sd']);
+    assert.match(await txt('#tb-nt .task[data-id="sd"] .task-meta'), /s\/d 17:00/);
+    assert.equal(await p.evaluate(() => document.getElementById('tb-nt').getBoundingClientRect().bottom <= document.getElementById('tb-grid').getBoundingClientRect().top + 1), true, 'di atas garis waktu');
+    assert.equal(await txt('#tb-bar .tb-up'), '3 tanpa jam');
+
+    // garis waktu 00:00–24:00, 1 jam = 60px
+    assert.equal(await p.locator('#tb-grid .tb-hr:not(.half)').count(), 25);
+    assert.deepEqual(await p.evaluate(() => { const s = [...document.querySelectorAll('#tb-grid .tb-hr:not(.half) span')]; return [s[0].textContent, s[7].textContent, s[23].textContent]; }), ['00:00', '07:00', '23:00']);
+
+    // blok: di jam mulai, tinggi = durasi (minimal 20 mnt, celah 2px)
+    let b = await blocks();
+    assert.deepEqual(Object.keys(b).sort(), ['kerja', 'kmrn<', 'lap', 'm1', 'malam', 'mkn', 'pendek', 'rapat']);
+    const pos = k => [b[k].top, b[k].h];
+    assert.deepEqual([pos('kerja'), pos('rapat'), pos('lap'), pos('mkn'), pos('m1'), pos('pendek'), pos('malam'), pos('kmrn<')],
+      [[480, 538], [540, 88], [570, 28], [720, 43], [780, 118], [420, 18], [1320, 118], [0, 88]]);
+    assert.match(b.m1.text, /^Hari 2\/3\s*13:00–15:00$/, 'tugas multi-hari: tanda Hari 2/3');
+    assert.equal(b.malam.text, '22:00 s/d 02:00 besok');
+    assert.match(b.malam.cls, /\bcont\b/);
+    assert.equal(b['kmrn<'].text, 'Lanjutan, s/d 01:30', 'lanjutan tugas kemarin yang lewat tengah malam');
+    assert.match(b.mkn.cls, /\bdone\b/);
+    assert.deepEqual([b.lap.od, b.rapat.od], [true, false], 'tanda lewat deadline');
+    assert.match(b.lap.cls, /\bxs\b/, 'blok pendek: satu baris');
+    // tombol centang hanya di blok ≥ 45 menit (jawaban user)
+    assert.deepEqual(['kerja', 'rapat', 'lap', 'mkn', 'm1', 'pendek', 'malam', 'kmrn<'].map(k => b[k].chk), [true, true, false, true, true, false, true, true]);
+    // yang bertabrakan berdampingan, tidak ada yang bertumpuk
+    const keys = Object.keys(b);
+    for (const x of keys) for (const y of keys) {
+      if (x >= y) continue;
+      const A = b[x], B = b[y];
+      if (A.top < B.top + B.h && B.top < A.top + A.h) assert.ok(A.r <= B.l + 0.5 || B.r <= A.l + 0.5, 'bertumpuk: ' + x + ' & ' + y);
+    }
+    assert.ok(b.rapat.l > b.kerja.r - 0.5 && b.lap.l > b.rapat.r - 0.5, 'kerja | rapat | lap berdampingan');
+    const areaW = await p.evaluate(() => document.querySelector('#tb-grid .tb-area').getBoundingClientRect().width);
+    assert.ok(b.malam.r - b.malam.l > areaW - 4, 'tidak bertabrakan = lebar penuh');
+    assert.ok(Math.abs((b.mkn.r - b.mkn.l) - areaW * 2 / 3) < 4, 'makan siang melebar ke kolom kosong');
+
+    // garis "sekarang" + gulir awal ke ±1 jam sebelum sekarang, di bawah strip yang menempel
+    assert.equal(await txt('#tb-grid .tb-now span'), '09:15');
+    const geo = await p.evaluate(() => {
+      const bar = document.getElementById('tb-bar').getBoundingClientRect(), hdr = document.getElementById('home-top').getBoundingClientRect(), g = document.getElementById('tb-grid').getBoundingClientRect();
+      return { barTop: bar.top, barBottom: bar.bottom, hdrBottom: hdr.bottom, at: bar.bottom - g.top - 10, now: document.querySelector('.tb-now').getBoundingClientRect().top, nav: document.querySelector('.nav').getBoundingClientRect().top };
+    });
+    assert.ok(Math.abs(geo.barTop - geo.hdrBottom) < 1, 'strip menempel tepat di bawah kepala halaman');
+    assert.ok(geo.at > 480 && geo.at < 520, 'jam teratas yang terlihat ≈ 08:15: ' + geo.at);
+    assert.ok(geo.now > geo.barBottom && geo.now < geo.nav, 'garis sekarang terlihat');
+    // tombol "↑ 3 tanpa jam" menggulir ke area Tanpa jam
+    await p.click('#tb-bar .tb-up'); await wait(700);
+    assert.equal(await p.evaluate(() => { const r = document.getElementById('tb-nt').getBoundingClientRect(); return r.top >= document.getElementById('tb-bar').getBoundingClientRect().bottom - 1 && r.top < innerHeight; }), true);
+    // menggulir: strip tetap menempel
+    await p.evaluate(() => document.getElementById('sc').scrollBy(0, 900)); await wait(200);
+    assert.equal(await p.evaluate(() => Math.abs(document.getElementById('tb-bar').getBoundingClientRect().top - document.getElementById('home-top').getBoundingClientRect().bottom) < 1), true);
+
+    // ---- centang dari blok + urungkan (setelah sinkron selesai) ----
+    await p.locator('#tb-body .tb-b[data-id="rapat"] .check').click(); await wait(1500);
+    assert.equal(row('rapat')['Status'], 'Selesai');
+    assert.match((await blocks()).rapat.cls, /\bdone\b/);
+    assert.equal(await txt('#toast-btn'), 'Urungkan');
+    await p.click('#toast-btn'); await wait(1500);
+    assert.equal(row('rapat')['Status'], 'Belum');
+    assert.doesNotMatch((await blocks()).rapat.cls, /\bdone\b/);
+    // tap blok (bukan tombol centang) = detail; blok pendek tanpa tombol centang juga
+    await p.locator('#tb-body .tb-b[data-id="pendek"]').click(); await wait(400);
+    assert.equal(await isOpen('#detail-wrap'), true);
+    assert.match(await p.evaluate(() => document.getElementById('detail').textContent), /Telepon ibu/);
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(350);
+    assert.equal(await isOpen('#detail-wrap'), false);
+    // multi-hari (K3): dicentang di 10 Nov → di 11 Nov ikut tercentang, tetap satu baris di server
+    await p.locator('#tb-body .tb-b[data-id="m1"] .check').click(); await wait(1300);
+    await p.click('#tb-bar [data-d="2026-11-11"]'); await wait(400);
+    assert.deepEqual(await strip(), ['09•', '10t•', '11*•', '12', '13', '14', '15']);
+    assert.equal(await txt('#tb-bar .tb-st'), 'Besok, 11 Nov · 2 tugas, 1 selesai');
+    b = await blocks();
+    assert.deepEqual(Object.keys(b).sort(), ['bsk', 'm1', 'malam<']);
+    assert.deepEqual([b.m1.top, b.m1.h, b.m1.text], [780, 118, 'Hari 3/313:00–15:00'], 'jam sama setiap hari (tanda + jam dipisah jarak CSS)');
+    assert.match(b.m1.cls, /\bdone\b/);
+    assert.deepEqual([b['malam<'].top, b['malam<'].h, b['malam<'].text], [0, 118, 'Lanjutan, s/d 02:00']);
+    assert.equal(S.sheet('@adit').objects().filter(o => o.ID === 'm1').length, 1);
+    assert.equal(row('m1')['Status'], 'Selesai');
+    assert.equal(await p.locator('#tb-nt').count(), 0);
+    assert.ok((await p.evaluate(() => document.getElementById('tb-bar').getBoundingClientRect().bottom - document.getElementById('tb-grid').getBoundingClientRect().top - 10)) < 480, 'hari lain: gulir ke ±30 mnt sebelum blok pertama (lanjutan 00:00)');
+    await shot('t7-02-besok');
+
+    // ---- ‹ › pindah hari (minggu ikut berganti), hari kosong, ganti bulan ----
+    await p.click('#tb-bar [data-n="-1"]'); await wait(250);
+    await p.click('#tb-bar [data-n="-1"]'); await wait(250);
+    await p.click('#tb-bar [data-n="-1"]'); await wait(300);
+    assert.deepEqual(await strip(), ['02', '03', '04', '05', '06', '07', '08*'], 'Minggu 8 Nov: minggu sebelumnya');
+    assert.equal(await txt('#tb-bar .tb-st'), 'Min, 8 Nov · tidak ada tugas');
+    assert.equal(await txt('#tb-body .tb-empty'), 'Belum ada tugas di tanggal ini. Tekan + untuk menambah.');
+    assert.equal(await p.locator('#tb-body .tb-b').count(), 0);
+    assert.equal(await p.locator('#tb-grid .tb-now').count(), 0, 'garis sekarang hanya di hari ini');
+    await p.click('#tb-bar [data-n="1"]'); await wait(300);
+    assert.equal((await strip())[0], '09*•');
+    await p.tap('[data-act="month-picker"]'); await wait(300);
+    await p.tap('#month-body [data-m="2026-12"]'); await wait(400);
+    assert.deepEqual(await strip(), ['30', '01*', '02', '03', '04', '05', '06']);
+    assert.deepEqual([await txt('#h-month'), await txt('#tb-bar .tb-st')], ['Des', 'Sel, 1 Des · tidak ada tugas']);
+    await p.click('#tb-bar [data-n="-1"]'); await wait(300);
+    assert.deepEqual([await txt('#h-month'), (await strip())[0]], ['Nov', '30*'], 'bulan di kepala halaman ikut hari yang tampil');
+
+    // ---- tombol + di Time Blocking: tanggal = hari yang tampil; setelah simpan bloknya disorot ----
+    await p.click('#tb-bar [data-n="-1"]'); await wait(200);
+    for (let i = 0; i < 17; i++) { await p.click('#tb-bar [data-n="-1"]'); await wait(60); }
+    assert.equal(await txt('#tb-bar .tb-st'), 'Kam, 12 Nov · tidak ada tugas');
+    await p.click('.nav .fab'); await wait(300);
+    await p.click('[data-act="pick-cat"][data-k="tkuliah"]'); await wait(400);
+    assert.equal(await p.inputValue('#f-date'), '2026-11-12');
+    await p.fill('#f-name', 'Blok baru');
+    await p.fill('#f-start', '14:00'); await p.dispatchEvent('#f-start', 'change'); await wait(100);
+    await p.click('#f-save'); await wait(250);   // sebelum sinkron (500 ms) membuat ulang daftar
+    assert.equal(await hidden('#tb'), false, 'kembali ke Time Blocking');
+    b = await blocks();
+    assert.deepEqual(Object.keys(b), [Object.keys(b).find(k => b[k].text === '14:00–15:00')]);
+    assert.deepEqual([b[Object.keys(b)[0]].top, b[Object.keys(b)[0]].h], [840, 58]);
+    assert.equal(await p.locator('#tb-body .tb-b.flash').count(), 1, 'blok baru disorot');
+    await wait(1200);
+    assert.equal(S.sheet('@adit').objects().find(o => o['Nama tugas'] === 'Blok baru')['Tanggal'], '2026-11-12');
+
+    // ---- pilihan diingat saat aplikasi dibuka lagi (hari = hari ini) ----
+    await p.reload(); await wait(1500);
+    assert.deepEqual([await hidden('#tb'), await p.getAttribute('#home-view', 'data-v'), (await strip())[1]], [false, 'list', '10*t•']);
+    assert.ok(await p.evaluate(() => { const n = document.querySelector('.tb-now').getBoundingClientRect().top; return n > document.getElementById('tb-bar').getBoundingClientRect().bottom && n < innerHeight - 70; }), 'dibuka di sekitar jam sekarang');
+    // pindah menu lalu kembali: tetap Time Blocking
+    await p.click('#nav [data-view="kalender"]'); await wait(250);
+    await p.click('#nav [data-view="tugas"]'); await wait(350);
+    assert.equal(await hidden('#tb'), false);
+
+    // ---- layar 360px: tanpa geser samping, judul tidak tertabrak tombol ----
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 0)); await wait(150);
+    assert.equal(await p.evaluate(() => document.getElementById('sc').scrollWidth <= innerWidth), true, 'tanpa geser samping');
+    assert.equal(await p.evaluate(() => { const h = document.querySelector('#home-top h1').getBoundingClientRect(), t = document.querySelector('#home-top h1 .sync-dot').getBoundingClientRect();
+      return t.right <= document.getElementById('home-view').getBoundingClientRect().left && h.left >= document.querySelector('#home-top .avatar-btn').getBoundingClientRect().right - 1; }), true);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#tb-bar .tb-day')].map(x => Math.round(x.getBoundingClientRect().width)).filter(w => w < 40)), [], 'strip: tiap hari mudah di-tap (≥ 40px)');
+    await shot('t7-03-360');
+    await p.setViewportSize({ width: 390, height: 844 }); await wait(200);
+
+    // ---- pop-up Urungkan yang masih tampil tidak ditimpa pesan "Tampilan: …" ----
+    await p.evaluate(() => document.querySelector('#tb-body .tb-b[data-id="kerja"] .check').click()); await wait(300);
+    await p.click('#home-view'); await wait(400);
+    assert.deepEqual([await hidden('#tb'), await p.isVisible('#toast-btn'), await txt('#toast-btn')], [true, true, 'Urungkan']);
+    await p.click('#toast-btn'); await wait(1500);
+    assert.equal(row('kerja')['Status'], 'Belum');
+    await p.click('#home-view'); await wait(300);
+    assert.equal(await txt('#toast-msg'), 'Tampilan: Time Blocking');
+
+    // ---- kembali ke To Do List ----
+    await p.click('#home-view'); await wait(400);
+    assert.deepEqual([await hidden('#tb'), await hidden('#home-list'), await ls(), await txt('#toast-msg')], [true, false, '"list"', 'Tampilan: To Do List']);
+    assert.equal(await p.locator('#tb-body .tb-b').count(), 0);
+    assert.ok(await p.locator('#home-list .task').count() > 5);
+    await p.reload(); await wait(1500);
+    assert.equal(await hidden('#tb'), true, 'To Do List diingat');
+
+    // ---- mode coba: bisa dipakai, pilihan tidak ditulis ke HP ----
+    const before = await p.evaluate(() => JSON.stringify(Object.keys(localStorage).sort().map(k => [k, localStorage.getItem(k)])));
+    await p.goto(base + '?coba'); await wait(1200);
+    await p.click('#home-view'); await wait(400);
+    assert.equal(await hidden('#tb'), false);
+    assert.ok(await p.locator('#tb-body .tb-b').count() >= 2, 'contoh tugas hari ini tampil sebagai blok');
+    assert.equal(await p.evaluate(() => JSON.stringify(Object.keys(localStorage).sort().map(k => [k, localStorage.getItem(k)]))), before);
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});

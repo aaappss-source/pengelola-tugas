@@ -711,3 +711,122 @@ test('drag → server (Code.gs): tetap satu baris, tanggal + hari + deadline iku
   res = S.post('apiSync', tok, [{ op: 'upsert', task: back }]);
   assert.deepEqual(['Tanggal', 'Hari', 'Deadline (tanggal)', 'Nama tugas'].map(k => row('m')[k]), ['Tanggal', 'Hari', 'Deadline (tanggal)', 'Nama tugas'].map(k => before[k]));
 });
+
+// ---------------- Tahap 7 (Poin 16): Time Blocking ----------------
+// isi satu hari: blok = {t, start, end, cont, prev} (menit sejak 00:00), tanpa jam = untimed
+const TB = (list, d) => { const r = L.tbItems(list, d); return plain({ untimed: r.untimed.map(t => t.id), blocks: r.blocks.map(b => [b.t.id, b.start, b.end, b.cont, b.prev]).sort() }); };
+const LB = (id, start, end, extra) => ({ t: Object.assign({ id, createdAt: 1 }, extra || {}), start, end });
+const lay = (blocks, min) => plain(L.tbLayout(blocks, min)).map(b => [b.t.id, b.col, b.cols, b.span]);
+
+test('Time Blocking: blok di jam mulai selama durasinya, tanpa jam di area terpisah', () => {
+  const d = '2026-11-20';
+  const list = [
+    MT('a', d, '', { start: '09:00', end: '10:30' }),
+    MT('b', d, '', { start: '13:15', end: '' }),            // jam selesai kosong → durasi bawaan 1 jam
+    MT('tj', d, '', { start: '', end: '' }),                // tanpa jam
+    MT('sd', d, '', { start: '', end: '17:00' }),           // tugas lama: hanya jam selesai → tetap "Tanpa jam" (PROGRESS §4 5a)
+    MT('nol', d, '', { start: '07:00', end: '07:00' }),     // jam mulai = jam selesai → durasi 0 (tinggi minimal diatur tbLayout)
+    MT('lain', '2026-11-21', '', { start: '09:00', end: '10:00' })
+  ];
+  assert.deepEqual(TB(list, d), { untimed: ['tj', 'sd'], blocks: [['a', 540, 630, false, false], ['b', 795, 855, false, false], ['nol', 420, 420, false, false]] });
+  assert.equal(L.DAY_MIN, 1440);
+  assert.deepEqual(TB(list, '2026-11-22'), { untimed: [], blocks: [] });
+  assert.deepEqual(TB(list, 'bukan-tanggal'), { untimed: [], blocks: [] });
+  assert.deepEqual(TB(null, d), { untimed: [], blocks: [] });
+});
+
+test('Time Blocking (K3): tugas multi-hari tampil di setiap hari rentangnya di jam yang sama', () => {
+  const m = MT('m', '2026-11-19', '2026-11-21', { start: '13:00', end: '15:00' });
+  const n = MT('n', '2026-11-20', '2026-11-22', { start: '', end: '' });
+  for (const d of ['2026-11-19', '2026-11-20', '2026-11-21']) assert.deepEqual(TB([m], d).blocks, [['m', 780, 900, false, false]], d);
+  for (const d of ['2026-11-18', '2026-11-22']) assert.deepEqual(TB([m], d).blocks, [], d + ' di luar rentang');
+  assert.deepEqual(['2026-11-19', '2026-11-20', '2026-11-22', '2026-11-23'].map(d => TB([n], d).untimed.join()), ['', 'n', 'n', '']);
+  // tetap objek yang sama (centang dari hari mana pun = tugas yang sama)
+  assert.equal(L.tbItems([m], '2026-11-20').blocks[0].t, m);
+});
+
+test('Time Blocking: lewat tengah malam → dipotong di 24:00, lanjutannya tampil di pagi hari berikutnya', () => {
+  const malam = MT('malam', '2026-11-20', '', { start: '22:00', end: '02:00' });
+  assert.deepEqual(TB([malam], '2026-11-20').blocks, [['malam', 1320, 1440, true, false]]);
+  assert.deepEqual(TB([malam], '2026-11-21').blocks, [['malam', 0, 120, false, true]], 'lanjutan 00:00–02:00');
+  assert.deepEqual(TB([malam], '2026-11-22').blocks, []);
+  // selesai tepat 00:00 = tidak berlanjut
+  assert.deepEqual(TB([MT('pas', '2026-11-20', '', { start: '23:00', end: '00:00' })], '2026-11-20').blocks, [['pas', 1380, 1440, false, false]]);
+  assert.deepEqual(TB([MT('pas', '2026-11-20', '', { start: '23:00', end: '00:00' })], '2026-11-21').blocks, []);
+  // durasi terpanjang (23 jam 59 mnt): lanjutan tidak menabrak blok hari itu sendiri
+  const pj = MT('pj', '2026-11-20', '2026-11-21', { start: '10:00', end: '09:59' });
+  assert.deepEqual(TB([pj], '2026-11-21').blocks, [['pj', 0, 599, false, true], ['pj', 600, 1440, true, false]]);
+  // multi-hari + lewat tengah malam: lanjutan muncul juga sehari setelah hari terakhir rentangnya
+  const shift = MT('shift', '2026-11-20', '2026-11-21', { start: '22:00', end: '06:00' });
+  assert.deepEqual(['2026-11-20', '2026-11-21', '2026-11-22', '2026-11-23'].map(d => TB([shift], d).blocks.map(b => b.slice(1).join('-')).join(' ')),
+    ['1320-1440-true-false', '0-360-false-true 1320-1440-true-false', '0-360-false-true', '']);
+  // pergantian bulan & tahun
+  assert.deepEqual(TB([MT('ty', '2026-12-31', '', { start: '23:30', end: '00:30' })], '2027-01-01').blocks, [['ty', 0, 30, false, true]]);
+});
+
+test('Time Blocking: susunan blok — yang bertabrakan berdampingan, tidak bertumpuk', () => {
+  // tidak bertabrakan / bersambung (selesai 10:00, berikutnya mulai 10:00) → lebar penuh
+  assert.deepEqual(lay([LB('a', 540, 600), LB('b', 600, 660), LB('c', 700, 720)], 20), [['a', 0, 1, 1], ['b', 0, 1, 1], ['c', 0, 1, 1]]);
+  // dua bertabrakan → dua kolom; yang lebih panjang di kiri
+  assert.deepEqual(lay([LB('pendek', 540, 570), LB('panjang', 540, 660)], 20), [['panjang', 0, 2, 1], ['pendek', 1, 2, 1]]);
+  // rantai: A 9–11, B 10–12, C 11:30–13 → satu kelompok 2 kolom, C memakai kolom A yang sudah kosong
+  assert.deepEqual(lay([LB('C', 690, 780), LB('A', 540, 660), LB('B', 600, 720)], 20), [['A', 0, 2, 1], ['B', 1, 2, 1], ['C', 0, 2, 1]]);
+  // setelah kelompok selesai, kelompok baru mulai lagi dari lebar penuh
+  assert.deepEqual(lay([LB('A', 540, 660), LB('B', 600, 720), LB('D', 720, 780)], 20).map(x => x.join()), ['A,0,2,1', 'B,1,2,1', 'D,0,1,1']);
+  // tugas panjang (01:00–23:00, seperti data nyata) + tugas lain di jamnya → berdampingan, tidak tertutup
+  assert.deepEqual(lay([LB('kerja', 60, 1380), LB('rapat', 600, 660), LB('makan', 720, 780)], 20), [['kerja', 0, 2, 1], ['rapat', 1, 2, 1], ['makan', 1, 2, 1]]);
+  // melebar: D (10–11) di kolom 1 boleh memakai kolom 2 yang kosong di jam itu
+  assert.deepEqual(lay([LB('A', 540, 660), LB('B', 540, 600, { createdAt: 1 }), LB('C', 540, 600, { createdAt: 2 }), LB('D', 600, 660)], 20),
+    [['A', 0, 3, 1], ['B', 1, 3, 1], ['C', 2, 3, 1], ['D', 1, 3, 2]]);
+  // tinggi tampil minimal: 09:00–09:05 lalu 09:05–10:00 → bertabrakan secara tampilan (min 20 mnt), tidak kalau min 0
+  assert.deepEqual(lay([LB('x', 540, 545), LB('y', 545, 600)], 20), [['x', 0, 2, 1], ['y', 1, 2, 1]]);
+  assert.deepEqual(lay([LB('x', 540, 545), LB('y', 545, 600)], 0), [['x', 0, 1, 1], ['y', 0, 1, 1]]);
+  assert.deepEqual(lay([LB('nol', 420, 420), LB('z', 425, 480)], 20), [['nol', 0, 2, 1], ['z', 1, 2, 1]], 'durasi 0');
+  // urutan stabil untuk jam yang sama: dibuat lebih dulu, lalu id
+  assert.deepEqual(lay([LB('q', 540, 600, { createdAt: 5 }), LB('p', 540, 600, { createdAt: 5 }), LB('o', 540, 600, { createdAt: 1 })], 20).map(x => x[0]), ['o', 'p', 'q']);
+  // masukan tidak diubah; masukan rusak diabaikan
+  const inp = [LB('a', 540, 600)];
+  L.tbLayout(inp, 20);
+  assert.deepEqual(Object.keys(inp[0]).sort(), ['end', 'start', 't']);
+  assert.deepEqual(plain(L.tbLayout(null, 20)), []);
+  assert.deepEqual(lay([null, { t: { id: 'r' }, start: NaN, end: 5 }, LB('ok', 0, 60)], 20), [['ok', 0, 1, 1]]);
+});
+
+test('Time Blocking: susunan acak — blok yang beririsan TIDAK PERNAH menempati kolom yang sama', () => {
+  let seed = 7;
+  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  for (let round = 0; round < 300; round++) {
+    const n = 1 + rnd(12), blocks = [];
+    for (let i = 0; i < n; i++) { const s = rnd(1440), e = Math.min(1440, s + rnd(300)); blocks.push(LB('b' + i, s, e, { createdAt: rnd(3) })); }
+    const out = plain(L.tbLayout(blocks, 20));
+    assert.equal(out.length, n);
+    for (const b of out) {
+      assert.ok(b.col >= 0 && b.span >= 1 && b.col + b.span <= b.cols, JSON.stringify(b));
+      assert.equal(b.vEnd, Math.max(b.end, b.start + 20));
+    }
+    for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
+      const a = out[i], b = out[j];
+      if (!(a.start < b.vEnd && b.start < a.vEnd)) continue;
+      assert.equal(a.cols, b.cols, 'satu kelompok = jumlah kolom sama');
+      const apart = a.col + a.span <= b.col || b.col + b.span <= a.col;
+      assert.ok(apart, 'bertumpuk: ' + JSON.stringify([a, b]));
+    }
+    // urut jam mulai
+    for (let i = 1; i < out.length; i++) assert.ok(out[i - 1].start <= out[i].start);
+  }
+});
+
+test('Time Blocking: strip 7 hari (Senin–Minggu) dan posisi gulir awal', () => {
+  const wk = ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'];
+  for (const d of wk) assert.deepEqual(plain(L.weekDays(d)), wk, d);   // 20 Nov 2026 = Jumat
+  assert.deepEqual(plain(L.weekDays('2027-01-01')), ['2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02', '2027-01-03']);
+  assert.deepEqual(plain(L.weekDays('2028-03-01')).slice(0, 3), ['2028-02-28', '2028-02-29', '2028-03-01'], 'kabisat');
+  assert.deepEqual(plain(L.weekDays('1969-12-31')), ['1969-12-29', '1969-12-30', '1969-12-31', '1970-01-01', '1970-01-02', '1970-01-03', '1970-01-04']);
+  assert.deepEqual(plain(L.weekDays('x')), []);
+  // gulir awal: hari ini → 1 jam sebelum sekarang; hari lain → 30 mnt sebelum blok pertama; kosong → 07:00
+  assert.equal(L.tbScrollMin([LB('a', 600, 660)], 17 * 60 + 13), 16 * 60 + 13);
+  assert.equal(L.tbScrollMin([], 20), 0);
+  assert.equal(L.tbScrollMin([LB('a', 600, 660), LB('b', 480, 500)], null), 450);
+  assert.equal(L.tbScrollMin([LB('lanjut', 0, 120)], null), 0);
+  assert.equal(L.tbScrollMin([], null), 420);
+});

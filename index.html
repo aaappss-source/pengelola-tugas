@@ -376,6 +376,73 @@ html.dragging .cday.drop{outline:none}
 .cal-legend span{display:inline-flex;gap:5px;align-items:center}
 .cal-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
 
+/* ---------- Time Blocking (Tahap 7, Poin 16) ---------- */
+/* tombol pilihan tampilan di kepala menu Tugas (ikon tampilan tujuan; jawaban user: tidak memakan baris daftar) */
+.hv-btn svg{width:25px;height:25px}
+/* strip 7 hari (Senin–Minggu) + ‹ ›, menempel di bawah kepala halaman */
+.tb-bar{position:sticky;top:var(--hdr);z-index:15;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 4px 0}
+.tb-week{display:flex;align-items:center}
+.tb-nav{flex:none;width:38px;height:52px;display:grid;place-items:center;border-radius:12px;color:var(--text2)}
+.tb-nav svg{width:22px;height:22px}
+.tb-nav:active{background:#2a2a2a}
+.tb-days{flex:1;min-width:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.tb-day{position:relative;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--text2)}
+.tb-day small{font-size:11.5px;color:var(--muted);line-height:1.2}
+.tb-day b{font-size:17px;font-weight:500;line-height:1.2;color:var(--text)}
+.tb-day i{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.tb-day i.all{background:var(--good)}
+.tb-day.today b{color:var(--accent)}
+.tb-day.sel{background:var(--accent)}
+.tb-day.sel small,.tb-day.sel b{color:var(--accent-ink)}
+.tb-day.sel i{background:var(--accent-ink)}
+.tb-day:not(.sel):active{background:#2a2a2a}
+.tb-sum{display:flex;align-items:center;gap:8px;min-height:36px;padding:2px 12px 4px;font-size:13px;color:var(--text2)}
+.tb-st{flex:1;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-st b{color:var(--text);font-weight:500}
+.tb-up{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 4px;color:var(--accent);font-weight:500;font-size:13px;white-space:nowrap}
+.tb-up svg{width:14px;height:14px}
+.tb-empty{padding:12px 16px 2px;font-size:13px;color:var(--muted)}
+.tb-nt{margin-bottom:4px}
+/* garis waktu 00:00–24:00: 1 menit = 1px (TB_PX), area blok di kanan kolom jam */
+.tb-grid{position:relative;margin:0 0 6px}
+.tb-hr{position:absolute;left:0;right:0;height:0;border-top:1px solid #2c2c2c}
+.tb-hr.half{border-top:1px dashed #252525}
+.tb-hr span{position:absolute;left:8px;top:-8px;font-size:11.5px;line-height:16px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--bg);padding-right:4px}
+.tb-area{position:absolute;top:0;bottom:0;left:52px;right:8px}
+.tb-b{--h:200;position:absolute;display:flex;align-items:flex-start;gap:2px;overflow:hidden;border-radius:8px;padding:3px 2px 3px 8px;background:hsl(var(--h) 28% 21%);border-left:3px solid hsl(var(--h) 62% 66%);cursor:pointer;box-shadow:0 0 0 1px var(--bg)}
+.tb-b:active{filter:brightness(1.15)}
+.tb-bt{flex:1;min-width:0}
+.tb-n{font-size:13.5px;line-height:16px;font-weight:500;color:var(--text);word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--ln,1)}
+.tb-m{font-size:12px;line-height:15px;color:hsl(var(--h) 30% 78%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.tb-m .span-tag{margin-right:4px;font-size:11px;line-height:14px;padding:0 4px;vertical-align:0}
+.tb-m .tb-od{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--danger);margin-right:5px;vertical-align:1px}
+/* blok pendek (< 34px): nama + jam dalam satu baris */
+.tb-b.xs{align-items:center;padding-top:0;padding-bottom:0}
+.tb-b.xs .tb-bt{display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden}
+.tb-b.xs .tb-n{flex:0 1 auto;display:block;white-space:nowrap;text-overflow:ellipsis;font-size:12.5px}
+.tb-b.xs .tb-m{flex:1 1 auto;min-width:0}
+/* lewat tengah malam: tepi yang terpotong putus-putus */
+.tb-b.cont{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px dashed hsl(var(--h) 62% 66%)}
+.tb-b.prev{border-top-left-radius:0;border-top-right-radius:0;border-top:2px dashed hsl(var(--h) 62% 66%)}
+.tb-b.done{background:hsl(var(--h) 10% 18%);border-left-color:hsl(var(--h) 25% 45%)}
+.tb-b.done .tb-n{text-decoration:line-through;color:var(--muted)}
+.tb-b.done .tb-m{color:var(--muted)}
+.tb-b.flash{animation:tbflash 1.6s}
+@keyframes tbflash{0%,35%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 1px var(--bg)}}
+/* tombol centang di blok ≥ 45 menit (jawaban user Tahap 7) */
+.check.tb-chk{width:26px;height:26px;margin:2px 4px 0 2px;border-color:hsl(var(--h) 20% 62%)}
+.check.tb-chk::before{inset:-7px}
+.check.tb-chk svg{width:14px;height:14px}
+.tb-b.done .check.tb-chk{background:var(--accent);border-color:var(--accent)}
+.tb-b.done .check.tb-chk svg{opacity:1;transform:none}
+/* garis "sekarang" (hanya di hari ini) */
+.tb-now{position:absolute;left:46px;right:0;height:0;border-top:2px solid var(--danger);z-index:3;pointer-events:none}
+.tb-now::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--danger)}
+.tb-now span{position:absolute;left:-46px;top:-9px;width:40px;text-align:right;font-size:11.5px;line-height:16px;font-weight:700;color:var(--danger);background:var(--bg);font-variant-numeric:tabular-nums}
+/* layar sempit: judul + 4 tombol di kepala halaman muat; strip 7 hari selebar mungkin */
+@media (max-width:400px){.titlebar .icon-btn{width:40px}.titlebar h1{font-size:19px;gap:6px}}
+@media (max-width:380px){.tb-bar{padding:10px 2px 0}.tb-nav{width:34px}.tb-days{gap:0}}
+
 /* ---------- stats ---------- */
 .st-top{background:var(--bg2);position:sticky;top:0;z-index:5}
 .st-bar{display:flex;align-items:center;padding:10px 8px 0 4px;gap:4px}
@@ -621,6 +688,8 @@ button.crow{width:100%;text-align:left}
       <div class="titlebar">
         <button class="avatar-btn" data-act="accounts" aria-label="Akun"><span class="av" id="hdr-av">?</span></button>
         <h1>Pengelola Tugas <i class="sync-dot" id="sync-dot" title="Status penyimpanan"></i></h1>
+        <!-- Tahap 7 (Poin 16): pilihan tampilan To Do List / Time Blocking (ikon = tampilan tujuan), diingat di HP -->
+        <button class="icon-btn hv-btn" id="home-view" data-act="home-view" data-v="tb" aria-label="Ganti ke tampilan Time Blocking" title="Ganti ke tampilan Time Blocking"></button>
         <button class="icon-btn" data-act="search" aria-label="Cari tugas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></svg></button>
         <button class="icon-btn" data-act="nav" data-view="kalender" aria-label="Buka kalender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h.01M12 13.5h.01M16.5 13.5h.01M7.5 17h.01M12 17h.01M16.5 17h.01" stroke-width="2.6"/></svg></button>
       </div>
@@ -634,6 +703,10 @@ button.crow{width:100%;text-align:left}
     <div class="banner" id="banner"></div>
     <div class="chips" id="home-chips"></div>
     <div id="home-list"></div>
+    <div id="tb" class="hidden">
+      <div class="tb-bar" id="tb-bar"></div>
+      <div id="tb-body"></div>
+    </div>
   </section>
 
   <!-- ================= KALENDER ================= -->
@@ -1140,6 +1213,75 @@ function shiftDates(t,from,to){
   return {date:ymdAdd(s,n),dlDate:dl?ymdAdd(dl,n):'',days:n};
 }
 
+/* ---- Time Blocking (Tahap 7, Poin 16) ----
+   Satu hari = garis waktu 00:00–24:00 (menit 0…1440). Tugas berjam tampil sebagai blok dari jam mulainya selama durasinya
+   (durMin: jam selesai − jam mulai, bawaan 1 jam). Tugas tanpa jam (start kosong, termasuk tugas lama yang hanya punya jam
+   selesai, PROGRESS §4 5a) masuk area "Tanpa jam". Tugas multi-hari tampil di setiap hari rentangnya di jam yang sama (K3,
+   lewat tasksOn). Lewat tengah malam (jawaban user Tahap 7): blok dipotong di 24:00 dan lanjutannya 00:00–jam selesai
+   tampil di hari berikutnya sebagai tugas yang sama. */
+const DAY_MIN=1440;
+/** Isi Time Blocking tanggal d → {untimed: [tugas…] (urut seperti tasksOn), blocks: [{t, start, end, cont, prev}]}.
+ *  start/end = menit sejak 00:00 hari itu; cont = berlanjut ke besok (dipotong di 24:00); prev = lanjutan dari kemarin. */
+function tbItems(list,d){
+  const out={untimed:[],blocks:[]};if(!okD(d))return out;
+  tasksOn(list,d).forEach(t=>{
+    const s=toMin(t.start);
+    if(s==null){out.untimed.push(t);return;}
+    const e=s+durMin(t.start,t.end);
+    out.blocks.push({t:t,start:s,end:Math.min(e,DAY_MIN),cont:e>DAY_MIN,prev:false});
+  });
+  tasksOn(list,ymdAdd(d,-1)).forEach(t=>{
+    const s=toMin(t.start);if(s==null)return;
+    const e=s+durMin(t.start,t.end);
+    if(e>DAY_MIN)out.blocks.push({t:t,start:0,end:e-DAY_MIN,cont:false,prev:true});
+  });
+  return out;
+}
+/** Susunan blok supaya yang bertabrakan tampil berdampingan, tidak bertumpuk (Poin 16).
+ *  Tabrakan dihitung dengan tinggi tampil minimal `minLen` menit (blok 0–10 menit tetap terbaca dan tidak tertimpa blok
+ *  sesudahnya). Blok yang saling beririsan (langsung atau berantai) jadi satu kelompok; di dalamnya tiap blok mendapat
+ *  kolom pertama yang sudah kosong. → salinan blok (urut jam mulai, yang lebih panjang dulu) + {col, cols, span, vEnd}:
+ *  kiri = col/cols, lebar = span/cols lebar area. span > 1 = blok melebar ke kolom kanan yang kosong selama jamnya. */
+function tbLayout(blocks,minLen){
+  const m=Math.max(0,+minLen||0);
+  const key=b=>(b.t&&b.t.createdAt)||0,idOf=b=>String((b.t&&b.t.id)||'');
+  const list=(Array.isArray(blocks)?blocks:[]).filter(b=>b&&isFinite(b.start)&&isFinite(b.end))
+    .map(b=>Object.assign({},b,{vEnd:Math.max(b.end,b.start+m)}))
+    .sort((a,b)=>a.start-b.start||b.vEnd-a.vEnd||key(a)-key(b)||(idOf(a)<idOf(b)?-1:idOf(a)>idOf(b)?1:0));
+  const out=[];let group=[],cols=[],gEnd=-Infinity;
+  const hit=(a,b)=>a.start<b.vEnd&&b.start<a.vEnd;
+  const close=()=>{
+    group.forEach(b=>{
+      let span=1;
+      for(let c=b.col+1;c<cols.length&&!cols[c].some(o=>hit(o,b));c++)span++;
+      b.cols=cols.length;b.span=span;
+    });
+    group=[];cols=[];gEnd=-Infinity;
+  };
+  list.forEach(b=>{
+    if(group.length&&b.start>=gEnd)close();
+    let c=cols.findIndex(col=>col[col.length-1].vEnd<=b.start);
+    if(c<0){c=cols.length;cols.push([]);}
+    cols[c].push(b);b.col=c;group.push(b);out.push(b);
+    gEnd=Math.max(gEnd,b.vEnd);
+  });
+  close();
+  return out;
+}
+/** 7 tanggal Senin–Minggu dari minggu yang memuat tanggal d (strip hari Time Blocking). [] kalau d tidak valid. */
+function weekDays(d){
+  const s=okD(d);if(!s)return [];
+  const wd=((dayNum(s)+3)%7+7)%7;   // 1 Jan 1970 = Kamis → Senin = 0
+  return Array.from({length:7},(_,i)=>ymdAdd(s,i-wd));
+}
+/** Menit yang dituju saat garis waktu dibuka: hari ini (nowMin diisi) → 1 jam sebelum sekarang; hari lain → 30 menit
+ *  sebelum blok pertama; tanpa blok → 07:00. */
+function tbScrollMin(blocks,nowMin){
+  if(nowMin!=null&&isFinite(nowMin))return Math.max(0,Math.floor(nowMin)-60);
+  const first=(Array.isArray(blocks)?blocks:[]).reduce((m,b)=>b&&isFinite(b.start)?Math.min(m,b.start):m,Infinity);
+  return first===Infinity?420:Math.max(0,first-30);
+}
+
 /* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
    Satu "draft" = isi satu form: {cat, name, detail, diff, date, multi, dates, noTime, start, end, dlOn, dlDate, dlTime, dlOff}.
    multi = "Beberapa tanggal" aktif → satu tugas berdiri sendiri per tanggal di `dates` (bukan tugas multi-hari).
@@ -1287,6 +1429,7 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   byTime:byTime,newestFirst:newestFirst,
   spanEnd:spanEnd,isMulti:isMulti,spanDays:spanDays,onDay:onDay,dayOf:dayOf,spanTag:spanTag,byClock:byClock,tasksOn:tasksOn,
   monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,shiftDates:shiftDates,
+  DAY_MIN:DAY_MIN,tbItems:tbItems,tbLayout:tbLayout,weekDays:weekDays,tbScrollMin:tbScrollMin,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
   dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
 })();
@@ -1546,11 +1689,11 @@ function initAccounts(){
 function useAccount(acc,fresh){
   if(!acc.demo)dropDemoParam();
   me=acc;saveAccounts();loadLocalFor(acc);
-  state.homeMonth=mkey(today());state.homeFilter='semua';state.calMonth=mkey(today());state.calSel=today();state.statMonth=mkey(today());
+  state.homeMonth=mkey(today());state.homeFilter='semua';state.tbDay=today();state.calMonth=mkey(today());state.calSel=today();state.statMonth=mkey(today());
   while(layers.length)hideLayer(layers[layers.length-1]);
   hideAuth();
   goView('tugas');render();
-  requestAnimationFrame(()=>scrollToDate(today(),false));
+  requestAnimationFrame(homeScroll);
   if(!fresh)load();else{net.lastLoad=Date.now();setNet(ops.length?'saving':'saved');}
 }
 function addAccount(res){
@@ -1657,6 +1800,8 @@ async function submitAuth(e){
 const state={
   view:'tugas',
   homeMonth:mkey(today()),homeFilter:'semua',
+  // Tahap 7 (Poin 16): tampilan menu Tugas 'list' (To Do List) | 'tb' (Time Blocking), diingat di HP ini; tbDay = hari yang tampil
+  homeView:lsGet('pt.homeView','list')==='tb'?'tb':'list',tbDay:today(),
   calMonth:mkey(today()),calSel:today(),
   calEdit:false,  // Mode Edit kalender (Tahap 6): tekan lama + tarik tugas ke tanggal lain
   statMonth:mkey(today()),statFilter:'semua',statFocus:null,
@@ -1744,6 +1889,9 @@ function renderHome(){
     '<div class="bar" role="progressbar" aria-valuenow="'+p+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+p+'%"></i></div>'+
     '<div class="banner-today">'+ic('cal',2)+'<span>Hari ini: '+(td.length?(td.length+' tugas, '+(tdLeft?tdLeft+' belum selesai':'semua selesai 🎉')):'tidak ada tugas')+
     (over?' · <b style="color:var(--danger);font-weight:500">'+over+' lewat deadline</b>':'')+'</span></div>';
+  syncHomeView();
+  if(state.homeView==='tb'){$('#home-chips').innerHTML='';$('#home-list').innerHTML='';renderTB();return;}
+  $('#tb-bar').innerHTML='';$('#tb-body').innerHTML='';
   const cnt={semua:list.length,belum:list.length-done,selesai:done};
   $('#home-chips').innerHTML=[['semua','Semua'],['belum','Belum selesai'],['selesai','Selesai']].map(f=>
     '<button class="chip'+(state.homeFilter===f[0]?' on':'')+'" data-act="home-filter" data-f="'+f[0]+'">'+f[1]+'<span class="n">'+cnt[f[0]]+'</span></button>').join('');
@@ -1770,7 +1918,10 @@ function renderHome(){
   box.innerHTML=h;
 }
 function updateHdr(){const h=$('#home-top');if(h)document.documentElement.style.setProperty('--hdr',h.offsetHeight+'px');}
+// gulir awal menu Tugas: To Do List → tanggal hari ini (kalau bulan ini), Time Blocking → jam sekarang / blok pertama
+function homeScroll(){if(state.homeView==='tb')tbScroll(false);else if(state.homeMonth===mkey(today()))scrollToDate(today(),false);}
 function scrollToDate(d,smooth){
+  if(state.homeView==='tb')return;
   const list=Object.keys(tasks).length?Array.from(document.querySelectorAll('#home-list .dhead')):[];
   if(!list.length)return;
   let el=document.getElementById('g-'+d);
@@ -1779,6 +1930,97 @@ function scrollToDate(d,smooth){
   updateHdr();
   const top=el.getBoundingClientRect().top+SC.scrollTop-$('#home-top').offsetHeight-2;
   SC.scrollTo({top:Math.max(0,top),behavior:smooth?'smooth':'auto'});
+}
+
+/* ================= TIME BLOCKING (Tahap 7, Poin 16) =================
+   Pilihan tampilan di menu Tugas: To Do List (tampilan lama) | Time Blocking, diingat di HP (localStorage pt.homeView,
+   tidak ditulis di mode coba). Time Blocking = satu hari (state.tbDay): strip 7 hari Senin–Minggu + ‹ › (jawaban user)
+   yang menempel di bawah kepala halaman, area "Tanpa jam" (baris tugas biasa), lalu garis waktu 00:00–24:00. Isi & susunan
+   blok dihitung PT_LIB (tbItems/tbLayout, diuji di Node): tugas multi-hari tampil setiap hari di jam yang sama (K3), lewat
+   tengah malam dipotong di 24:00 + lanjutannya di pagi berikutnya, yang bertabrakan berdampingan. Blok ≥ 45 menit punya
+   tombol centang (jawaban user); tap blok = detail. Bulan di kepala halaman ikut bulan hari yang tampil. */
+const TB_PX=1,TB_TOP=10,TB_MIN=20,TB_CHK=45;   // 1 menit = 1px; jarak atas grid; tinggi tampil minimal (mnt); centang ≥ 45 mnt
+const DAYS_S=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const tbOn=()=>state.view==='tugas'&&state.homeView==='tb';
+const HV_NAME={list:'To Do List',tb:'Time Blocking'};
+const HV_IC={list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6.5 1.5 1.5 2.5-2.5M11 7h9M4 13.5 5.5 15 8 12.5M11 14h9M11 19.5h9"/></svg>',
+  tb:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4v16M3.5 6.5h1.2M3.5 12h1.2M3.5 17.5h1.2"/><rect x="8" y="4.5" width="12.5" height="6" rx="1.6"/><rect x="8" y="13" width="6" height="7" rx="1.6"/><rect x="16" y="13" width="4.5" height="4" rx="1.4"/></svg>'};
+function syncHomeView(){
+  const tb=state.homeView==='tb';
+  const b=$('#home-view'),to=tb?'list':'tb',lbl='Ganti ke tampilan '+HV_NAME[to];
+  if(b.getAttribute('data-v')!==to||!b.firstChild){b.setAttribute('data-v',to);b.setAttribute('aria-label',lbl);b.setAttribute('title',lbl);b.innerHTML=HV_IC[to];}
+  $('#home-chips').classList.toggle('hidden',tb);$('#home-list').classList.toggle('hidden',tb);$('#tb').classList.toggle('hidden',!tb);
+}
+function setHomeView(v){
+  v=v==='tb'?'tb':'list';if(state.homeView===v)return;
+  state.homeView=v;
+  if(!(me&&me.demo))lsSet('pt.homeView',v);   // mode coba tidak menulis apa pun ke HP
+  if(v==='tb'){if(mkey(state.tbDay)!==state.homeMonth)state.tbDay=state.homeMonth===mkey(today())?today():state.homeMonth+'-01';}
+  else state.homeMonth=mkey(state.tbDay);
+  renderHome();updateHdr();
+  if(v==='tb')tbScroll(false);
+  else{SC.scrollTo(0,0);scrollToDate(state.tbDay,false);}
+  if(!toastCb)toast('Tampilan: '+HV_NAME[v]);   // jangan menimpa pop-up Urungkan yang masih tampil
+}
+function setTbDay(d){
+  if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
+  state.tbDay=d;state.homeMonth=mkey(d);
+  renderHome();updateHdr();tbScroll(false);
+}
+// gulir ke jam yang dituju (L.tbScrollMin): hari ini → 1 jam sebelum sekarang, hari lain → sebelum blok pertama.
+// Hari tanpa blok tapi ada tugas tanpa jam → ke atas (area "Tanpa jam" terlihat).
+function tbScroll(smooth){
+  if(!tbOn())return;
+  const g=$('#tb-grid'),tb=$('#tb');if(!g||!tb)return;
+  updateHdr();
+  const d=state.tbDay,it=L.tbItems(all(),d),n=new Date();
+  const hdr=$('#home-top').offsetHeight,base=SC.scrollTop;
+  let y;
+  if(!it.blocks.length&&it.untimed.length)y=tb.getBoundingClientRect().top+base-hdr;
+  else y=g.getBoundingClientRect().top+base+TB_TOP+L.tbScrollMin(it.blocks,d===today()?n.getHours()*60+n.getMinutes():null)*TB_PX-hdr-$('#tb-bar').offsetHeight-6;
+  SC.scrollTo({top:Math.max(0,Math.round(y)),behavior:smooth?'smooth':'auto'});
+}
+function renderTB(){
+  const d=state.tbDay,td=today(),list=all(),dt=parseYmd(d);
+  const on=onDate(d),done=on.filter(t=>t.done).length,it=L.tbItems(list,d),rel=relDay(d);
+  const arrow=(n,lbl,path)=>'<button class="tb-nav" data-act="tb-step" data-n="'+n+'" aria-label="'+lbl+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg></button>';
+  const days=L.weekDays(d).map(x=>{
+    const l=onDate(x),n=l.length,xd=parseYmd(x),sel=x===d;
+    return '<button class="tb-day'+(sel?' sel':'')+(x===td?' today':'')+'" data-act="tb-day" data-d="'+x+'" aria-label="'+esc(fmtLong(x))+', '+n+' tugas"'+(sel?' aria-current="date"':'')+'>'+
+      '<small>'+DAYS_S[xd.getDay()]+'</small><b>'+xd.getDate()+'</b>'+(n?'<i'+(l.every(t=>t.done)?' class="all"':'')+'></i>':'')+'</button>';
+  }).join('');
+  $('#tb-bar').innerHTML='<div class="tb-week">'+arrow(-1,'Hari sebelumnya','m14.5 6-6 6 6 6')+'<div class="tb-days">'+days+'</div>'+arrow(1,'Hari berikutnya','m9.5 6 6 6-6 6')+'</div>'+
+    // "Hari ini, 10 Nov" / "Sel, 17 Nov" (+ tahun kalau bukan tahun ini) · jumlah tugas yang tampil di hari itu
+    '<div class="tb-sum"><p class="tb-st"><b'+(rel==='Hari ini'?' style="color:var(--accent)"':'')+'>'+(rel||DAYS_S[dt.getDay()])+', '+dt.getDate()+' '+MON_S[dt.getMonth()]+
+    (dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'')+'</b> · '+(on.length?on.length+' tugas, '+done+' selesai':'tidak ada tugas')+'</p>'+
+    (it.untimed.length?'<button class="tb-up" data-act="tb-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>'+it.untimed.length+' tanpa jam</button>':'')+'</div>';
+  let h='';
+  if(it.untimed.length)h+='<div class="ntbox tb-nt" id="tb-nt"><div class="subhead">Tanpa jam</div>'+it.untimed.map(t=>taskRow(t,d)).join('')+'</div>';
+  else if(!it.blocks.length)h+='<p class="tb-empty">Belum ada tugas di tanggal ini. Tekan + untuk menambah.</p>';
+  h+='<div class="tb-grid" id="tb-grid" style="height:'+(TB_TOP+L.DAY_MIN*TB_PX+14)+'px">';
+  for(let i=0;i<=24;i++){
+    h+='<div class="tb-hr" style="top:'+(TB_TOP+i*60*TB_PX)+'px"><span>'+pad(i)+':00</span></div>';
+    if(i<24)h+='<div class="tb-hr half" style="top:'+(TB_TOP+(i*60+30)*TB_PX)+'px;left:52px"></div>';
+  }
+  // perkiraan lebar area blok (px): blok yang terlalu sempit tidak diberi tombol centang (tetap bisa lewat detail)
+  const aw=Math.max(120,Math.min(innerWidth||360,480)-60);
+  h+='<div class="tb-area">'+L.tbLayout(it.blocks,TB_MIN).map(b=>tbBlock(b,d,aw)).join('')+'</div>';
+  if(d===td){const n=new Date(),m=n.getHours()*60+n.getMinutes();
+    h+='<div class="tb-now" style="top:'+(TB_TOP+m*TB_PX)+'px" aria-hidden="true"><span>'+pad(n.getHours())+':'+pad(n.getMinutes())+'</span></div>';}
+  $('#tb-body').innerHTML=h+'</div>';
+}
+function tbBlock(b,d,aw){
+  const t=b.t,c=catOf(t.cat),len=b.end-b.start,hpx=Math.max(len,TB_MIN)*TB_PX-2;
+  const xs=hpx<34,chk=len>=TB_CHK&&aw*b.span/b.cols>=104;
+  const end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
+  const time=b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
+  const dl=dlInfo(t),sp=b.prev?'':L.spanTag(t,d);
+  const meta=(dl&&dl.cls==='over'?'<i class="tb-od" title="Lewat deadline"></i>':'')+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+esc(time);
+  const ln=xs?1:Math.max(1,Math.floor((hpx-6-15)/16));
+  return '<div class="tb-b'+(t.done?' done':'')+(xs?' xs':'')+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc(t.name+' · '+time)+'"'+
+    ' style="--h:'+c.h+';--ln:'+ln+';top:'+(TB_TOP+b.start*TB_PX+1)+'px;height:'+hpx+'px;left:calc('+(b.col/b.cols*100).toFixed(3)+'% + 1px);width:calc('+(b.span/b.cols*100).toFixed(3)+'% - 2px)">'+
+    '<div class="tb-bt"><div class="tb-n">'+esc(t.name)+'</div><div class="tb-m">'+meta+'</div></div>'+
+    (chk?'<button class="check tb-chk" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button>':'')+'</div>';
 }
 
 /* ================= CALENDAR ================= */
@@ -2546,14 +2788,14 @@ function saveEdit(f){
 function goToDate(ret,date){
   if(ret==='kalender'){state.calMonth=mkey(date);state.calSel=date;}
   else if(ret==='grafik'){state.statMonth=mkey(date);}
-  else if(ret==='tugas'){state.homeMonth=mkey(date);if(state.homeFilter==='selesai')state.homeFilter='semua';}
+  else if(ret==='tugas'){state.homeMonth=mkey(date);state.tbDay=date;if(state.homeFilter==='selesai')state.homeFilter='semua';}
 }
 function flashRows(ids){
   requestAnimationFrame(()=>{
-    const rows=[];ids.forEach(id=>document.querySelectorAll('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"]').forEach(x=>rows.push(x)));
+    const rows=[];ids.forEach(id=>document.querySelectorAll('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"],.view:not(.hidden) .tb-b[data-id="'+CSS.escape(id)+'"]').forEach(x=>rows.push(x)));
     if(!rows.length)return;
-    updateHdr();const r=rows[0].getBoundingClientRect();
-    if(r.top<120||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});
+    updateHdr();const r=rows[0].getBoundingClientRect(),bar=tbOn()&&$('#tb-bar');
+    if(r.top<(bar?bar.getBoundingClientRect().bottom+8:120)||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});
     rows.forEach(x=>x.classList.add('flash'));
   });
 }
@@ -2780,7 +3022,7 @@ function goView(v){
   syncHist();
   render();
   if(changed)SC.scrollTo(0,0);
-  if(v==='tugas'&&changed&&state.homeMonth===mkey(today()))requestAnimationFrame(()=>scrollToDate(today(),false));
+  if(v==='tugas'&&changed)requestAnimationFrame(homeScroll);
 }
 function render(){
   renderSync();
@@ -2803,14 +3045,14 @@ document.addEventListener('click',e=>{
   if(chk){e.preventDefault();toggleDone(chk.dataset.check,chk);return;}
   const act=tg.closest('[data-act]');
   if(act){handle(act.dataset.act,act,e);return;}
-  const row=tg.closest('.task[data-id]');
-  if(row){openDetail(row.dataset.id);return;}
+  const row=tg.closest('.task[data-id],.tb-b[data-id]');   // baris tugas / blok Time Blocking (Tahap 7)
+  if(row){openDetail(row.getAttribute('data-id'));return;}
   if(!tg.closest('#curve')){const c=$('#curve');if(c&&c._hide)c._hide();}
 });
 function handle(a,el,e){
   switch(a){
     case 'nav':goView(el.dataset.view);break;
-    case 'add':openAdd({date:state.view==='kalender'?state.calSel:(state.homeMonth!==mkey(today())&&state.view==='tugas'?state.homeMonth+'-01':today()),returnTo:state.view});break;
+    case 'add':openAdd({date:state.view==='kalender'?state.calSel:tbOn()?state.tbDay:(state.homeMonth!==mkey(today())&&state.view==='tugas'?state.homeMonth+'-01':today()),returnTo:state.view});break;
     case 'add-on-date':openAdd({date:state.calSel,returnTo:'kalender'});break;
     case 'add-cancel':closeAddAsk();break;
     case 'back':goBack();break;
@@ -2849,9 +3091,16 @@ function handle(a,el,e){
     case 'search':$('#search-q').value='';renderSearch();showLayer('search');setTimeout(()=>$('#search-q').focus(),250);break;
     case 'close-search':hideLayer('search');break;
     case 'home-filter':state.homeFilter=el.dataset.f;renderHome();break;
+    // ---- Time Blocking (Tahap 7) ----
+    case 'home-view':setHomeView(el.dataset.v);break;
+    case 'tb-day':setTbDay(el.dataset.d);break;
+    case 'tb-step':setTbDay(addDays(state.tbDay,+el.dataset.n));break;
+    case 'tb-top':{const tb=$('#tb');updateHdr();SC.scrollTo({top:Math.max(0,tb.getBoundingClientRect().top+SC.scrollTop-$('#home-top').offsetHeight),behavior:'smooth'});break;}
     case 'month-picker':state.pickYear=+state.homeMonth.slice(0,4);renderMonthPicker();showLayer('month');break;
     case 'yr':state.pickYear+=+el.dataset.d;renderMonthPicker();break;
-    case 'pick-month':state.homeMonth=el.dataset.m;hideLayer('month');renderHome();SC.scrollTo(0,0);if(state.homeMonth===mkey(today()))requestAnimationFrame(()=>scrollToDate(today(),true));break;
+    case 'pick-month':state.homeMonth=el.dataset.m;hideLayer('month');
+      if(state.homeView==='tb'){setTbDay(state.homeMonth===mkey(today())?today():state.homeMonth+'-01');break;}
+      renderHome();SC.scrollTo(0,0);if(state.homeMonth===mkey(today()))requestAnimationFrame(()=>scrollToDate(today(),true));break;
     case 'close-month':hideLayer('month');break;
     case 'cal-prev':state.calMonth=mAdd(state.calMonth,-1);state.calSel=state.calMonth===mkey(today())?today():state.calMonth+'-01';renderCalendar();break;
     case 'cal-next':state.calMonth=mAdd(state.calMonth,1);state.calSel=state.calMonth===mkey(today())?today():state.calMonth+'-01';renderCalendar();break;
@@ -2971,7 +3220,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me){if(op
 window.addEventListener('online',()=>{if(me&&ops.length)flush();});
 initAccounts();
 if(DEMO_RE.test(location.search))startDemo();
-else if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(()=>scrollToDate(today(),false));load();}
+else if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(homeScroll);load();}
 else{render();showAuth(accounts.length?'masuk':'daftar');}
 })();
 </script>
