@@ -1120,3 +1120,255 @@ test('E2E Tahap 5: tugas multi-hari (Poin 15) tampil di setiap tanggal, tetap sa
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });
+
+test('E2E Tahap 6: Mode Edit kalender, tekan lama + tarik tugas ke tanggal lain (Poin 14)', { skip: !pw && 'Playwright tidak terpasang', timeout: 240000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, date, start, dlDate, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date, start, end: start ? String(+start.slice(0, 2) + 1).padStart(2, '0') + start.slice(2) : '',
+    dlDate: dlDate || '', dlTime: dlDate ? '17:00' : '', done: false, doneAt: null, doneBy: '', createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  const fill = Array.from({ length: 10 }, (_, i) => T('f' + (i + 1), 'Isi ' + (i + 1), '2026-11-20', String(8 + i).padStart(2, '0') + ':00'));
+  S.post('apiSync', reg.token, [
+    T('a', 'Rapat', '2026-11-10', '09:00', '2026-11-10', { cat: 'tkerja', dlTime: '12:00' }),   // deadline hari yang sama
+    T('m1', 'Makalah DE', '2026-11-09', '13:00', '2026-11-11'),                                   // 9–11 Nov, hari ini hari ke-2
+    T('n', 'Belanja', '2026-11-10', '', '', { cat: 'belanja', done: true, doneAt: 1762740000000, doneBy: 'p1' }),
+    T('z', 'Akhir bulan', '2026-11-30', '08:00', '')
+  ].concat(fill).map(t => ({ op: 'upsert', task: t })));
+  const { p, base, st, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const row = id => S.sheet('@adit').objects().find(o => o.ID === id);
+  const cols = (id, ks) => ks.map(k => row(id)[k]);
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();
+  const cdp = await p.context().newCDPSession(p);
+  const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+  const center = sel => p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+  const rowPt = id => p.evaluate(id => { const r = document.querySelector('#cal-day-list .task[data-id="' + id + '"]').getBoundingClientRect(); return { x: r.x + 120, y: r.y + r.height / 2 }; }, id);
+  const scTop = () => p.evaluate(() => document.getElementById('sc').scrollTop);
+  const dragging = () => p.evaluate(() => document.documentElement.classList.contains('dragging'));
+  const ghostTo = () => p.evaluate(() => { const g = document.querySelector('.drag-ghost .dg-to'); return g ? g.textContent : null; });
+  const dropCells = () => p.evaluate(() => [...document.querySelectorAll('#cgrid .cday.drop,#cgrid .cday.drop-span')].map(c => c.dataset.d + (c.classList.contains('drop') ? '*' : '')));
+  const moveTo = async (a, b, n) => { n = n || 10; for (let i = 1; i <= n; i++) { await touch('touchMove', a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n); await wait(25); } };
+  // tekan lama baris tugas `id` lalu tarik ke elemen `toSel`; mid() dijalankan sebelum jari diangkat
+  async function tdrag(id, toSel, mid) {
+    const a = await rowPt(id), b = await center(toSel);
+    await touch('touchStart', a.x, a.y); await wait(520);
+    await moveTo(a, b); await wait(120);
+    if (mid) await mid();
+    await touch('touchEnd'); await wait(450);
+  }
+  const head = () => txt('#cal-day-head b');
+  try {
+    await p.goto(base); await wait(1500);
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+
+    // ---- tombol Mode Edit; di luar Mode Edit tekan lama + tarik tidak memindahkan apa pun ----
+    assert.equal(await txt('#cal-day-head .cal-edit'), 'Mode Edit');
+    assert.equal(await p.getAttribute('#cal-day-head .cal-edit', 'aria-pressed'), 'false');
+    assert.equal(await p.isVisible('#cal-day-list .task[data-id="a"] .check'), true);
+    await tdrag('a', '#cgrid [data-d="2026-11-12"]', async () => { assert.equal(await dragging(), false); });
+    assert.equal(await p.locator('.drag-ghost').count(), 0);
+    assert.equal(cols('a', ['Tanggal'])[0], '2026-11-10', 'tanpa Mode Edit: tidak pindah');
+    assert.equal(await p.evaluate(() => document.getElementById('detail-wrap').classList.contains('open')), false);
+
+    // ---- masuk Mode Edit ----
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+    assert.equal(await p.evaluate(() => document.getElementById('v-kalender').classList.contains('editing')), true);
+    assert.deepEqual([await txt('#cal-day-head .cal-edit'), await p.getAttribute('#cal-day-head .cal-edit', 'aria-pressed')], ['Selesai', 'true']);
+    assert.match(await txt('#cal-legend'), /Tekan lama tugas di bawah, lalu tarik ke tanggal tujuan\. Tahan di ‹ › untuk pindah bulan\./);
+    assert.equal(await p.isVisible('#cal-day-list .task[data-id="a"] .check'), false, 'centang diganti pegangan');
+    await shot('t6-01-mode-edit');
+    // tap biasa tetap membuka detail
+    await p.locator('#cal-day-list .task[data-id="a"]').tap(); await wait(400);
+    assert.equal(await p.evaluate(() => document.getElementById('detail-wrap').classList.contains('open')), true);
+    await p.tap('.back-btn[data-act="close-detail"]'); await wait(350);
+
+    // ---- tugas 1 hari: 10 Nov → 12 Nov; jam tetap, deadline ikut, highlight sel tujuan ----
+    const y0 = await scTop();
+    await tdrag('a', '#cgrid [data-d="2026-11-12"]', async () => {
+      assert.equal(await dragging(), true);
+      assert.deepEqual(await dropCells(), ['2026-11-12*'], 'sel tujuan di-highlight');
+      assert.equal(await ghostTo(), '→ Kam, 12 Nov');
+      assert.equal(await txt('.drag-ghost b'), 'Rapat');
+      assert.equal(await p.locator('#cal-day-list .task[data-id="a"].drag-src').count(), 1);
+      assert.equal(await scTop(), y0, 'halaman tidak ikut bergulir saat menarik');
+      await shot('t6-02-menarik');
+    });
+    assert.equal(await p.locator('.drag-ghost').count(), 0);
+    assert.equal(await dragging(), false);
+    assert.equal(await head(), 'Kamis, 12 November 2026', 'daftar pindah ke tanggal tujuan');
+    assert.equal(await p.locator('#cgrid [data-d="2026-11-12"].sel').count(), 1);
+    assert.equal(await p.locator('#cal-day-list .task[data-id="a"].flash').count(), 1, 'tugas yang dipindah disorot');
+    assert.equal(await txt('#toast-msg'), '"Rapat" dipindah ke Kam, 12 Nov');
+    assert.equal(await txt('#toast-btn'), 'Urungkan');
+    assert.equal(await p.evaluate(() => document.getElementById('detail-wrap').classList.contains('open')), false, 'lepas jari tidak membuka detail');
+    await shot('t6-03-dilepas');
+    await wait(1500);   // tunggu sinkron selesai dulu (objek tugas diganti data server, pelajaran Tahap 5)
+    assert.deepEqual(cols('a', ['Tanggal', 'Hari', 'Jam mulai', 'Jam selesai', 'Deadline (tanggal)', 'Deadline (jam)']), ['2026-11-12', 'Kamis', '09:00', '10:00', '2026-11-12', '12:00']);
+    assert.equal(S.sheet('@adit').objects().length, 14);
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.equal(await head(), 'Selasa, 10 November 2026', 'urungkan → kembali ke tanggal asal');
+    assert.equal(await p.locator('#cal-day-list .task[data-id="a"]').count(), 1);
+    assert.deepEqual(cols('a', ['Tanggal', 'Deadline (tanggal)', 'Jam mulai']), ['2026-11-10', '2026-11-10', '09:00']);
+
+    // ---- multi-hari (K2): baris "Hari 2/3" ditarik ke 15 Nov → +5 hari, seluruh rentang ikut ----
+    assert.equal(await txt('#cal-day-list .task[data-id="m1"] .span-tag'), 'Hari 2/3');
+    await tdrag('m1', '#cgrid [data-d="2026-11-15"]', async () => {
+      assert.deepEqual(await dropCells(), ['2026-11-14', '2026-11-15*', '2026-11-16'], 'rentang baru ikut ditandai');
+      assert.equal(await ghostTo(), '→ 14–16 Nov 2026');
+      await shot('t6-04-multi-hari');
+      // tampilan diperbarui (render berkala tiap menit / sinkron selesai) saat jari masih menarik: drag tetap jalan
+      await p.context().clock.runFor(61000); await wait(100);
+      assert.deepEqual(await dropCells(), ['2026-11-14', '2026-11-15*', '2026-11-16']);
+      assert.equal(await p.locator('#cal-day-list .task[data-id="m1"].drag-src').count(), 1, 'daftar tidak dibuat ulang selama menarik');
+    });
+    assert.equal(await txt('#toast-msg'), '"Makalah DE" dipindah ke 14–16 Nov 2026');
+    assert.equal(await head(), 'Minggu, 15 November 2026');
+    assert.equal(await txt('#cal-day-list .task[data-id="m1"] .span-tag'), 'Hari 2/3');
+    await wait(1500);
+    assert.deepEqual(cols('m1', ['Tanggal', 'Deadline (tanggal)', 'Jam mulai', 'Deadline (jam)']), ['2026-11-14', '2026-11-16', '13:00', '17:00']);
+    assert.equal(S.sheet('@adit').objects().length, 14, 'tetap satu baris');
+    const cnt = d => p.evaluate(d => { const c = document.querySelector('#cgrid [data-d="' + d + '"] .c1'); return c ? c.textContent : ''; }, d);
+    assert.deepEqual([await cnt('2026-11-09'), await cnt('2026-11-11'), await cnt('2026-11-14'), await cnt('2026-11-16')], ['', '', '1 tugas', '1 tugas']);
+
+    // ---- tugas selesai tanpa jam: tetap selesai; dilepas di tanggal asal / di luar tanggal = batal ----
+    await p.tap('#cgrid [data-d="2026-11-10"]'); await wait(200);
+    await tdrag('n', '#cgrid [data-d="2026-11-09"]');
+    await wait(1500);
+    assert.deepEqual(cols('n', ['Tanggal', 'Status', 'Deadline (tanggal)', 'Jam mulai']), ['2026-11-09', 'Selesai', '', '']);
+    assert.equal(await p.locator('#cal-day-list .task[data-id="n"].done').count(), 1);
+    await p.tap('#toast-x'); await wait(300);
+    await tdrag('n', '#cgrid [data-d="2026-11-09"]', async () => {
+      assert.equal(await ghostTo(), 'Tanggal asal');
+      assert.deepEqual(await dropCells(), []);
+    });
+    await tdrag('n', '#cal-legend', async () => { assert.equal(await ghostTo(), 'Lepas di tanggal tujuan'); });
+    assert.equal(await p.evaluate(() => document.getElementById('toast').classList.contains('on')), false, 'batal: tidak ada pop-up');
+    assert.equal(cols('n', ['Tanggal'])[0], '2026-11-09');
+    assert.deepEqual([await head(), await p.locator('#cal-day-list .task.drag-src,#cal-day-list .task.pressing').count()], ['Senin, 9 November 2026', 0]);
+
+    // ---- geser cepat tanpa tekan lama = gulir biasa, bukan drag ----
+    await p.tap('#cgrid [data-d="2026-11-20"]'); await wait(200);
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 250)); await wait(150);
+    const s0 = await scTop(), f5 = await rowPt('f5');
+    await touch('touchStart', f5.x, f5.y); let wasDrag = false;
+    for (let i = 1; i <= 8; i++) { await touch('touchMove', f5.x, f5.y - i * 18); await wait(16); wasDrag = wasDrag || await dragging(); }
+    await touch('touchEnd'); await wait(500);
+    assert.equal(wasDrag, false, 'tidak jadi drag');
+    assert.notEqual(await scTop(), s0, 'halaman bergulir seperti biasa');
+    assert.equal(cols('f5', ['Tanggal'])[0], '2026-11-20');
+
+    // ---- daftar panjang: tarik ke tepi atas → halaman bergulir sendiri sampai kalender terlihat ----
+    await p.evaluate(() => { const s = document.getElementById('sc'); s.scrollTo(0, s.scrollHeight); }); await wait(200);
+    const s1 = await scTop(), f10 = await rowPt('f10');
+    assert.ok(s1 > 200, 'kalender sebagian tertutup (scrollTop ' + s1 + ')');
+    await touch('touchStart', f10.x, f10.y); await wait(520);
+    assert.equal(await dragging(), true);
+    await moveTo(f10, { x: f10.x, y: f10.y - 80 }, 4); await wait(150);
+    assert.equal(await scTop(), s1, 'di tengah layar: halaman diam (gulir bawaan dicegah)');
+    const topY = await p.evaluate(() => document.querySelector('#v-kalender .cal-head').getBoundingClientRect().bottom + 14);
+    await moveTo({ x: f10.x, y: f10.y - 80 }, { x: 200, y: topY }, 6); await wait(1600);
+    assert.equal(await scTop(), 0, 'bergulir sendiri ke atas');
+    const c18 = await center('#cgrid [data-d="2026-11-18"]');
+    await moveTo({ x: 200, y: topY }, c18, 5); await wait(120);
+    assert.deepEqual(await dropCells(), ['2026-11-18*']);
+    await touch('touchEnd'); await wait(450);
+    assert.equal(await head(), 'Rabu, 18 November 2026');
+    await wait(1200);
+    assert.deepEqual(cols('f10', ['Tanggal', 'Jam mulai']), ['2026-11-18', '17:00']);
+
+    // ---- pindah bulan: tahan di › lalu lepas di tanggal bulan berikutnya ----
+    await p.tap('#cgrid [data-d="2026-11-30"]'); await wait(200);
+    let z = await rowPt('z');
+    const nx = await center('#v-kalender [data-act="cal-next"]');
+    await touch('touchStart', z.x, z.y); await wait(520);
+    await moveTo(z, nx); await wait(250);
+    assert.equal(await ghostTo(), 'Tahan untuk ke Des 2026');
+    assert.equal(await p.locator('#v-kalender [data-act="cal-next"].drop').count(), 1);
+    await shot('t6-05-tahan-panah');
+    await wait(650);
+    assert.equal(await txt('#cal-label'), 'Des 2026', 'pindah bulan sambil menarik');
+    const d2 = await center('#cgrid [data-d="2026-12-02"]');
+    await moveTo(nx, d2, 4); await wait(120);
+    assert.equal(await ghostTo(), '→ Rab, 2 Des');
+    await touch('touchEnd'); await wait(450);
+    assert.deepEqual([await txt('#cal-label'), await head()], ['Des 2026', 'Rabu, 2 Desember 2026']);
+    await wait(1200);
+    assert.equal(cols('z', ['Tanggal'])[0], '2026-12-02');
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.deepEqual([await txt('#cal-label'), await head(), cols('z', ['Tanggal'])[0]], ['Nov 2026', 'Senin, 30 November 2026', '2026-11-30']);
+    // pindah bulan lalu batal → kembali ke bulan semula
+    z = await rowPt('z');
+    const pv = await center('#v-kalender [data-act="cal-prev"]');
+    await touch('touchStart', z.x, z.y); await wait(520);
+    await moveTo(z, pv); await wait(950);
+    assert.equal(await txt('#cal-label'), 'Okt 2026');
+    await moveTo(pv, { x: 195, y: 500 }, 4); await touch('touchEnd'); await wait(400);
+    assert.deepEqual([await txt('#cal-label'), await head(), cols('z', ['Tanggal'])[0]], ['Nov 2026', 'Senin, 30 November 2026', '2026-11-30']);
+    assert.equal(await p.locator('#cal-day-list .task[data-id="z"]').count(), 1);
+
+    // ---- mouse (laptop): tekan lama + tarik juga bisa ----
+    await p.tap('#cgrid [data-d="2026-11-10"]'); await wait(200);
+    const ma = await rowPt('a'), m11 = await center('#cgrid [data-d="2026-11-11"]');
+    await p.mouse.move(ma.x, ma.y); await p.mouse.down(); await wait(520);
+    await p.mouse.move(m11.x, m11.y, { steps: 8 }); await wait(100);
+    assert.deepEqual(await dropCells(), ['2026-11-11*']);
+    await p.mouse.up(); await wait(450);
+    assert.equal(await head(), 'Rabu, 11 November 2026');
+    assert.equal(await p.evaluate(() => document.getElementById('detail-wrap').classList.contains('open')), false);
+    await wait(1200);
+    assert.equal(cols('a', ['Tanggal'])[0], '2026-11-11');
+
+    // ---- offline: tersimpan di antrean, terkirim saat online lagi ----
+    st.offline = true;
+    await tdrag('a', '#cgrid [data-d="2026-11-13"]'); await wait(800);
+    assert.equal(await head(), 'Jumat, 13 November 2026');
+    assert.equal(cols('a', ['Tanggal'])[0], '2026-11-11', 'server belum tahu');
+    const queued = await p.evaluate(id => (JSON.parse(localStorage.getItem('pt.cache.' + id)).ops || []).filter(o => o.op === 'upsert' && o.task.id === 'a').map(o => o.task.date), reg.user.id);
+    assert.deepEqual(queued, ['2026-11-13']);
+    st.offline = false;
+    await p.evaluate(() => window.dispatchEvent(new Event('online'))); await wait(1800);
+    assert.equal(cols('a', ['Tanggal'])[0], '2026-11-13');
+
+    // ---- tombol back HP: batal drag → keluar Mode Edit → ke menu Tugas ----
+    const back = async () => { await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(350); };
+    const editing = () => p.evaluate(() => document.getElementById('v-kalender').classList.contains('editing'));
+    const a2 = await rowPt('a');
+    await touch('touchStart', a2.x, a2.y); await wait(520);
+    await moveTo(a2, { x: a2.x, y: a2.y - 200 }, 4);
+    assert.equal(await dragging(), true);
+    await back();
+    assert.deepEqual([await dragging(), await p.locator('.drag-ghost').count(), await editing()], [false, 0, true], 'back = batal menarik');
+    await touch('touchEnd'); await wait(300);
+    assert.equal(cols('a', ['Tanggal'])[0], '2026-11-13');
+    await back();
+    assert.equal(await editing(), false, 'back berikutnya = keluar Mode Edit');
+    assert.equal(await p.isHidden('#v-kalender'), false, 'masih di Kalender');
+    assert.equal(await txt('#cal-day-head .cal-edit'), 'Mode Edit');
+    await back();
+    assert.equal(await p.isHidden('#v-kalender'), true, 'back lagi = ke menu Tugas');
+    // pindah menu juga mengakhiri Mode Edit; tombol Selesai juga
+    await p.click('#nav [data-view="kalender"]'); await wait(250);
+    await p.tap('[data-act="cal-edit"]'); await wait(150);
+    await p.click('#nav [data-view="grafik"]'); await wait(250);
+    await p.click('#nav [data-view="kalender"]'); await wait(250);
+    assert.equal(await editing(), false);
+    await p.tap('[data-act="cal-edit"]'); await wait(150);
+    await p.tap('[data-act="cal-edit"]'); await wait(150);
+    assert.equal(await editing(), false, 'tombol Selesai');
+
+    // ---- Home ikut tanggal baru; muat ulang tetap; layar 360px muat ----
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+    assert.equal(await p.evaluate(() => { const r = document.querySelector('#home-list .task[data-id="a"]'); let h = r.previousElementSibling; while (h && !h.classList.contains('dhead')) h = h.previousElementSibling; return h && h.id; }), 'g-2026-11-13');
+    await p.reload(); await wait(1500);
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+    assert.deepEqual([await cnt('2026-11-13'), await cnt('2026-11-15')], ['1 tugas', '1 tugas']);
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+    assert.equal(await p.evaluate(() => document.getElementById('sc').scrollWidth <= innerWidth), true, 'tanpa geser samping');
+    assert.equal(await p.evaluate(() => document.querySelector('#cal-day-head .cal-edit').getBoundingClientRect().right <= innerWidth - 8), true);
+    await p.tap('#cgrid [data-d="2026-11-15"]'); await wait(200);
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 260)); await wait(200);
+    await shot('t6-06-360');
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});

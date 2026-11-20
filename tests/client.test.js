@@ -646,3 +646,68 @@ test('mode coba: contoh tugas multi-hari ada dan tampil di setiap harinya', () =
   assert.deepEqual([m.date, m.dlDate, L.spanDays(m)], ['2026-11-12', '2026-11-14', 3]);
   assert.deepEqual(['2026-11-12', '2026-11-13', '2026-11-14'].map(d => L.tasksOn(seed.tasks, d).some(t => t === m)), [true, true, true]);
 });
+
+// ---------------- Tahap 6 (Poin 14): geser tanggal dengan drag di kalender ----------------
+const moved = (t, from, to) => { const r = L.shiftDates(t, from, to); return r ? Object.assign({}, t, { date: r.date, dlDate: r.dlDate }) : null; };
+
+test('drag (Poin 14): tanggal pindah, jam tetap; deadline tugas 1 hari ikut geser', () => {
+  // tanpa deadline
+  const a = MT('a', '2026-11-10', '', { start: '09:00', end: '10:30' });
+  assert.deepEqual(plain(L.shiftDates(a, '2026-11-10', '2026-11-12')), { date: '2026-11-12', dlDate: '', days: 2 });
+  // deadline di hari yang sama → ikut pindah (jawaban user Tahap 6), jam deadline tetap
+  const b = MT('b', '2026-11-10', '2026-11-10', { dlTime: '17:00' });
+  const b2 = moved(b, '2026-11-10', '2026-11-08');
+  assert.deepEqual([b2.date, b2.dlDate, b2.dlTime, b2.start, b2.end], ['2026-11-08', '2026-11-08', '17:00', '08:00', '09:00']);
+  assert.equal(L.spanDays(b2), 1, 'tetap tugas 1 hari');
+  // deadline lebih awal dari tanggal (= 1 hari) → selisihnya tetap
+  const c = moved(MT('c', '2026-11-20', '2026-11-18'), '2026-11-20', '2026-11-25');
+  assert.deepEqual([c.date, c.dlDate, L.spanDays(c)], ['2026-11-25', '2026-11-23', 1]);
+  // field lain tidak disentuh
+  const keys = Object.keys(a).filter(k => k !== 'date' && k !== 'dlDate');
+  const a2 = moved(a, '2026-11-10', '2026-11-11');
+  assert.deepEqual(keys.map(k => a2[k]), keys.map(k => a[k]));
+});
+
+test('drag multi-hari (K2): seluruh rentang bergeser, selisih dihitung dari tanggal baris yang ditarik', () => {
+  const m = MT('m', '2026-11-09', '2026-11-11');   // 9–11 Nov (3 hari)
+  // baris "Hari 2/3" (10 Nov) ditarik ke 15 Nov → +5 hari → 14–16 Nov, dan di 15 Nov tetap "Hari 2/3"
+  const m2 = moved(m, '2026-11-10', '2026-11-15');
+  assert.deepEqual([m2.date, m2.dlDate, L.spanDays(m2), L.spanTag(m2, '2026-11-15')], ['2026-11-14', '2026-11-16', 3, 'Hari 2/3']);
+  assert.deepEqual(allDays([m2], '2026-11-08', 10).filter(d => d[1]).map(d => d[0]), ['2026-11-14', '2026-11-15', '2026-11-16']);
+  // baris "Hari 3/3" ditarik mundur ke 9 Nov → −2 → 7–9 Nov
+  const m3 = moved(m, '2026-11-11', '2026-11-09');
+  assert.deepEqual([m3.date, m3.dlDate, L.spanTag(m3, '2026-11-09')], ['2026-11-07', '2026-11-09', 'Hari 3/3']);
+  // lewat bulan, tahun, dan 29 Februari
+  assert.deepEqual(plain(L.shiftDates(MT('x', '2026-11-29', '2026-12-02'), '2026-11-30', '2026-12-31')), { date: '2026-12-30', dlDate: '2027-01-02', days: 31 });
+  assert.deepEqual(plain(L.shiftDates(MT('y', '2028-02-28', '2028-03-01'), '2028-02-28', '2028-02-29')), { date: '2028-02-29', dlDate: '2028-03-02', days: 1 });
+  assert.deepEqual(plain(L.shiftDates(MT('z', '2027-01-01', ''), '2027-01-01', '2026-12-31')), { date: '2026-12-31', dlDate: '', days: -1 });
+  // tidak berubah / tidak valid → null (tidak ada yang disimpan)
+  assert.equal(L.shiftDates(m, '2026-11-10', '2026-11-10'), null, 'dilepas di tanggal yang sama');
+  for (const [t, f, to] of [[m, '', '2026-11-12'], [m, '2026-11-10', 'besok'], [MT('r', 'x', ''), '2026-11-10', '2026-11-12'], [null, '2026-11-10', '2026-11-12']]) {
+    assert.equal(L.shiftDates(t, f, to), null, JSON.stringify([t && t.date, f, to]));
+  }
+});
+
+test('drag → server (Code.gs): tetap satu baris, tanggal + hari + deadline ikut; urungkan mengembalikan', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const m = MT('m', '2026-11-09', '2026-11-11', { start: '13:00', end: '15:00', dlTime: '17:00' });
+  const a = MT('a', '2026-11-10', '2026-11-10', { start: '09:00', end: '10:00', dlTime: '12:00', done: true, doneAt: 5, doneBy: 'p1' });
+  S.post('apiSync', tok, [m, a].map(t => ({ op: 'upsert', task: L.toDoc(t) })));
+  const row = id => S.sheet('@adit').objects().find(o => o.ID === id);
+  const before = row('m');
+  const m2 = Object.assign(moved(m, '2026-11-10', '2026-11-15'), { updatedAt: 20 });
+  const a2 = Object.assign(moved(a, '2026-11-10', '2026-11-12'), { updatedAt: 20 });
+  let res = S.post('apiSync', tok, [m2, a2].map(t => ({ op: 'upsert', task: L.toDoc(t) })));
+  assert.equal(res.ok, true);
+  assert.equal(S.sheet('@adit').objects().length, 2, 'tidak ada salinan');
+  assert.deepEqual(['Tanggal', 'Hari', 'Jam mulai', 'Jam selesai', 'Deadline (tanggal)', 'Deadline (jam)'].map(k => row('m')[k]),
+    ['2026-11-14', 'Sabtu', '13:00', '15:00', '2026-11-16', '17:00']);
+  assert.deepEqual(['Tanggal', 'Hari', 'Jam mulai', 'Deadline (tanggal)', 'Deadline (jam)', 'Status'].map(k => row('a')[k]),
+    ['2026-11-12', 'Kamis', '09:00', '2026-11-12', '12:00', 'Selesai'], 'tugas selesai tetap selesai');
+  assert.equal(row('a')['Diselesaikan oleh'], 'p1');
+  // urungkan = kembalikan tanggal & deadline lama (aplikasi memakai data terbaru saat tombol ditekan)
+  const back = Object.assign({}, res.tasks.find(t => t.id === 'm'), { date: m.date, dlDate: m.dlDate, updatedAt: 30 });
+  res = S.post('apiSync', tok, [{ op: 'upsert', task: back }]);
+  assert.deepEqual(['Tanggal', 'Hari', 'Deadline (tanggal)', 'Nama tugas'].map(k => row('m')[k]), ['Tanggal', 'Hari', 'Deadline (tanggal)', 'Nama tugas'].map(k => before[k]));
+});

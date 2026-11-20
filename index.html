@@ -338,6 +338,38 @@ textarea.inp{resize:vertical;min-height:76px;line-height:1.4}
 .cal-day-head{display:flex;justify-content:space-between;align-items:flex-end;padding:22px 16px 10px;border-bottom:1px solid var(--line)}
 .cal-day-head small{display:block;color:var(--muted);font-size:13px}
 .cal-day-head b{font-size:18px;font-weight:500}
+/* Mode Edit kalender (Tahap 6, Poin 14): tekan lama + tarik tugas ke tanggal lain */
+.cal-day-head .cdh-t{min-width:0}
+.cal-edit{flex:none;position:relative;display:inline-flex;align-items:center;gap:6px;height:38px;margin-left:12px;padding:0 14px 0 11px;border-radius:19px;border:1.5px solid #4a4a46;color:var(--accent);font-size:14px;font-weight:500;white-space:nowrap}
+.cal-edit::before{content:"";position:absolute;inset:-4px -2px}
+.cal-edit svg{width:17px;height:17px}
+.cal-edit.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cal-hint{display:inline-flex;gap:7px;align-items:flex-start;text-align:left;color:var(--text2);font-size:12.5px;line-height:1.4}
+.cal-hint svg{flex:none;width:15px;height:15px;margin-top:1px;color:var(--accent)}
+#v-kalender.editing .cal-legend{padding:12px 18px 0}
+#v-kalender.editing #cal-day-list .task{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#v-kalender.editing #cal-day-list .check{display:none}
+/* pegangan "⋮⋮" menggantikan tombol centang selama Mode Edit */
+#v-kalender.editing #cal-day-list .task::before{content:"";order:9;flex:none;width:28px;height:28px;margin:0 8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238d8c86' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01'/%3E%3C/svg%3E") center/22px no-repeat}
+.task.pressing{background:rgba(255,212,59,.13);transition:background .35s}
+.task.drag-src{opacity:.35}
+html.dragging,html.dragging *{-webkit-user-select:none;user-select:none;cursor:grabbing}
+html.dragging .cday:not(.blank){outline:1.5px dashed rgba(255,212,59,.3);outline-offset:-4px}
+.cday.drop-span{border-color:rgba(255,212,59,.5);background:rgba(255,212,59,.12)}
+html.dragging .cday.drop-span{outline:none}
+.cday.drop{border-color:var(--accent);background:rgba(255,212,59,.3);transform:scale(1.07);transition:transform .1s}
+.cday.drop b{color:var(--accent);font-weight:700}
+html.dragging .cday.drop{outline:none}
+.cday.flash{animation:cflash 1.5s}
+@keyframes cflash{0%,35%{box-shadow:0 0 0 3px rgba(255,212,59,.6)}100%{box-shadow:0 0 0 3px rgba(255,212,59,0)}}
+.cal-month .icon-btn.drop{background:rgba(255,212,59,.22);box-shadow:inset 0 0 0 2px var(--accent)}
+.drag-ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;max-width:min(260px,84vw);padding:7px 12px 7px 7px;border-radius:14px;background:#2d2d2b;border:1.5px solid var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.45);will-change:transform}
+.drag-ghost .dg-row{display:flex;gap:8px;align-items:center;min-width:0}
+.drag-ghost .cat-ic{width:28px;height:28px}
+.drag-ghost .cat-ic svg{width:16px;height:16px}
+.drag-ghost .cat-ic .cat-l{font-size:13px}
+.drag-ghost b{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drag-ghost .dg-to{margin:2px 0 0 36px;font-size:12.5px;font-weight:500;color:var(--accent);white-space:nowrap}
 .add-here{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 16px 0;padding:13px;border-radius:14px;border:1.5px dashed #555;color:var(--accent);font-weight:500;width:calc(100% - 32px)}
 .add-here svg{width:20px;height:20px}
 .cal-legend{display:flex;gap:14px;justify-content:center;padding:12px 0 0;font-size:12px;color:var(--muted)}
@@ -540,6 +572,11 @@ button.crow{width:100%;text-align:left}
 .legend,.legend button,.seg button{min-width:0}
 .tile{min-width:0}
 .tile b{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:380px){
+  .cal-day-head{padding:20px 12px 10px 14px}
+  .cal-day-head b{font-size:16px}
+  .cal-edit{margin-left:8px;padding:0 12px 0 10px;gap:5px}
+}
 @media (max-width:374px){
   .titlebar h1{font-size:18px}
   .summary{grid-template-columns:74px 1fr 1fr 1fr;padding:4px 12px 14px}
@@ -612,7 +649,7 @@ button.crow{width:100%;text-align:left}
     </div>
     <div class="wk"><span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div>
     <div class="cgrid" id="cgrid"></div>
-    <div class="cal-legend"><span><i style="background:var(--accent)"></i>jumlah tugas</span><span><i style="background:var(--good)"></i>✓ selesai</span><span><i style="background:var(--danger)"></i>lewat deadline</span></div>
+    <div class="cal-legend" id="cal-legend"><span><i style="background:var(--accent)"></i>jumlah tugas</span><span><i style="background:var(--good)"></i>✓ selesai</span><span><i style="background:var(--danger)"></i>lewat deadline</span></div>
     <div class="cal-day-head" id="cal-day-head"></div>
     <div id="cal-day-list"></div>
     <button class="add-here" data-act="add-on-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span id="add-here-lbl">Tambah tugas di tanggal ini</span></button>
@@ -1090,6 +1127,19 @@ const countDay=(t,mk)=>t.date<mk+'-01'?mk+'-01':t.date;
  *  (jumlah semua isinya = jumlah tugas di bulan itu). */
 function perDay(list,mk){const a=Array(+monthEnd(mk).slice(8)).fill(0);inMonth(list,mk).forEach(t=>{a[+countDay(t,mk).slice(8)-1]++;});return a;}
 
+/* ---- geser tanggal dengan drag di kalender (Tahap 6, Poin 14) ----
+   Tugas yang tampil di tanggal `from` dilepas di tanggal `to` → selisih hari = to − from. Tanggal mulai DAN deadline
+   bergeser sebanyak itu: rentang tugas multi-hari tetap (K2), deadline tugas 1 hari ikut pindah (jawaban user Tahap 6).
+   Jam (mulai, selesai, jam deadline) tidak berubah. Satu tugas multi-hari tampil di beberapa tanggal, jadi `from` = tanggal
+   baris yang ditarik (mis. baris "Hari 2/3"), bukan selalu tanggal mulainya. */
+/** → {date, dlDate, days} (days = selisih hari, boleh negatif), atau null kalau tanggal tidak valid / tidak berubah. */
+function shiftDates(t,from,to){
+  const s=okD(t&&t.date),a=okD(from),b=okD(to);if(!s||!a||!b)return null;
+  const n=dayNum(b)-dayNum(a);if(!n)return null;
+  const dl=okD(t.dlDate);
+  return {date:ymdAdd(s,n),dlDate:dl?ymdAdd(dl,n):'',days:n};
+}
+
 /* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
    Satu "draft" = isi satu form: {cat, name, detail, diff, date, multi, dates, noTime, start, end, dlOn, dlDate, dlTime, dlOff}.
    multi = "Beberapa tanggal" aktif → satu tugas berdiri sendiri per tanggal di `dates` (bukan tugas multi-hari).
@@ -1236,7 +1286,7 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   CAT_NAME_MAX:CAT_NAME_MAX,CAT_HUES:CAT_HUES,checkCatName:checkCatName,nextCatHue:nextCatHue,deleteCat:deleteCat,
   byTime:byTime,newestFirst:newestFirst,
   spanEnd:spanEnd,isMulti:isMulti,spanDays:spanDays,onDay:onDay,dayOf:dayOf,spanTag:spanTag,byClock:byClock,tasksOn:tasksOn,
-  monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,
+  monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,shiftDates:shiftDates,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
   dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
 })();
@@ -1310,7 +1360,8 @@ const P={
  user:'<circle cx="12" cy="8" r="4.2"/><path d="M4 21c.8-4 4.1-6.5 8-6.5s7.2 2.5 8 6.5"/>',
  phone:'<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
  alarm:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 4.5 6.5 2.5M20 4.5l-2.5-2"/>',
- chev:'<path d="m9.5 6 6 6-6 6"/>'
+ chev:'<path d="m9.5 6 6 6-6 6"/>',
+ move:'<path d="M12 3v18M3 12h18"/><path d="m9 5.5 3-2.5 3 2.5M9 18.5l3 2.5 3-2.5M5.5 9 3 12l2.5 3M18.5 9l2.5 3-2.5 3"/>'
 };
 const ic=(k,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||1.7)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[k]||'')+'</svg>';
 
@@ -1607,6 +1658,7 @@ const state={
   view:'tugas',
   homeMonth:mkey(today()),homeFilter:'semua',
   calMonth:mkey(today()),calSel:today(),
+  calEdit:false,  // Mode Edit kalender (Tahap 6): tekan lama + tarik tugas ke tanggal lain
   statMonth:mkey(today()),statFilter:'semua',statFocus:null,
   pickYear:new Date().getFullYear(),
   form:null,detailId:null,returnTo:null,
@@ -1730,7 +1782,22 @@ function scrollToDate(d,smooth){
 }
 
 /* ================= CALENDAR ================= */
+const CAL_LEGEND='<span><i style="background:var(--accent)"></i>jumlah tugas</span><span><i style="background:var(--good)"></i>✓ selesai</span><span><i style="background:var(--danger)"></i>lewat deadline</span>';
 function renderCalendar(){
+  renderCalGrid();
+  const ed=!!state.calEdit,sel=state.calSel,l=onDate(sel),rel=relDay(sel);
+  $('#v-kalender').classList.toggle('editing',ed);
+  $('#cal-legend').innerHTML=ed?'<span class="cal-hint">'+ic('move',2)+'<span>Tekan lama tugas di bawah, lalu tarik ke tanggal tujuan. Tahan di ‹ › untuk pindah bulan.</span></span>':CAL_LEGEND;
+  $('#cal-day-head').innerHTML='<div class="cdh-t"><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>'+
+    '<button class="cal-edit'+(ed?' on':'')+'" data-act="cal-edit" aria-pressed="'+ed+'">'+ic(ed?'check':'move',2.2)+'<span>'+(ed?'Selesai':'Mode Edit')+'</span></button>';
+  // Selama tugas ditarik daftar TIDAK dibuat ulang (mis. karena sinkron selesai): elemen yang sedang disentuh harus
+  // tetap ada, kalau dibuang browser berhenti mengirim gerakan jari. Dibuat ulang setelah tugas dilepas.
+  if(drag)drag.stale=true;
+  else $('#cal-day-list').innerHTML=l.length?dayRows(l,sel):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
+  $('#add-here-lbl').textContent='Tambah tugas di '+fmtShort(sel);
+}
+// grid bulan saja (dipakai juga saat pindah bulan sambil menarik tugas, tanpa mengganti daftar di bawahnya)
+function renderCalGrid(){
   const mk=state.calMonth,[y,m]=mk.split('-').map(Number);
   $('#cal-label').textContent=MON_S[m-1]+' '+y;
   const first=new Date(y,m-1,1).getDay(),n=dim(mk),td=today();
@@ -1742,11 +1809,186 @@ function renderCalendar(){
       (od?'<i class="od"></i>':'')+'<b>'+d+'</b>'+(l.length?'<span class="c1">'+l.length+' tugas</span>':'')+(dn?'<span class="c2">✓ '+dn+'</span>':'')+'</button>';
   }
   $('#cgrid').innerHTML=h;
-  const sel=state.calSel,l=onDate(sel),rel=relDay(sel);
-  $('#cal-day-head').innerHTML='<div><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>';
-  $('#cal-day-list').innerHTML=l.length?dayRows(l,sel):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
-  $('#add-here-lbl').textContent='Tambah tugas di '+fmtShort(sel);
+  if(drag&&drag.on)dragPaint();
 }
+
+/* ---- Mode Edit: tarik tugas ke tanggal lain (Tahap 6, Poin 14) ----
+   Tombol "Mode Edit" di kepala daftar tanggal. Di mode ini tekan lama (DRAG_HOLD) sebuah tugas di daftar tanggal terpilih,
+   lalu tarik ke sel tanggal tujuan. Sel tujuan diberi highlight (tugas multi-hari: seluruh rentang barunya ikut ditandai),
+   label kecil di atas jari menyebut tanggal barunya. Tahan di atas ‹ › (MONTH_HOLD) untuk pindah bulan; dekat tepi atas/
+   bawah layar halaman bergulir sendiri. Lepas di sel → PT_LIB.shiftDates: tanggal + deadline bergeser dengan selisih hari
+   yang sama, jam tetap (K2 + jawaban user). Disimpan lewat antrean biasa (jalan offline) + pop-up Urungkan, lalu daftar
+   pindah ke tanggal tujuan dengan tugas tadi disorot (jawaban user). Lepas di luar sel / di tanggal asal = batal.
+   Sentuh memakai touch event: touchmove non-pasif di #cal-day-list, jadi sebelum tekan lama tercapai jari tetap bisa
+   menggulir seperti biasa (gerak > DRAG_SLOP = batal), sesudahnya gulir dicegah. Mouse/pen memakai pointer event. */
+const DRAG_HOLD=380,DRAG_SLOP=10,MONTH_HOLD=650,EDGE=56;
+let drag=null,noClickUntil=0;
+function setCalEdit(on){
+  on=!!on;if(!!state.calEdit===on)return;
+  dragCancel();state.calEdit=on;
+  if(state.view==='kalender')renderCalendar();
+}
+function pressStart(row,x,y,kind,pid){
+  if(drag||!state.calEdit||state.view!=='kalender'||layers.length)return;
+  const id=row.getAttribute('data-id');if(!id||!tasks[id])return;
+  drag={id:id,from:state.calSel,month0:state.calMonth,row:row,kind:kind,pid:pid,x0:x,y0:y,x:x,y:y,on:false,moved:false,
+    to:'',arrow:null,holdT:0,monthT:0,raf:0,ghost:null,stale:false};
+  row.classList.add('pressing');
+  drag.holdT=setTimeout(dragBegin,DRAG_HOLD);
+}
+function pressMove(x,y,e){
+  const d=drag;if(!d)return;
+  d.x=x;d.y=y;
+  if(!d.on){   // belum tekan lama: jari bergerak / halaman mulai bergulir → ini gulir biasa, bukan drag
+    if(Math.abs(x-d.x0)>DRAG_SLOP||Math.abs(y-d.y0)>DRAG_SLOP||(e&&e.cancelable===false))dragCancel();
+    return;
+  }
+  if(e&&e.cancelable)e.preventDefault();
+  if(Math.abs(x-d.x0)>16||Math.abs(y-d.y0)>16)d.moved=true;
+  dragHit();
+}
+function pressEnd(e){
+  const d=drag;if(!d)return;
+  if(!d.on){dragCancel();return;}            // tap biasa → klik tetap membuka detail
+  if(e&&e.cancelable)e.preventDefault();      // drag selesai → jangan jadi klik
+  noClickUntil=Date.now()+300;
+  dragHit();dragDrop();
+}
+function dragBegin(){
+  const d=drag;if(!d||d.on)return;
+  const t=tasks[d.id];
+  if(!t||!d.row.isConnected||state.view!=='kalender'||!state.calEdit||layers.length){dragCancel();return;}
+  d.on=true;
+  d.row.classList.remove('pressing');d.row.classList.add('drag-src');
+  document.documentElement.classList.add('dragging');
+  const g=document.createElement('div');g.className='drag-ghost';g.setAttribute('aria-hidden','true');
+  g.innerHTML='<div class="dg-row">'+catIc(catOf(t.cat))+'<b>'+esc(t.name)+'</b></div><div class="dg-to"></div>';
+  document.body.appendChild(g);d.ghost=g;
+  try{const ua=navigator.userActivation;if(navigator.vibrate&&(!ua||ua.hasBeenActive))navigator.vibrate(12);}catch(_){}
+  dragHit();
+  const loop=()=>{if(drag!==d)return;dragAuto();d.raf=requestAnimationFrame(loop);};
+  d.raf=requestAnimationFrame(loop);
+}
+// cari sel tanggal / tombol bulan di bawah jari (bayangan tugas tidak menangkap sentuhan: pointer-events:none)
+function dragHit(){
+  const d=drag;if(!d||!d.on)return;
+  const el=document.elementFromPoint(d.x,d.y);
+  const cell=el&&el.closest('#cgrid .cday[data-d]');
+  const arrow=el&&el.closest('#v-kalender .cal-month [data-act="cal-prev"],#v-kalender .cal-month [data-act="cal-next"]');
+  d.to=cell?cell.getAttribute('data-d'):'';
+  if(arrow!==d.arrow){clearTimeout(d.monthT);d.arrow=arrow;if(arrow)d.monthT=setTimeout(dragFlip,MONTH_HOLD);}
+  dragPaint();
+}
+// tahan di ‹ › → pindah bulan (grid saja); tetap ditahan → pindah lagi
+function dragFlip(){
+  const d=drag;if(!d||!d.on||!d.arrow)return;
+  state.calMonth=mAdd(state.calMonth,d.arrow.getAttribute('data-act')==='cal-next'?1:-1);
+  renderCalGrid();
+  d.monthT=setTimeout(dragFlip,MONTH_HOLD+250);
+}
+const dayShort=s=>{const d=parseYmd(s);return DAYS[d.getDay()].slice(0,3)+', '+fmtShort(s)+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'');};
+// tanggal baru untuk teks: "Kam, 12 Nov" atau rentang "14–16 Nov 2026" (multi-hari)
+const moveWhen=r=>{const e=L.spanEnd(r);return e>r.date?fmtRange(r.date,e):dayShort(r.date);};
+function dragPaint(){
+  const d=drag;if(!d||!d.on)return;
+  document.querySelectorAll('#cgrid .drop,#cgrid .drop-span,#v-kalender .icon-btn.drop').forEach(x=>x.classList.remove('drop','drop-span'));
+  const t=tasks[d.id],r=t&&d.to?L.shiftDates(t,d.from,d.to):null;
+  let lbl='Lepas di tanggal tujuan';
+  if(r){
+    const end=L.spanEnd(r);
+    document.querySelectorAll('#cgrid .cday[data-d]').forEach(c=>{const x=c.getAttribute('data-d');if(x>=r.date&&x<=end)c.classList.add(x===d.to?'drop':'drop-span');});
+    lbl='→ '+moveWhen(r);
+  }else if(d.to)lbl='Tanggal asal';
+  else if(d.arrow){d.arrow.classList.add('drop');lbl='Tahan untuk ke '+fmtMonthS(mAdd(state.calMonth,d.arrow.getAttribute('data-act')==='cal-next'?1:-1));}
+  const g=d.ghost;if(!g)return;
+  g.querySelector('.dg-to').textContent=lbl;
+  // bayangan di atas jari (jari menutupi sel tujuan), pindah ke bawah jari kalau terlalu dekat tepi atas
+  const w=g.offsetWidth,h=g.offsetHeight,x=Math.max(8,Math.min(innerWidth-w-8,d.x-w/2));
+  let y=d.y-h-30;if(y<8)y=d.y+30;
+  g.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)';
+}
+// jari dekat tepi atas (di bawah judul) / tepi bawah (menu bawah) → halaman bergulir sendiri
+function dragAuto(){
+  const d=drag;if(!d||!d.on||!d.moved)return;
+  const top=$('#v-kalender .cal-head').getBoundingClientRect().bottom,bot=$('#nav').getBoundingClientRect().top;
+  let v=0;
+  if(d.y>=top&&d.y<top+EDGE)v=-Math.ceil((top+EDGE-d.y)/EDGE*14);
+  else if(d.y>bot-EDGE)v=Math.min(14,Math.ceil((d.y-bot+EDGE)/EDGE*14));
+  if(!v)return;
+  const y0=SC.scrollTop;SC.scrollTop=y0+v;
+  if(SC.scrollTop!==y0)dragHit();
+}
+// bersihkan semua sisa drag (bayangan, highlight, timer); mengembalikan data drag yang tadi
+function dragStop(){
+  const d=drag;if(!d)return null;
+  drag=null;
+  clearTimeout(d.holdT);clearTimeout(d.monthT);cancelAnimationFrame(d.raf);
+  document.documentElement.classList.remove('dragging');
+  if(d.ghost)d.ghost.remove();
+  document.querySelectorAll('.task.pressing,.task.drag-src,#cgrid .drop,#cgrid .drop-span,#v-kalender .icon-btn.drop').forEach(x=>x.classList.remove('pressing','drag-src','drop','drop-span'));
+  return d;
+}
+// batal: kembali ke bulan semula (kalau tadi sempat pindah bulan) dan daftar dibuat ulang kalau tertunda
+function dragCancel(){
+  const d=dragStop();if(!d)return;
+  if(d.on)state.calMonth=d.month0;
+  if((d.on||d.stale)&&state.view==='kalender')renderCalendar();
+}
+function dragDrop(){
+  const d=dragStop();if(!d)return;
+  if(d.to&&moveTask(d.id,d.from,d.to))return;
+  state.calMonth=d.month0;renderCalendar();   // dilepas di luar tanggal / di tanggal asal → tidak ada yang berubah
+}
+// simpan pindah tanggal + pop-up Urungkan (komponen Tahap 2). Urungkan memakai tasks[id] saat ditekan (pelajaran Tahap 5).
+function moveTask(id,from,to){
+  const t=tasks[id];
+  if(!t){toast('Tugas ini sudah dihapus');return false;}
+  const r=L.shiftDates(t,from,to);if(!r)return false;
+  const old={date:t.date,dlDate:t.dlDate};
+  t.date=r.date;t.dlDate=r.dlDate;t.updatedAt=Date.now();
+  state.calMonth=mkey(to);state.calSel=to;   // daftar pindah ke tanggal tujuan
+  persist(id);flashRows([id]);flashCell(to);
+  const nm=String(t.name||'').trim(),short=nm.length>22?nm.slice(0,22)+'…':nm;
+  undoToast('"'+short+'" dipindah ke '+moveWhen(r),()=>{
+    const x=tasks[id];if(!x)return;
+    x.date=old.date;x.dlDate=old.dlDate;x.updatedAt=Date.now();
+    if(state.view==='kalender'){state.calMonth=mkey(from);state.calSel=from;}
+    persist(id);flashRows([id]);if(state.view==='kalender')flashCell(from);
+  });
+  return true;
+}
+function flashCell(d){requestAnimationFrame(()=>{const c=$('#cgrid .cday[data-d="'+d+'"]');if(c)c.classList.add('flash');});}
+const calList=$('#cal-day-list');
+const touchOf=(e,id)=>{for(let i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===id)return e.changedTouches[i];return null;};
+calList.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1){if(drag)dragCancel();return;}   // jari kedua = batal
+  const tg=/** @type {Element} */(e.target),row=state.calEdit&&tg.closest?tg.closest('.task[data-id]'):null;if(!row)return;
+  const p=e.changedTouches[0];pressStart(row,p.clientX,p.clientY,'touch',p.identifier);
+},{passive:true});
+calList.addEventListener('touchmove',e=>{
+  if(!drag||drag.kind!=='touch')return;
+  const p=touchOf(e,drag.pid);if(p)pressMove(p.clientX,p.clientY,e);
+},{passive:false});
+calList.addEventListener('touchend',e=>{
+  if(!drag||drag.kind!=='touch')return;
+  const p=touchOf(e,drag.pid);if(!p)return;
+  drag.x=p.clientX;drag.y=p.clientY;pressEnd(e);
+},{passive:false});
+calList.addEventListener('touchcancel',()=>{if(drag&&drag.kind==='touch')dragCancel();});
+calList.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'||e.button!==0||!state.calEdit)return;
+  const tg=/** @type {Element} */(e.target),row=tg.closest?tg.closest('.task[data-id]'):null;
+  if(row)pressStart(row,e.clientX,e.clientY,'mouse',e.pointerId);
+});
+window.addEventListener('pointermove',e=>{if(drag&&drag.kind==='mouse'&&e.pointerId===drag.pid)pressMove(e.clientX,e.clientY,e);});
+window.addEventListener('pointerup',e=>{if(drag&&drag.kind==='mouse'&&e.pointerId===drag.pid){drag.x=e.clientX;drag.y=e.clientY;pressEnd(e);}});
+window.addEventListener('pointercancel',e=>{if(drag&&drag.kind==='mouse'&&e.pointerId===drag.pid)dragCancel();});
+SC.addEventListener('scroll',()=>{if(drag&&!drag.on)dragCancel();},{passive:true});   // halaman bergulir sebelum tekan lama = gulir biasa
+window.addEventListener('blur',()=>{if(drag)dragCancel();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&drag)dragCancel();});
+// tekan lama di HP bisa membuka menu/pilih teks bawaan browser
+document.addEventListener('contextmenu',e=>{const tg=/** @type {Element} */(e.target);
+  if(drag||(state.calEdit&&tg&&tg.closest&&tg.closest('#cal-day-list .task')))e.preventDefault();});
 
 /* ================= STATS ================= */
 const SLOT=['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
@@ -2426,6 +2668,7 @@ const LAYER_EL={auth:'#auth',accounts:'#acct-wrap',add:'#add-screen',form:'#form
 const layers=[];
 function isOpen(id){return layers.indexOf(id)>=0;}
 function showLayer(id){
+  if(drag)dragCancel();
   const el=$(LAYER_EL[id]);el.classList.add('open');el.setAttribute('aria-hidden','false');$('#toast').classList.remove('on');
   const i=layers.indexOf(id);if(i>=0)layers.splice(i,1);layers.push(id);syncHist();
 }
@@ -2461,7 +2704,9 @@ function onBack(){
   if(now-lastBack<60)return;lastBack=now;
   if(now<ignoreUntil){ignoreUntil=0;return;}
   guard=false;
-  if(layers.length){const top=layers[layers.length-1];if(top==='add'&&addNeedsAsk())closeAddAsk();else hideLayer(top);}
+  if(drag){dragCancel();syncHist();}   // sedang menarik tugas → batal saja
+  else if(layers.length){const top=layers[layers.length-1];if(top==='add'&&addNeedsAsk())closeAddAsk();else hideLayer(top);}
+  else if(state.view==='kalender'&&state.calEdit){setCalEdit(false);syncHist();}   // keluar Mode Edit dulu, belum pindah menu
   else if(state.view!=='tugas')goView('tugas');
   else syncHist();
 }
@@ -2472,7 +2717,7 @@ function confirmBox(title,msg,yes,cb){$('#cf-title').textContent=title;$('#cf-ms
 /* ---- pop-up bawah ----
    toast(pesan)                    : info singkat, hilang sendiri setelah 2,4 dtk
    toast(pesan, [label, fungsi])   : + tombol aksi dan tombol × (4,5 dtk)
-   undoToast(pesan, urungkan)      : pop-up "Urungkan" yang dipakai ulang (hapus, centang, nanti geser tanggal di Tahap 6).
+   undoToast(pesan, urungkan)      : pop-up "Urungkan" yang dipakai ulang (hapus, centang, simpan banyak, geser tanggal di kalender — Tahap 6).
    Aksinya SUDAH dijalankan sebelum pop-up muncul: "Urungkan" membaliknya, × hanya menutup pop-up (aksi tetap).
    Pop-up baru selalu menggantikan yang lama (urungkan milik pop-up lama tidak bisa dipakai lagi). */
 let toastT=null,toastCb=null;
@@ -2528,6 +2773,7 @@ const VIEWS=['tugas','kalender','grafik','saya'];
 function goView(v){
   if(VIEWS.indexOf(v)<0||!me)v='tugas';
   const changed=state.view!==v;
+  if(v!=='kalender'){dragCancel();state.calEdit=false;}   // Mode Edit kalender selesai saat pindah menu
   state.view=v;
   VIEWS.forEach(x=>$('#v-'+x).classList.toggle('hidden',x!==v));
   document.querySelectorAll('#nav [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
@@ -2550,7 +2796,9 @@ function render(){
 }
 
 document.addEventListener('click',e=>{
-  const tg=e.target;
+  const tg=/** @type {Element} */(e.target);
+  // klik yang menyusul akhir drag (Mode Edit kalender) jangan membuka detail / memilih tanggal
+  if(Date.now()<noClickUntil&&tg.closest('#v-kalender')){e.preventDefault();e.stopPropagation();return;}
   const chk=tg.closest('[data-check]');
   if(chk){e.preventDefault();toggleDone(chk.dataset.check,chk);return;}
   const act=tg.closest('[data-act]');
@@ -2608,6 +2856,7 @@ function handle(a,el,e){
     case 'cal-prev':state.calMonth=mAdd(state.calMonth,-1);state.calSel=state.calMonth===mkey(today())?today():state.calMonth+'-01';renderCalendar();break;
     case 'cal-next':state.calMonth=mAdd(state.calMonth,1);state.calSel=state.calMonth===mkey(today())?today():state.calMonth+'-01';renderCalendar();break;
     case 'cal-day':state.calSel=el.dataset.d;renderCalendar();break;
+    case 'cal-edit':setCalEdit(!state.calEdit);break;
     case 'st-filter':state.statFilter=el.dataset.f;renderStats();break;
     case 'st-month':state.statMonth=el.dataset.m;renderStats();break;
     case 'seg-focus':if(bindDonut.focus){const i=+el.dataset.i;bindDonut.focus(state.statFocus===i?null:i);}break;
@@ -2705,7 +2954,8 @@ const isKcName=t=>!!t&&t===$('#kc-name');
 document.addEventListener('input',e=>{if(isKcName(e.target)){catErr('');syncCatEditor();}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&isKcName(e.target)){e.preventDefault();saveCat();}});
 $('#search-q').addEventListener('input',renderSearch);
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(sugOpen()){hideSug();return;}if(layers.length)goBack();});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(drag){dragCancel();return;}if(sugOpen()){hideSug();return;}if(layers.length)goBack();
+  else if(state.view==='kalender'&&state.calEdit)setCalEdit(false);});
 let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(state.view==='grafik')renderStats();updateHdr();},150);});
 // refresh countdowns every minute
 setInterval(()=>{if(!document.hidden&&!isOpen('add')){const y=SC.scrollTop;render();SC.scrollTo(0,y);}},60000);
