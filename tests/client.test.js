@@ -247,7 +247,8 @@ test('mode coba: data contoh valid, tanggal relatif hari ini, server palsu menyi
 
   const m = L.mergeServer(r1, [], { cats: [], profiles: [] }, anyCat);   // jalur yang sama dengan applyServer di aplikasi
   assert.equal(Object.keys(m.tasks).length, seed.tasks.length);
-  assert.deepEqual(plain(m.profiles), [{ id: 'p1', name: 'Tamu', avatar: '' }]);
+  // Tahap 9: mode coba punya profil contoh kedua ("Sari") supaya fitur profil terlihat
+  assert.deepEqual(plain(m.profiles), [{ id: 'p1', name: 'Tamu', avatar: '' }, { id: 'p2', name: 'Sari', avatar: 'hijab' }]);
 
   assert.equal(call('apiProfile', [L.DEMO_TOKEN, '  Budi  ']).user.name, 'Budi');
   const pin = call('apiChangePin', [L.DEMO_TOKEN, '1234', '5678']);
@@ -1062,4 +1063,118 @@ test('Time Blocking (perbaikan Tahap 8): nama kegiatan tidak boleh tertutup tuga
   // beberapa kegiatan sekaligus; masukan kosong/rusak aman
   assert.deepEqual(lab([k(480, 600), LB('k2', 900, 960)], [t('x', 900, 960)]), [{ at: 480, host: -1 }, { at: null, host: 0 }]);
   assert.deepEqual(plain(L.tbLabels(null, null, 20, 60, 40)), []);
+});
+
+// ---------------- Tahap 9 (Poin 6 + 18): profil & foto profil ----------------
+const PT = (id, extra) => Object.assign({ id, cat: 'tkerja', name: 'Tugas ' + id, detail: '', date: '2026-11-10', start: '08:00', end: '09:00', dlDate: '', dlTime: '',
+  done: false, doneAt: null, createdAt: 1, updatedAt: 1, kind: 'tugas', diff: '', parent: '', by: 'p1', doneBy: '' }, extra || {});
+const PROFS = [{ id: 'p1', name: 'Adit', avatar: '' }, { id: 'p2', name: 'Budi', avatar: 'kucing' }, { id: 'p3', name: 'Sari', avatar: 'hijab' }];
+
+test('profil: nama (wajib, maks 40, tidak kembar), ID baru, avatar bawaan, kapan layar "Siapa yang pakai?" muncul', () => {
+  assert.deepEqual(plain(L.checkProfName('  Budi   Santoso ', PROFS)), { name: 'Budi Santoso' }, 'spasi dirapikan seperti Code.gs');
+  assert.match(L.checkProfName('   ', PROFS).error, /wajib/);
+  assert.match(L.checkProfName('\u0000\u0007', PROFS).error, /wajib/, 'karakter kontrol saja = kosong');
+  assert.match(L.checkProfName('BUDI', PROFS).error, /sudah dipakai/, 'tidak peka huruf besar/kecil');
+  assert.deepEqual(plain(L.checkProfName('budi', PROFS, 'p2')), { name: 'budi' }, 'mengubah huruf nama sendiri boleh');
+  assert.equal(L.checkProfName('x'.repeat(60), []).name.length, 40, 'maks 40 = cleanName_ Code.gs');
+  // ID: cocok dengan Code.gs (p + huruf kecil/angka, maks 21), tidak bentrok dengan yang sudah ada
+  const id = L.newProfileId(PROFS, 1763600000000, () => 0.5);
+  assert.ok(L.isProf(id) && !PROFS.some(p => p.id === id), id);
+  const taken = [{ id }], id2 = L.newProfileId(taken, 1763600000000, () => 0.5);
+  assert.ok(L.isProf(id2) && id2 !== id, 'ID kembar → akhiran');
+  for (let i = 0; i < 200; i++) assert.ok(L.isProf(L.newProfileId([], Date.now() + i * 997)), 'selalu valid');
+  // avatar bawaan profil baru = karakter pertama yang belum dipakai
+  assert.equal(L.AVATARS.length, 12, '12 karakter (Poin 6: 8–12)');
+  assert.equal(new Set(L.AVATARS).size, 12);
+  assert.equal(L.nextAvatar([{ avatar: '' }, { avatar: 'cowok' }]), 'cewek');
+  assert.equal(L.nextAvatar(L.AVATARS.map(a => ({ avatar: a }))), 'cowok', 'semua terpakai → yang pertama');
+  // jawaban user: "Siapa yang pakai?" setelah masuk/ganti akun (force), atau HP ini belum punya pilihan yang berlaku;
+  // akun 1 profil tidak pernah ditanya
+  assert.equal(L.needsPick(PROFS.slice(0, 1), null, true), false, '1 profil langsung masuk');
+  assert.equal(L.needsPick(PROFS, 'p2', true), true, 'setelah masuk');
+  assert.equal(L.needsPick(PROFS, 'p2', false), false, 'pilihan diingat');
+  assert.equal(L.needsPick(PROFS, null, false), true, 'belum pernah memilih di HP ini');
+  assert.equal(L.needsPick(PROFS, 'p9', false), true, 'profil pilihannya sudah dihapus');
+  assert.equal(L.needsPick(null, null, true), false);
+});
+
+test('profil: pembuat & pencentang (data lama = profil pertama, sama dengan Code.gs), hapus profil + urungkan', () => {
+  assert.equal(L.byOf(PT('a', { by: 'p2' }), 'p1'), 'p2');
+  assert.equal(L.byOf(PT('a', { by: undefined }), 'p1'), 'p1', 'tanpa pembuat → profil pertama');
+  assert.equal(L.byOf(PT('a', { by: 'Adit' }), 'p1'), 'p1', 'bukan ID profil');
+  assert.equal(L.byOf(PT('a', { by: 'p9' }), 'p1'), 'p9', 'profil terhapus tetap tercatat');
+  assert.equal(L.doneByOf(PT('a', { done: true, doneBy: 'p3' }), 'p1'), 'p3');
+  assert.equal(L.doneByOf(PT('a', { done: true, doneBy: '' }), 'p1'), 'p1', 'selesai tanpa pencentang → profil pertama');
+  assert.equal(L.doneByOf(PT('a', { done: false, doneBy: 'p3' }), 'p1'), '', 'belum selesai');
+  assert.equal(L.doneByOf(PT('k', { kind: 'kegiatan', done: true, doneBy: 'p3' }), 'p1'), '', 'kegiatan tidak punya pencentang');
+  // hapus
+  assert.equal(L.profileDelete(PROFS.slice(0, 1), 'p1'), null, 'profil terakhir tidak bisa dihapus (= Code.gs)');
+  assert.equal(L.profileDelete(PROFS, 'p9'), null);
+  const r = L.profileDelete(PROFS, 'p2');
+  assert.deepEqual(plain(r.profiles.map(p => p.id)), ['p1', 'p3']);
+  assert.deepEqual([r.idx, r.p.name], [1, 'Budi']);
+  assert.equal(PROFS.length, 3, 'masukan tidak diubah');
+});
+
+test('Grafik per profil (Poin 18): paling banyak membuat & mencentang, tanpa kegiatan, profil terhapus ikut, seri', () => {
+  const list = [PT('a', { by: 'p2', done: true, doneBy: 'p3' }), PT('b', { by: 'p2' }), PT('c', { by: 'p3', done: true, doneBy: 'p3' }),
+    PT('d', { by: undefined, done: true, doneBy: undefined }),                    // data lama → profil pertama
+    PT('e', { by: 'p9', done: true, doneBy: 'p9' }),                               // profil yang sudah dihapus
+    PT('k', { kind: 'kegiatan', by: 'p3' }), PT('k2', { kind: 'kegiatan', by: 'p3' })];   // kegiatan tidak dihitung
+  const st = plain(L.profileStats(list, PROFS));
+  assert.deepEqual(st.rows, [{ id: 'p2', made: 2, checked: 0 }, { id: 'p3', made: 1, checked: 2 }, { id: 'p1', made: 1, checked: 1 }, { id: 'p9', made: 1, checked: 1 }]);
+  assert.deepEqual(st.top, { made: ['p2'], checked: ['p3'] });
+  assert.equal(st.rows.reduce((n, r) => n + r.made, 0), L.tasksOnly(list).length, 'jumlah "dibuat" = jumlah tugas');
+  assert.equal(st.rows.reduce((n, r) => n + r.checked, 0), L.tasksOnly(list).filter(t => t.done).length, 'jumlah "dicentang" = tugas selesai');
+  // seri, belum ada yang selesai, profil tanpa tugas tetap tampil
+  const tie = plain(L.profileStats([PT('a', { by: 'p1' }), PT('b', { by: 'p2' })], PROFS));
+  assert.deepEqual(tie.top, { made: ['p1', 'p2'], checked: [] });
+  assert.deepEqual(tie.rows.map(r => r.id), ['p1', 'p2', 'p3'], 'urutan profil dipertahankan kalau angkanya sama');
+  assert.deepEqual(plain(L.profileStats([], PROFS)).top, { made: [], checked: [] });
+  assert.deepEqual(plain(L.profileStats(null, null)), { rows: [], top: { made: [], checked: [] } });
+});
+
+test('profil → Code.gs: semua kode avatar diterima, tambah/ubah/hapus/urungkan, tugas tetap mencatat profil terhapus', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  // setiap karakter Poin 6 lolos aturan avatar server (avatarOf_) dan tersimpan apa adanya
+  L.AVATARS.forEach((a, i) => {
+    const r = S.post('apiSync', tok, [{ op: 'profile', profile: { id: 'p1', name: 'Adit', avatar: a } }]);
+    assert.equal(r.profiles[0].avatar, a, 'avatar ' + a);
+  });
+  const id = L.newProfileId([{ id: 'p1' }], 1763600000000);
+  let r = S.post('apiSync', tok, [{ op: 'profile', profile: { id, name: L.checkProfName(' Budi ', []).name, avatar: L.nextAvatar([{ avatar: 'monster-tanduk' }]) } },
+    { op: 'upsert', task: PT('t1', { by: id }) }, { op: 'upsert', task: PT('t2', { by: 'p1', done: true, doneAt: 5, doneBy: id }) }]);
+  assert.deepEqual(plain(r.profiles), [{ id: 'p1', name: 'Adit', avatar: 'monster-tanduk' }, { id, name: 'Budi', avatar: 'cowok' }]);
+  // HP: hapus profil (op profile-del) → server menghapus, tugas tetap mencatat ID-nya
+  const del = L.profileDelete(plain(r.profiles), id);
+  r = S.post('apiSync', tok, [{ op: 'profile-del', id }]);
+  assert.deepEqual(plain(r.profiles.map(p => p.id)), ['p1']);
+  const t = Object.fromEntries(r.tasks.map(x => [x.id, x]));
+  assert.deepEqual([t.t1.by, t.t2.doneBy], [id, id], 'tugas tetap mencatat profil terhapus');
+  assert.deepEqual(plain(L.profileStats(r.tasks, r.profiles).rows), [{ id, made: 1, checked: 1 }, { id: 'p1', made: 1, checked: 0 }], 'sama-sama 1 dibuat → yang lebih banyak mencentang dulu');
+  // Urungkan → dibuat lagi dengan ID yang sama, tugasnya "kembali" ke profil itu
+  r = S.post('apiSync', tok, [{ op: 'profile', profile: del.p }]);
+  assert.deepEqual(plain(r.profiles.map(p => [p.id, p.name, p.avatar])), [['p1', 'Adit', 'monster-tanduk'], [id, 'Budi', 'cowok']]);
+  // hapus + urungkan sebelum terkirim: satu op per profil di antrean → yang terkirim hanya "profile" (tidak terhapus di server)
+  let q = L.enqueue([], { op: 'profile-del', id });
+  q = L.enqueue(q, { op: 'profile', profile: del.p });
+  assert.deepEqual(plain(q.map(o => o.op)), ['profile']);
+  // maks 5 profil (= Code.gs), profil terakhir tidak bisa dihapus di server
+  const more = ['p3', 'p4', 'p5', 'p6'].map(x => ({ op: 'profile', profile: { id: x, name: 'N' + x, avatar: '' } }));
+  assert.equal(S.post('apiSync', tok, more).profiles.length, L.MAX_PROFILES);
+  // edit tugas dari profil lain tidak mengganti pembuatnya (server mempertahankan "Dibuat oleh")
+  r = S.post('apiSync', tok, [{ op: 'upsert', task: PT('t1', { by: 'p3', name: 'Diubah Sari' }) }]);
+  assert.equal(r.tasks.find(x => x.id === 't1').by, id);
+});
+
+test('mode coba: dua profil contoh, tugas dibuat/dicentang profil kedua', () => {
+  const seed = L.demoSeed('2026-11-10', Date.UTC(2026, 10, 10, 2));
+  assert.deepEqual(plain(seed.profiles), [{ id: 'p1', name: 'Tamu', avatar: '' }, { id: 'p2', name: 'Sari', avatar: 'hijab' }]);
+  assert.ok(L.AVATARS.includes(seed.profiles[1].avatar));
+  const st = plain(L.profileStats(seed.tasks, seed.profiles));
+  assert.deepEqual(st.rows.map(r => r.id), ['p1', 'p2']);
+  assert.ok(st.rows[1].made >= 2 && st.rows[1].checked >= 1, 'Sari membuat & mencentang tugas contoh');
+  assert.equal(L.tasksOnly(seed.tasks).length, 12, 'jumlah tugas contoh tetap 12');
+  seed.tasks.forEach(t => assert.ok(L.isProf(t.by) && (t.done ? L.isProf(t.doneBy) : t.doneBy === ''), t.name));
 });

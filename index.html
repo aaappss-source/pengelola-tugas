@@ -678,6 +678,78 @@ button.crow{width:100%;text-align:left}
 .acc-act{display:flex;align-items:center;gap:12px;width:100%;padding:14px 4px;font-size:15.5px;color:var(--accent);font-weight:500}
 .acc-act svg{width:22px;height:22px}
 .acc-act.danger{color:var(--danger)}
+/* ---------- profil & foto profil (Tahap 9, Poin 6 + 18) ---------- */
+.av.pic{background:#2e2e2e;overflow:hidden;padding:0}
+.av.pic svg{display:block;width:100%!important;height:100%!important;margin:0!important}
+.av.gone{background:#3a3a37;color:var(--muted)}
+.av.xs{width:17px;height:17px;border-radius:50%;font-size:9.5px}
+.av.xxs{display:inline-grid;width:15px;height:15px;border-radius:50%;font-size:8.5px;vertical-align:-3px;margin-right:4px}
+.av.sm{width:26px;height:26px;border-radius:50%;font-size:12.5px}
+.av.xl{width:84px;height:84px;border-radius:50%;font-size:36px}
+/* avatar mini pembuat di pojok ikon kategori (hanya kalau akun punya ≥ 2 profil) */
+.ic-who{position:relative;flex:none;display:grid}
+.ic-who .av.by{position:absolute;right:-4px;bottom:-3px;box-shadow:0 0 0 2px var(--bg)}
+.keg-h .ic-who .av.by{box-shadow:0 0 0 2px hsl(var(--h) 18% 15.5%)}
+.keg-kids .ic-who .av.by{box-shadow:0 0 0 2px #1a1a19}
+.d-kids .ic-who .av.by{box-shadow:0 0 0 2px var(--card)}
+.task.done .ic-who .av.by{opacity:.6}
+.m-by{color:var(--good)}
+.m-by svg{margin-right:1px!important}
+.d-who .av{flex:none;margin-top:1px}
+/* layar "Siapa yang pakai?" */
+.pf-top{display:flex;justify-content:space-between;align-items:center;padding:calc(8px + env(safe-area-inset-top)) 8px 0}
+.pf-top .txt-btn{min-width:0;padding:8px 12px;color:var(--accent);font-weight:500}
+.pf-in{padding:6px 20px 40px;text-align:center}
+.pf-in h2{margin:0 0 4px;font-size:24px;font-weight:500}
+.pf-sub{margin:0 0 24px;color:var(--muted);font-size:14px}
+.pf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,150px));justify-content:center;gap:16px 18px}
+.pf-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 4px 8px;border-radius:18px;min-width:0}
+.pf-tile:active{background:#262626}
+.pf-tile b{max-width:100%;font-size:15.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-tile small{margin-top:-6px;font-size:12px;color:var(--accent);min-height:16px}
+.pf-tile.on .av{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--accent)}
+.pf-tile.add .av,.pf-chip.add .av{background:transparent;border:2px dashed #5d5c57;color:var(--text2)}
+.pf-tile.add .av svg{width:34px;height:34px}
+.pf-tile.add b{color:var(--text2)}
+.pf-ed{position:absolute;top:8px;left:calc(50% + 20px);width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 0 0 3px var(--bg)}
+.pf-ed svg{width:15px;height:15px}
+.pf-note{margin:26px auto 0;max-width:310px;color:var(--muted);font-size:13px;line-height:1.45}
+/* pilihan karakter (editor profil + Ganti foto profil) */
+.av-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:8px}
+.avp{position:relative;display:block;aspect-ratio:1;border-radius:50%;padding:3px}
+.avp .av{width:100%;height:100%;border-radius:50%}
+.avp.on .av{box-shadow:0 0 0 3px var(--accent)}
+.avp-ok{position:absolute;right:-1px;bottom:-1px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:none;place-items:center;box-shadow:0 0 0 2px var(--card)}
+.avp-ok svg{width:14px;height:14px}
+.avp.on .avp-ok,.avp-letter.on .avp-ok{display:grid}
+.avp-letter{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:8px 12px 8px 8px;border-radius:14px;border:1.5px solid var(--line);font-size:14.5px;color:var(--text2);text-align:left}
+.avp-letter .av{width:34px;height:34px;border-radius:50%;font-size:16px}
+.avp-letter.on{border-color:var(--accent);color:var(--text)}
+.avp-letter .avp-ok{position:static;margin-left:auto;box-shadow:none}
+.pe-av{width:64px!important;height:64px!important;border-radius:50%!important;font-size:28px!important}
+/* profil di sheet Akun */
+.pf-strip{display:flex;flex-wrap:wrap;gap:8px 6px;padding:2px 0 6px}
+.pf-chip{display:flex;flex-direction:column;align-items:center;gap:6px;width:66px;padding:6px 0;border-radius:14px}
+.pf-chip>span:last-child{max-width:64px;font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-chip.on .av{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent)}
+.pf-chip.on>span:last-child{color:var(--text);font-weight:500}
+.pf-chip .av svg{width:20px;height:20px}
+/* menu Saya */
+.me-pic{position:relative;flex:none;border-radius:50%}
+.me-pic .me-ed{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 0 0 2px var(--card)}
+.me-pic .me-ed svg{width:12px;height:12px}
+.menu>button>.av{width:24px;height:24px;border-radius:50%;font-size:12px}
+/* Grafik: per profil */
+.pf-bests{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 16px 2px}
+.pf-best{display:flex;gap:10px;align-items:center;min-width:0;background:var(--card);border-radius:14px;padding:11px 10px}
+.pf-best .av{width:36px;height:36px;border-radius:50%;font-size:16px}
+.pf-best .grow{flex:1;min-width:0}
+.pf-best .grow>span{display:block;font-size:12px;line-height:1.3;color:var(--muted)}
+.pf-best b{display:block;margin-top:2px;font-size:15.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-best small{display:block;font-size:11.5px;color:var(--text2)}
+.prow::after{left:72px}
+.prow .l1 span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .l1 b{flex:none}
 .tip-box{margin:0 16px;padding:14px 16px;border-radius:16px;background:#232a33;color:#cfe0f5;font-size:13.5px;line-height:1.5}
 
 /* ---------- search ---------- */
@@ -996,6 +1068,12 @@ button.crow{width:100%;text-align:left}
   <div id="ch-list"></div>
 </div>
 
+<!-- pilih profil "Siapa yang pakai?" + kelola profil (Tahap 9, Poin 18) -->
+<div class="screen" id="prof-screen" aria-hidden="true" style="z-index:57">
+  <div class="pf-top"><button class="icon-btn" data-act="close-profiles" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><button type="button" class="txt-btn" id="pf-manage" data-act="prof-manage">Kelola</button></div>
+  <div class="pf-in"><h2 id="pf-title">Siapa yang pakai?</h2><p class="pf-sub" id="pf-sub"></p><div class="pf-grid" id="pf-grid"></div><p class="pf-note" id="pf-note"></p></div>
+</div>
+
 <!-- login / daftar -->
 <div class="auth" id="auth" aria-hidden="true">
   <div class="auth-in">
@@ -1146,6 +1224,62 @@ const serverIsCurrent=res=>!!res&&typeof res.schema==='number'&&res.schema>=SCHE
 function pickProfile(profiles,stored){
   if(profiles.some(p=>p.id===stored))return stored;
   return profiles.length?profiles[0].id:undefined;
+}
+
+/* ---- profil & foto profil (Tahap 9, Poin 6 + 18) ----
+   Satu akun bisa dipakai sampai MAX_PROFILES orang. Profil = {id:'p…', name, avatar}; avatar = kode karakter (gambar SVG-nya
+   di script utama, AV) atau '' = huruf awal nama. Semua aturan di sini sama dengan Code.gs (upsertProfile_/delProfile_). */
+const AVATARS=['cowok','cewek','hijab','kacamata','kucing','panda','rubah','beruang','robot','robot-bulat','monster','monster-tanduk'];
+const PROF_NAME_MAX=40;   // = cleanName_ di Code.gs
+/** Nama profil → {name} atau {error}. Wajib diisi, tidak boleh sama dengan profil lain di akun itu (tidak peka huruf besar/kecil). */
+function checkProfName(name,profiles,selfId){
+  const n=cleanName(name,PROF_NAME_MAX);
+  if(!n)return {error:'Nama profil wajib diisi.'};
+  const low=n.toLowerCase();
+  if((Array.isArray(profiles)?profiles:[]).some(p=>p&&p.id!==selfId&&String(p.name||'').toLowerCase()===low))return {error:'Nama ini sudah dipakai profil lain.'};
+  return {name:n};
+}
+/** ID profil baru yang belum dipakai (cocok dengan Code.gs: p + huruf kecil/angka). */
+function newProfileId(profiles,now,rnd){
+  const taken=new Set((Array.isArray(profiles)?profiles:[]).map(p=>p&&p.id));
+  const base='p'+Math.max(0,Math.floor(+now||0)).toString(36).slice(-10)+Math.floor((rnd?rnd():Math.random())*1296).toString(36);
+  for(let i=0;;i++){const id=i?base+i.toString(36):base;if(isProf(id)&&!taken.has(id))return id;}
+}
+/** Avatar bawaan profil baru: karakter pertama yang belum dipakai profil lain (supaya mudah dibedakan). */
+function nextAvatar(profiles){
+  const used=new Set((Array.isArray(profiles)?profiles:[]).map(p=>p&&p.avatar));
+  return AVATARS.find(a=>!used.has(a))||AVATARS[0];
+}
+/** Perlu layar "Siapa yang pakai?"? Hanya kalau akun punya ≥ 2 profil, lalu: setelah masuk/ganti akun (force) atau
+ *  HP ini belum punya pilihan yang masih berlaku (mis. profil baru dibuat di HP lain, atau profil pilihannya dihapus). */
+function needsPick(profiles,stored,force){
+  if(!Array.isArray(profiles)||profiles.length<2)return false;
+  return !!force||!profiles.some(p=>p&&p.id===stored);
+}
+/** Pembuat tugas. Tanpa pembuat yang valid (data sebelum Tahap 1) = profil pertama, sama dengan migrasi Code.gs. */
+function byOf(t,first){return t&&isProf(t.by)?t.by:(first||'');}
+/** Pencentang: '' kalau belum selesai / kegiatan; selesai tanpa pencentang yang valid = profil pertama (sama dengan Code.gs). */
+function doneByOf(t,first){return !t||!t.done||isKeg(t)?'':isProf(t.doneBy)?t.doneBy:(first||'');}
+/** Grafik "Per profil": jumlah tugas yang dibuat dan dicentang tiap profil (kegiatan tidak dihitung, Tahap 8).
+ *  rows = semua profil akun + profil terhapus yang masih tercatat di tugas, urut paling banyak membuat;
+ *  top.made / top.checked = ID profil dengan angka terbesar (lebih dari satu kalau seri, kosong kalau semuanya 0). */
+function profileStats(list,profiles){
+  profiles=Array.isArray(profiles)?profiles:[];
+  const first=profiles.length?profiles[0].id:'',made=Object.create(null),chk=Object.create(null),ids=[];
+  const see=id=>{if(id&&!(id in made)){made[id]=0;chk[id]=0;ids.push(id);}};
+  profiles.forEach(p=>see(p&&p.id));
+  tasksOnly(list).forEach(t=>{const b=byOf(t,first),d=doneByOf(t,first);if(b){see(b);made[b]++;}if(d){see(d);chk[d]++;}});
+  const rows=ids.map((id,i)=>({id:id,made:made[id],checked:chk[id],i:i})).sort((a,b)=>b.made-a.made||b.checked-a.checked||a.i-b.i)
+    .map(r=>({id:r.id,made:r.made,checked:r.checked}));
+  const top=k=>{const m=rows.reduce((x,r)=>Math.max(x,r[k]),0);return m?rows.filter(r=>r[k]===m).map(r=>r.id):[];};
+  return {rows:rows,top:{made:top('made'),checked:top('checked')}};
+}
+/** Hapus profil → {profiles, idx, p} (idx/p untuk Urungkan), null kalau tidak boleh (profil terakhir / tidak ada).
+ *  Tugas tidak diubah: tetap mencatat ID profil yang dihapus (keputusan Tahap 1, tampil "Profil terhapus"). */
+function profileDelete(profiles,id){
+  const list=Array.isArray(profiles)?profiles:[],idx=list.findIndex(p=>p&&p.id===id);
+  if(idx<0||list.length<=1)return null;
+  return {profiles:list.filter((p,i)=>i!==idx),idx:idx,p:list[idx]};
 }
 
 /* ---- jam & durasi (Tahap 2). Tanpa jam = start ''. Durasi = end − start; end < start = lewat tengah malam. ---- */
@@ -1606,7 +1740,10 @@ function demoSeed(todayYmd,now){
   tasks.push({id:'coba13',cat:'jamkerja',name:'Jam kerja',detail:'Shift pagi di kantor.',date:todayYmd,start:'08:00',end:'16:00',dlDate:'',dlTime:'',
     done:false,doneAt:null,createdAt:kAt,updatedAt:kAt,kind:'kegiatan',diff:'',parent:'',by:'p1',doneBy:''});
   tasks[4].parent='coba13';
-  return {user:{id:'coba',username:'coba',name:'Tamu'},tasks:tasks,cats:[],profiles:[{id:'p1',name:'Tamu',avatar:''}]};
+  // Tahap 9: contoh profil kedua ("Sari") supaya fitur profil terlihat: beberapa tugas dibuat / dicentang olehnya
+  [1,8,10].forEach(i=>{tasks[i].by='p2';});
+  [1,2].forEach(i=>{if(tasks[i].done)tasks[i].doneBy='p2';});
+  return {user:{id:'coba',username:'coba',name:'Tamu'},tasks:tasks,cats:[],profiles:[{id:'p1',name:'Tamu',avatar:''},{id:'p2',name:'Sari',avatar:'hijab'}]};
 }
 /** "Server" mode coba: data hanya di memori, jawabannya berbentuk sama dengan Code.gs (apiLoad/apiSync/apiProfile).
  *  Tidak pernah memakai jaringan. Mengembalikan fungsi (fn, args) → jawaban. */
@@ -1635,6 +1772,8 @@ function demoServer(seed,isBuiltinCat){
 return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CATS,isId:isId,isProf:isProf,isCustomCat:isCustomCat,
   normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
   migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile,
+  AVATARS:AVATARS,PROF_NAME_MAX:PROF_NAME_MAX,checkProfName:checkProfName,newProfileId:newProfileId,nextAvatar:nextAvatar,needsPick:needsPick,
+  byOf:byOf,doneByOf:doneByOf,profileStats:profileStats,profileDelete:profileDelete,
   DIFFS:DIFFS,DEF_DUR:DEF_DUR,toMin:toMin,fromMin:fromMin,durMin:durMin,endAfter:endAfter,crossesMidnight:crossesMidnight,fmtDur:fmtDur,
   suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer,
   CAT_NAME_MAX:CAT_NAME_MAX,CAT_HUES:CAT_HUES,checkCatName:checkCatName,nextCatHue:nextCatHue,deleteCat:deleteCat,
@@ -1719,6 +1858,7 @@ const P={
  alarm:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 4.5 6.5 2.5M20 4.5l-2.5-2"/>',
  chev:'<path d="m9.5 6 6 6-6 6"/>',
  chevd:'<path d="m6 9.5 6 6 6-6"/>',
+ pen:'<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-4-4L4 16z"/><path d="m14 6 4 4"/>',
  move:'<path d="M12 3v18M3 12h18"/><path d="m9 5.5 3-2.5 3 2.5M9 18.5l3 2.5 3-2.5M5.5 9 3 12l2.5 3M18.5 9l2.5 3-2.5 3"/>'
 };
 const ic=(k,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||1.7)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[k]||'')+'</svg>';
@@ -1797,8 +1937,11 @@ function loadLocalFor(acc){
   const c=L.migrateCache(acc.demo?{}:lsGet('pt.cache.'+acc.id,{}),isBuiltinCat);
   tasks=c.tasks;ops=c.ops;cats=c.cats;profiles=c.profiles;
 }
-// profil yang dipakai di HP ini untuk akun aktif (pemilih profil dibuat di Tahap 9)
-function curProfile(){return me?L.pickProfile(profiles,lsGet('pt.prof.'+me.id,null)):undefined;}
+// profil yang dipakai di HP ini untuk akun aktif: localStorage pt.prof.<akun> (mode coba: hanya di memori)
+let demoProf=null;
+function storedProf(){return me?(me.demo?demoProf:lsGet('pt.prof.'+me.id,null)):null;}
+function storeProf(id){if(!me)return;if(me.demo)demoProf=id;else lsSet('pt.prof.'+me.id,id);}
+function curProfile(){return me?L.pickProfile(profiles,storedProf()):undefined;}
 function api(fn){
   const args=[].slice.call(arguments,1);
   // mode coba: dijawab "server" di memori (PT_LIB.demoServer), tidak pernah ke Apps Script
@@ -1849,6 +1992,7 @@ function applyServer(res){
   const m=L.mergeServer(res,ops,{cats:cats,profiles:profiles},isBuiltinCat);
   tasks=m.tasks;cats=m.cats;profiles=m.profiles;
   if(res)net.oldServer=!L.serverIsCurrent(res);
+  syncAccProf();
   saveLocal();render();
 }
 async function load(){
@@ -1864,6 +2008,7 @@ async function load(){
     applyServer(res);
     setNet(ops.length?'saving':'saved');
     if(ops.length)scheduleFlush(200);
+    maybePick();
   }catch(e){if(acc===me)setNet('offline');}
 }
 function apiErr(res){
@@ -1892,7 +2037,10 @@ function syncState(){
 function statusText(){return syncState()[1];}
 function renderSync(){
   const d=$('#sync-dot');const st=syncState();d.className='sync-dot '+st[0];d.title=st[1];
-  const av=$('#hdr-av');if(av)av.textContent=me?initial(me):'?';
+  const av=$('#hdr-av');if(!av)return;
+  // Tahap 9: avatar profil yang dipakai (huruf awal nama profil kalau tanpa karakter); belum ada profil = huruf awal akun
+  const pr=me?curProf():null,k=pr?pr.id+'|'+pr.avatar+'|'+pr.name:(me?'a|'+initial(me):'?');
+  if(av.dataset.k!==k){av.dataset.k=k;av.className='av'+(pr&&AV[pr.avatar]?' pic':'');av.innerHTML=pr?avInner(pr):esc(me?initial(me):'?');}
 }
 function initial(a){return String((a&&(a.name||a.username))||'?').trim().charAt(0)||'?';}
 function openPanel(title,html){$('#import-top').textContent=title;$('#import-body').innerHTML=html;$('#import-wrap .sheet').scrollTop=0;showLayer('import');}
@@ -1912,6 +2060,9 @@ function useAccount(acc,fresh){
   goView('tugas');render();
   requestAnimationFrame(homeScroll);
   if(!fresh)load();else{net.lastLoad=Date.now();setNet(ops.length?'saving':'saved');}
+  syncAccProf();
+  // Tahap 9 (jawaban user): setelah masuk / ganti akun → "Siapa yang pakai?" kalau akun punya ≥ 2 profil
+  if(!acc.demo&&L.needsPick(profiles,storedProf(),true))showProfiles('pick');
 }
 function addAccount(res){
   let a=accounts.find(x=>x.id===res.user.id);
@@ -1938,7 +2089,7 @@ const DEMO_RE=/[?&]coba(?:[=&]|$)/;   // alamat …/?coba membuka mode coba lang
 let demoCall=null;
 function startDemo(){
   const seed=L.demoSeed(today(),Date.now());
-  demoCall=L.demoServer(seed,isBuiltinCat);
+  demoCall=L.demoServer(seed,isBuiltinCat);demoProf=null;
   useAccount({id:'coba',username:seed.user.username,name:seed.user.name,token:L.DEMO_TOKEN,demo:true});
   toast('Mode coba: berisi contoh tugas dan tidak disimpan.',['Daftar',()=>showAuth('daftar')]);
 }
@@ -1952,15 +2103,184 @@ function dropDemoParam(){
   window.addEventListener('popstate',function once(){window.removeEventListener('popstate',once);clean();});
 }
 function renderAccounts(){
-  const others=accounts.filter(a=>!me||a.id!==me.id);
-  $('#acct-body').innerHTML=
+  const others=accounts.filter(a=>!me||a.id!==me.id),cur=curProfile();
+  // Tahap 9: profil di akun aktif (ketuk = pakai profil itu) + Kelola, di atas daftar akun
+  const pf=me&&profiles.length?'<div class="acc-prof"><div class="menu-h" style="margin:4px 2px 6px">Profil di @'+esc(me.username)+'</div><div class="pf-strip">'+
+    profiles.map(x=>'<button class="pf-chip'+(x.id===cur?' on':'')+'" data-act="prof-use" data-id="'+esc(x.id)+'" aria-pressed="'+(x.id===cur)+'">'+avEl(x,'md')+'<span>'+esc(x.name)+'</span></button>').join('')+
+    (profiles.length<L.MAX_PROFILES?'<button class="pf-chip add" data-act="prof-new"><span class="av md">'+ic('plus',2.2)+'</span><span>Tambah</span></button>':'')+'</div>'+
+    '<button class="acc-act" data-act="profiles" data-m="manage">'+ic('pen',2)+'Kelola profil</button><div class="menu-h" style="margin:14px 2px 2px">Akun</div></div>':'';
+  // daftar akun dalam wadahnya sendiri: akun yang dipakai tetap anak pertama (seperti sebelum Tahap 9)
+  $('#acct-body').innerHTML=pf+'<div class="acc-list">'+
     (me?accRow(me,true):'')+others.map(a=>accRow(a,false)).join('')+
     '<button class="acc-act" data-act="add-account">'+ic('plus',2.2)+'Tambah / masuk akun lain</button>'+
     (me?'<button class="acc-act danger" data-act="sign-out">'+ic('user',1.9)+'Keluar dari @'+esc(me.username)+'</button>':'')+
-    '<p class="pmsg" style="margin-top:8px">Akun yang pernah masuk di HP ini tersimpan di sini, jadi kamu bisa berpindah akun tanpa mengetik PIN lagi.</p>';
+    '<p class="pmsg" style="margin-top:8px">Akun yang pernah masuk di HP ini tersimpan di sini, jadi kamu bisa berpindah akun tanpa mengetik PIN lagi.</p></div>';
 }
 function accRow(a,cur){
-  return '<button class="acc-row" data-act="switch-account" data-id="'+esc(a.id)+'"><span class="av md">'+esc(initial(a))+'</span><div class="grow"><b>'+esc(a.name||a.username)+'</b><small>@'+esc(a.username)+(cur?' · sedang dipakai':'')+'</small></div>'+(cur?'<span class="tick">'+ic('check',2.6)+'</span>':'')+'</button>';
+  // avatar profil yang terakhir dipakai di akun itu di HP ini (a.av/a.pn, disimpan syncAccProf), atau huruf awal akun
+  const av=AV[a.av]?'<span class="av md pic">'+avSvg(a.av)+'</span>':'<span class="av md">'+esc(a.pn?catLetter(a.pn):initial(a))+'</span>';
+  return '<button class="acc-row" data-act="switch-account" data-id="'+esc(a.id)+'">'+av+'<div class="grow"><b>'+esc(a.name||a.username)+'</b><small>@'+esc(a.username)+(a.pn&&a.pn!==(a.name||a.username)?' · profil '+esc(a.pn):'')+(cur?' · sedang dipakai':'')+'</small></div>'+(cur?'<span class="tick">'+ic('check',2.6)+'</span>':'')+'</button>';
+}
+
+/* ---- profil & foto profil (Tahap 9, Poin 6 + 18) ----
+   Profil = orang yang memakai akun ini (maks L.MAX_PROFILES). Pilihan profil disimpan per HP (pt.prof.<akun>).
+   Tambah/ubah → op 'profile', hapus → op 'profile-del' lewat antrean biasa (jalan offline). Tugas mencatat pembuat (by)
+   dan pencentang (doneBy); tugas milik profil yang dihapus tetap mencatat ID-nya → tampil "Profil terhapus".
+   Foto profil = karakter SVG buatan sendiri (AV), tanpa unggah foto. */
+// [nama, isi SVG viewBox 0 0 64 64 dengan latar penuh; bentuk bulat/kotak diatur wadahnya (.av)]
+const AV={
+ 'cowok':['Cowok','<rect width="64" height="64" fill="#4F7CAC"/><path d="M8 64c1-11 11-17 24-17s23 6 24 17z" fill="#FFD43B"/><path d="M27 40h10v9c-2 2-8 2-10 0z" fill="#E2A97E"/><circle cx="19" cy="31" r="3.2" fill="#F1C39B"/><circle cx="45" cy="31" r="3.2" fill="#F1C39B"/><ellipse cx="32" cy="30" rx="13" ry="15" fill="#F1C39B"/><path d="M18.5 30c-1.5-12 5-19 13.5-19s15 7 13.5 19c-.7-3.6-2.2-6.5-4.2-8.3-3 2.6-9 3.4-16.4 1.6-2.6 1.4-5.4 3.6-6.4 6.7z" fill="#2B2420"/><circle cx="27" cy="31.5" r="1.9" fill="#2B2420"/><circle cx="37" cy="31.5" r="1.9" fill="#2B2420"/><path d="M28 37.5q4 3 8 0" fill="none" stroke="#9A5136" stroke-width="1.8" stroke-linecap="round"/>'],
+ 'cewek':['Cewek','<rect width="64" height="64" fill="#C2577E"/><path d="M13 52c-1-6 0-12 1-20 1-13 8-21 18-21s17 8 18 21c1 8 2 14 1 20z" fill="#3B2A22"/><path d="M10 64c1-10 10-16 22-16s21 6 22 16z" fill="#F2EFE6"/><path d="M27 40h10v9c-2 2-8 2-10 0z" fill="#D99A72"/><ellipse cx="32" cy="31" rx="12.5" ry="14.5" fill="#E9B38C"/><path d="M19.5 29c1-10 6-15 12.5-15s12.2 5 13 15c-4.5-2-8.5-5-10.5-9.5-2.5 5-7.5 8-15 9.5z" fill="#3B2A22"/><circle cx="27" cy="32" r="1.8" fill="#3B2A22"/><circle cx="37" cy="32" r="1.8" fill="#3B2A22"/><circle cx="24" cy="36.5" r="2.4" fill="#F27C9A" opacity=".55"/><circle cx="40" cy="36.5" r="2.4" fill="#F27C9A" opacity=".55"/><path d="M28.5 38q3.5 2.6 7 0" fill="none" stroke="#9A4A3A" stroke-width="1.7" stroke-linecap="round"/>'],
+ 'hijab':['Berhijab','<rect width="64" height="64" fill="#2E9C7A"/><path d="M32 10c-12.5 0-20 9.5-20 22 0 6 1.6 10.4 4 13.6C10.6 48.8 8 55 8 64h48c0-9-2.6-15.2-8-18.4 2.4-3.2 4-7.6 4-13.6 0-12.5-7.5-22-20-22z" fill="#F3E2B8"/><ellipse cx="32" cy="31" rx="11.5" ry="15" fill="#C98E66"/><path d="M32 16c-7.5 0-12.2 6-12.6 13.5 4-4.2 8-6.5 12.6-6.5s8.6 2.3 12.6 6.5C44.2 22 39.5 16 32 16z" fill="#E6CF9C"/><circle cx="27.5" cy="32" r="1.8" fill="#2B2420"/><circle cx="36.5" cy="32" r="1.8" fill="#2B2420"/><circle cx="24.5" cy="36.5" r="2.2" fill="#E8756F" opacity=".5"/><circle cx="39.5" cy="36.5" r="2.2" fill="#E8756F" opacity=".5"/><path d="M28.6 38.5q3.4 2.5 6.8 0" fill="none" stroke="#7E3F2C" stroke-width="1.7" stroke-linecap="round"/><circle cx="44" cy="48" r="1.8" fill="#FFD43B"/>'],
+ 'kacamata':['Berkacamata','<rect width="64" height="64" fill="#8A63C9"/><path d="M8 64c1-11 11-17 24-17s23 6 24 17z" fill="#4CC77A"/><path d="M27 40h10v9c-2 2-8 2-10 0z" fill="#9C6644"/><circle cx="19.5" cy="31" r="3.2" fill="#B07450"/><circle cx="44.5" cy="31" r="3.2" fill="#B07450"/><ellipse cx="32" cy="30.5" rx="12.8" ry="14.8" fill="#B07450"/><g fill="#1F1A17"><circle cx="21.5" cy="20" r="6"/><circle cx="27" cy="14.5" r="6.5"/><circle cx="34.5" cy="12.5" r="6.5"/><circle cx="41" cy="16" r="6"/><circle cx="43.5" cy="22" r="4.6"/><circle cx="19.8" cy="25" r="3.2"/></g><g fill="#ffffff" fill-opacity=".22" stroke="#16130F" stroke-width="2"><circle cx="26.5" cy="31.5" r="5"/><circle cx="37.5" cy="31.5" r="5"/></g><path d="M31.4 31h1.2" stroke="#16130F" stroke-width="2" stroke-linecap="round"/><circle cx="26.5" cy="31.8" r="1.6" fill="#16130F"/><circle cx="37.5" cy="31.8" r="1.6" fill="#16130F"/><path d="M28.3 38.6q3.7 2.8 7.4 0" fill="none" stroke="#5A2E1E" stroke-width="1.8" stroke-linecap="round"/>'],
+ 'kucing':['Kucing','<rect width="64" height="64" fill="#3B4F7A"/><path d="M13 28 15.5 8.5 29 18z" fill="#F2A65A"/><path d="M51 28 48.5 8.5 35 18z" fill="#F2A65A"/><path d="M16 23 17.3 13 24 18z" fill="#F6C6C6"/><path d="M48 23 46.7 13 40 18z" fill="#F6C6C6"/><ellipse cx="32" cy="37" rx="20" ry="18" fill="#F2A65A"/><path d="M32 20v5M27.5 21l.8 4M36.5 21l-.8 4" stroke="#D27C34" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="32" cy="44" rx="9" ry="6.5" fill="#FFE9D2"/><ellipse cx="24.5" cy="35" rx="2.5" ry="3.4" fill="#1F1A17"/><ellipse cx="39.5" cy="35" rx="2.5" ry="3.4" fill="#1F1A17"/><circle cx="25.3" cy="33.8" r=".9" fill="#fff"/><circle cx="40.3" cy="33.8" r=".9" fill="#fff"/><path d="M30 40.5h4l-2 2.2z" fill="#E36F7E"/><path d="M32 42.7v1.6M32 44.3q-2.2 2-4 .4M32 44.3q2.2 2 4 .4" fill="none" stroke="#7A4A24" stroke-width="1.3" stroke-linecap="round"/><path d="M10 41.5l9 .8M10.5 47l8.5-1.8M54 41.5l-9 .8M53.5 47l-8.5-1.8" stroke="#FFE9D2" stroke-width="1.2" stroke-linecap="round" opacity=".85"/>'],
+ 'panda':['Panda','<rect width="64" height="64" fill="#6FAE5E"/><circle cx="15.5" cy="18" r="7.5" fill="#1F1F1F"/><circle cx="48.5" cy="18" r="7.5" fill="#1F1F1F"/><ellipse cx="32" cy="35" rx="21" ry="19" fill="#F7F6F0"/><ellipse cx="23.5" cy="33" rx="5.2" ry="7" transform="rotate(-25 23.5 33)" fill="#1F1F1F"/><ellipse cx="40.5" cy="33" rx="5.2" ry="7" transform="rotate(25 40.5 33)" fill="#1F1F1F"/><circle cx="24.5" cy="32" r="1.8" fill="#fff"/><circle cx="39.5" cy="32" r="1.8" fill="#fff"/><ellipse cx="32" cy="41" rx="3.4" ry="2.4" fill="#1F1F1F"/><path d="M32 43.2v1.8M32 45q-2.4 2.2-4.4.6M32 45q2.4 2.2 4.4.6" fill="none" stroke="#1F1F1F" stroke-width="1.4" stroke-linecap="round"/><circle cx="19.5" cy="42.5" r="2.3" fill="#F2A7B2" opacity=".6"/><circle cx="44.5" cy="42.5" r="2.3" fill="#F2A7B2" opacity=".6"/>'],
+ 'rubah':['Rubah','<rect width="64" height="64" fill="#2F5D62"/><path d="M11 9 25 19h14l14-10 1 21-22 25-22-25z" fill="#E8743B"/><path d="M14.5 14 23 20.5 15.5 26z" fill="#5A2A16"/><path d="M49.5 14 41 20.5 48.5 26z" fill="#5A2A16"/><path d="M10.5 31Q20 37 32 37.5 44 37 53.5 31L32 55z" fill="#FFF3E4"/><ellipse cx="24" cy="30.5" rx="2.4" ry="3" fill="#1F1A17"/><ellipse cx="40" cy="30.5" rx="2.4" ry="3" fill="#1F1A17"/><circle cx="24.7" cy="29.4" r=".8" fill="#fff"/><circle cx="40.7" cy="29.4" r=".8" fill="#fff"/><ellipse cx="32" cy="49.5" rx="3.2" ry="2.4" fill="#1F1A17"/>'],
+ 'beruang':['Beruang','<rect width="64" height="64" fill="#E9C46A"/><circle cx="15" cy="19" r="7.5" fill="#8B5A3C"/><circle cx="49" cy="19" r="7.5" fill="#8B5A3C"/><circle cx="15" cy="19" r="3.8" fill="#C98F68"/><circle cx="49" cy="19" r="3.8" fill="#C98F68"/><ellipse cx="32" cy="36" rx="20" ry="18.5" fill="#8B5A3C"/><ellipse cx="32" cy="43" rx="9.5" ry="7.5" fill="#D9AE85"/><circle cx="24" cy="33" r="2.3" fill="#1F1A17"/><circle cx="40" cy="33" r="2.3" fill="#1F1A17"/><ellipse cx="32" cy="39.5" rx="3.6" ry="2.6" fill="#1F1A17"/><path d="M32 42v2M32 44q-2.4 2.3-4.6.5M32 44q2.4 2.3 4.6.5" fill="none" stroke="#1F1A17" stroke-width="1.4" stroke-linecap="round"/>'],
+ 'robot':['Robot','<rect width="64" height="64" fill="#3E8FA6"/><path d="M32 9v8" stroke="#DDE3E8" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="8" r="3.2" fill="#FFD43B"/><rect x="20" y="52" width="24" height="14" rx="4" fill="#AEB8C1"/><rect x="7" y="27" width="6" height="12" rx="2.5" fill="#AEB8C1"/><rect x="51" y="27" width="6" height="12" rx="2.5" fill="#AEB8C1"/><rect x="12" y="16" width="40" height="34" rx="9" fill="#DDE3E8"/><rect x="17" y="22" width="30" height="18" rx="6" fill="#23303B"/><circle cx="25.5" cy="31" r="3.4" fill="#5CE1E6"/><circle cx="38.5" cy="31" r="3.4" fill="#5CE1E6"/><path d="M26 45h12" stroke="#8C99A5" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 2"/>'],
+ 'robot-bulat':['Robot bulat','<rect width="64" height="64" fill="#E76F51"/><path d="M20 12l4 6M44 12l-4 6" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"/><circle cx="19" cy="10.5" r="2.6" fill="#2B2B2B"/><circle cx="45" cy="10.5" r="2.6" fill="#2B2B2B"/><circle cx="32" cy="36" r="20" fill="#FFD43B"/><circle cx="14.5" cy="36" r="2.6" fill="#C9A21E"/><circle cx="49.5" cy="36" r="2.6" fill="#C9A21E"/><rect x="17" y="27" width="30" height="14" rx="7" fill="#2B2B2B"/><circle cx="32" cy="34" r="4.3" fill="#FF8A5B"/><circle cx="33.4" cy="32.6" r="1.3" fill="#fff"/><path d="M26 47q6 4 12 0" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"/>'],
+ 'monster':['Monster mata satu','<rect width="64" height="64" fill="#264653"/><path d="M12 62V30c0-12 9-20 20-20s20 8 20 20v32l-5-4-5 4-5-4-5 4-5-4-5 4-5-4z" fill="#8AC926"/><circle cx="19" cy="42" r="2.2" fill="#6FA51E"/><circle cx="46" cy="22" r="1.8" fill="#6FA51E"/><circle cx="45" cy="45" r="2.6" fill="#6FA51E"/><circle cx="32" cy="27" r="9" fill="#fff"/><circle cx="33" cy="28" r="4.6" fill="#1F1A17"/><circle cx="34.6" cy="26.4" r="1.4" fill="#fff"/><path d="M22 41h20q-3 9-10 9t-10-9z" fill="#1F1A17"/><path d="M25.5 41h4l-2 3.4zM34.5 41h4l-2 3.4z" fill="#fff"/>'],
+ 'monster-tanduk':['Monster bertanduk','<rect width="64" height="64" fill="#F4A261"/><path d="M19 21c-5-4-6-10-4-15 1.5 4.5 5 7.5 9.5 8.5zM45 21c5-4 6-10 4-15-1.5 4.5-5 7.5-9.5 8.5z" fill="#FFF4E0"/><path d="M9 64c0-28 9-46 23-46s23 18 23 46z" fill="#7B4FD1"/><circle cx="25" cy="34" r="5.2" fill="#fff"/><circle cx="39" cy="34" r="5.2" fill="#fff"/><circle cx="25.8" cy="34.8" r="2.5" fill="#1F1A17"/><circle cx="39.8" cy="34.8" r="2.5" fill="#1F1A17"/><path d="M23.5 44q8.5 6 17 0" fill="none" stroke="#1F1A17" stroke-width="2.2" stroke-linecap="round"/><path d="M27 45.3h3.2l-1.6 3.2zM33.8 45.3H37l-1.6 3.2z" fill="#fff"/><circle cx="17" cy="44" r="2.4" fill="#F28AB5" opacity=".6"/><circle cx="47" cy="44" r="2.4" fill="#F28AB5" opacity=".6"/>']
+};
+const avSvg=code=>AV[code]?'<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">'+AV[code][1]+'</svg>':'';
+const profOf=id=>profiles.find(x=>x.id===id)||null;
+const firstProf=()=>profiles.length?profiles[0].id:'';
+const curProf=()=>profOf(curProfile());
+// jawaban user: tanda pembuat/pencentang di item hanya kalau akun punya ≥ 2 profil
+const multiProf=()=>profiles.length>1;
+const profName=id=>{const x=profOf(id);return x?x.name:'Profil terhapus';};
+// nama pendek untuk baris info item ("✓ Budi"): kata pertama
+const profShort=id=>{const x=profOf(id);if(!x)return 'Profil terhapus';const w=x.name.split(' ')[0];return w.length>14?w.slice(0,13)+'…':w;};
+// isi avatar: karakter, huruf awal nama, atau "?" (profil terhapus)
+const avInner=x=>x&&AV[x.avatar]?avSvg(x.avatar):esc(x?catLetter(x.name):'?');
+function avEl(x,cls,attr){return '<span class="av'+(cls?' '+cls:'')+(x&&AV[x.avatar]?' pic':'')+(x?'':' gone')+'"'+(attr||'')+'>'+avInner(x)+'</span>';}
+// avatar mini pembuat di pojok ikon kategori (item tugas & kartu kegiatan)
+function whoIc(t,iconHtml){
+  if(!multiProf())return iconHtml;
+  const b=L.byOf(t,firstProf());
+  return '<div class="ic-who">'+iconHtml+avEl(profOf(b),'xs by',' title="Dibuat oleh '+esc(profName(b))+'"')+'</div>';
+}
+// avatar + nama profil yang dipakai disimpan di data akun (pt.accounts) supaya daftar akun bisa menampilkannya.
+// Akun yang baru punya 1 profil: pilihannya disimpan sekarang, jadi kalau nanti profil kedua dibuat (di HP mana pun)
+// HP ini tetap memakai profil yang sama tanpa ditanya.
+function syncAccProf(){
+  if(!me)return;
+  if(profiles.length===1&&storedProf()!==profiles[0].id)storeProf(profiles[0].id);
+  const x=curProf(),av=x?x.avatar:'',pn=x?x.name:'';
+  if(me.av!==av||me.pn!==pn){me.av=av;me.pn=pn;saveAccounts();}
+}
+function setProfile(id,quiet){
+  const x=profOf(id);if(!me||!x)return;
+  const same=curProfile()===id;
+  storeProf(id);syncAccProf();render();
+  if(isOpen('profiles'))renderProfiles();if(isOpen('accounts'))renderAccounts();
+  if(!quiet&&!same)toast('Sekarang memakai profil '+x.name);
+}
+// HP ini belum punya pilihan profil yang berlaku (mis. profil kedua dibuat di HP lain) → tanya, kalau tidak ada layar lain terbuka
+function maybePick(){
+  if(me&&!me.demo&&!layers.length&&!$('#auth').classList.contains('open')&&L.needsPick(profiles,storedProf(),false))showProfiles('pick');
+}
+// gambar ulang semua tempat yang menampilkan profil
+function refreshProfs(){syncAccProf();render();if(isOpen('profiles'))renderProfiles();if(isOpen('accounts'))renderAccounts();}
+function putProf(x){const i=profiles.findIndex(y=>y.id===x.id);if(i>=0)profiles[i]=x;else profiles.push(x);queueMeta({op:'profile',profile:x});}
+
+/* layar "Siapa yang pakai?" (mode 'pick') / "Kelola profil" (mode 'manage') */
+function showProfiles(mode){
+  if(isOpen('accounts'))hideLayer('accounts');
+  state.pfMode=mode==='manage'?'manage':'pick';renderProfiles();$('#prof-screen').scrollTop=0;showLayer('profiles');
+}
+function renderProfiles(){
+  if(!me){hideLayer('profiles');return;}
+  const man=state.pfMode==='manage',cur=curProfile();
+  $('#pf-title').textContent=man?'Kelola profil':'Siapa yang pakai?';
+  $('#pf-manage').textContent=man?'Selesai':'Kelola';
+  $('#pf-sub').textContent='@'+me.username+' · '+profiles.length+' dari '+L.MAX_PROFILES+' profil';
+  $('#pf-grid').innerHTML=profiles.map(x=>'<button class="pf-tile'+(x.id===cur&&!man?' on':'')+'" data-act="prof-tile" data-id="'+esc(x.id)+'" aria-label="'+esc((man?'Ubah profil ':'Pakai profil ')+x.name)+'">'+
+      avEl(x,'xl')+(man?'<span class="pf-ed">'+ic('pen',2.2)+'</span>':'')+'<b>'+esc(x.name)+'</b><small>'+(x.id===cur?'Sedang dipakai':'')+'</small></button>').join('')+
+    (profiles.length<L.MAX_PROFILES?'<button class="pf-tile add" data-act="prof-new"><span class="av xl">'+ic('plus',2)+'</span><b>Tambah profil</b><small></small></button>':'');
+  $('#pf-note').textContent=man?'Ketuk profil untuk mengubah nama, foto, atau menghapusnya. Kategori dipakai bersama semua profil.'
+    :'Tugas yang dibuat dan dicentang dicatat atas nama profil yang dipilih. Pilihan diingat di HP ini, bisa diganti dari menu Saya.';
+}
+/* editor profil (panel #import-wrap, pola sama dengan editor kategori) */
+function avGrid(act,cur,letter){
+  return '<div class="av-grid">'+L.AVATARS.map(a=>'<button type="button" class="avp'+(a===cur?' on':'')+'" data-act="'+act+'" data-a="'+a+'" aria-label="'+esc(AV[a][0])+'" aria-pressed="'+(a===cur)+'">'+
+      '<span class="av pic">'+avSvg(a)+'</span><i class="avp-ok">'+ic('check',3)+'</i></button>').join('')+'</div>'+
+    '<button type="button" class="avp-letter'+(cur?'':' on')+'" data-act="'+act+'" data-a="" aria-pressed="'+!cur+'"><span class="av">'+esc(letter)+'</span>Pakai huruf awal nama saja<i class="avp-ok">'+ic('check',3)+'</i></button>';
+}
+function markAvGrid(cur){
+  document.querySelectorAll('#import-body .avp,#import-body .avp-letter').forEach(b=>{const on=(b.getAttribute('data-a')||'')===cur;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+}
+const madeBy=id=>onlyT(all()).filter(t=>L.byOf(t,firstProf())===id).length;
+function openProfEditor(id){
+  const x=id?profOf(id):null;
+  if(id&&!x){toast('Profil sudah tidak ada');refreshProfs();return;}
+  if(!x&&profiles.length>=L.MAX_PROFILES){toast('Maksimal '+L.MAX_PROFILES+' profil per akun');return;}
+  const av=x?x.avatar:L.nextAvatar(profiles);
+  openPanel(x?'Ubah profil':'Profil baru',
+    '<div class="kc-prev"><span class="av pe-av" id="pe-av"></span><div class="grow"><small>Pratinjau</small><b id="pe-prev-n"></b></div></div>'+
+    '<label class="fld"><span>Nama profil</span><input class="inp" id="pe-name" maxlength="'+L.PROF_NAME_MAX+'" placeholder="Contoh: Budi" enterkeyhint="done" autocomplete="off" value="'+esc(x?x.name:'')+'"></label>'+
+    '<div class="err hidden" id="pe-err"></div>'+
+    '<div class="fld"><span>Foto profil</span>'+avGrid('pe-av',av,catLetter(x?x.name:'?'))+'</div>'+
+    '<button class="btn-primary" data-act="pe-save">'+(x?'Simpan':'Buat profil')+'</button>'+
+    (x?'<p class="kc-note">'+madeBy(x.id)+' tugas dibuat oleh profil ini.'+(x.id===curProfile()?' Profil ini sedang dipakai di HP ini.':'')+'</p>'+
+      (profiles.length>1?'<div class="d-actions"><button class="btn-sec danger" data-act="pe-del">Hapus profil</button></div>':'<p class="kc-note">Profil terakhir tidak bisa dihapus.</p>')
+      :'<p class="kc-note">Satu akun bisa dipakai sampai '+L.MAX_PROFILES+' orang. Tugas yang dibuat dan dicentang dicatat atas nama profilnya; kategori dipakai bersama.</p>'));
+  state.profEd={id:x?x.id:null,avatar:av};   // setelah openPanel (showLayer tidak mengosongkannya)
+  syncProfEditor();
+  if(!x)setTimeout(()=>{try{$('#pe-name').focus({preventScroll:true});}catch(_){}},320);
+}
+function syncProfEditor(){
+  const ed=state.profEd,inp=$('#pe-name');if(!ed||!inp)return;
+  const nm=inp.value.trim(),box=$('#pe-av'),x={name:nm||'?',avatar:ed.avatar};
+  box.className='av pe-av'+(AV[ed.avatar]?' pic':'');box.innerHTML=avInner(x);
+  $('#pe-prev-n').textContent=nm||'Nama profil';
+  const lt=$('#import-body .avp-letter .av');if(lt)lt.textContent=catLetter(nm||'?');
+  markAvGrid(ed.avatar);
+}
+function profErr(msg){const er=$('#pe-err'),inp=$('#pe-name');er.textContent=msg;er.classList.toggle('hidden',!msg);inp.classList.toggle('bad',!!msg);}
+function saveProf(){
+  const ed=state.profEd;if(!ed||!me)return;
+  const r=L.checkProfName($('#pe-name').value,profiles,ed.id);
+  if(r.error){profErr(r.error);try{$('#pe-name').focus();}catch(_){}return;}
+  if(ed.id&&!profOf(ed.id)){hideLayer('import');toast('Profil sudah tidak ada');refreshProfs();return;}
+  if(!ed.id&&profiles.length>=L.MAX_PROFILES){profErr('Maksimal '+L.MAX_PROFILES+' profil per akun.');return;}
+  const isNew=!ed.id,x={id:ed.id||L.newProfileId(profiles,Date.now()),name:r.name,avatar:ed.avatar};
+  if(isNew)storeProf(curProfile());   // profil yang sedang dipakai tetap dipakai (tidak ditanya ulang)
+  putProf(x);hideLayer('import');refreshProfs();
+  toast(isNew?'Profil "'+x.name+'" dibuat'+(isOpen('profiles')?'':' · ganti profil lewat menu Saya'):'Profil disimpan');
+}
+function delProfAsk(id){
+  const x=profOf(id);if(!x)return;
+  if(profiles.length<=1){toast('Profil terakhir tidak bisa dihapus');return;}
+  const f=firstProf(),n=onlyT(all()).filter(t=>L.byOf(t,f)===id||L.doneByOf(t,f)===id).length;
+  confirmBox('Hapus profil?','"'+x.name+'" dihapus dari akun ini. '+(n?n+' tugas yang dibuat atau dicentangnya tidak ikut terhapus, ditandai "Profil terhapus".':'Tidak ada tugas yang ikut terhapus.'),'Hapus',()=>delProfNow(id));
+}
+function delProfNow(id){
+  const r=L.profileDelete(profiles,id);if(!r||!me)return;
+  const wasCur=curProfile()===id;
+  profiles=r.profiles;queueMeta({op:'profile-del',id:id});
+  if(wasCur)storeProf(profiles[0].id);
+  hideLayer('import');refreshProfs();
+  undoToast('Profil "'+r.p.name+'" dihapus'+(wasCur?' · sekarang memakai '+profiles[0].name:''),()=>{
+    if(profOf(id))return;
+    if(profiles.length>=L.MAX_PROFILES){toast('Maksimal '+L.MAX_PROFILES+' profil per akun');return;}
+    profiles.splice(Math.min(r.idx,profiles.length),0,r.p);queueMeta({op:'profile',profile:r.p});
+    if(wasCur)storeProf(id);
+    refreshProfs();toast('Profil dikembalikan');
+  });
+}
+/* Ganti Foto Profil (Poin 6): pilihan karakter untuk profil yang sedang dipakai; tanda di yang sedang dipakai */
+function openPhotoPicker(){
+  const x=curProf();if(!x){toast('Profil belum dimuat. Coba lagi setelah tersambung.');return;}
+  openPanel('Ganti foto profil','<div class="kc-prev">'+avEl(x,'pe-av')+'<div class="grow"><small>Foto profil untuk</small><b>'+esc(x.name)+'</b></div></div>'+
+    avGrid('photo-pick',x.avatar,catLetter(x.name))+'<p class="kc-note">Pilih salah satu karakter. Foto dari HP tidak bisa diunggah.</p>');
+}
+function setPhoto(code){
+  const x=curProf();if(!x||(code&&!AV[code]))return;
+  hideLayer('import');
+  if(x.avatar===code)return;
+  putProf(Object.assign({},x,{avatar:code}));refreshProfs();
+  toast(code?'Foto profil diganti jadi '+AV[code][0]:'Foto profil memakai huruf awal');
 }
 
 /* ---- layar masuk / daftar ---- */
@@ -2008,7 +2328,8 @@ async function submitAuth(e){
     if(!res||!res.ok)return show((res&&res.message)||'Gagal. Coba lagi.');
     $('#a-user').value='';$('#a-pin').value='';$('#a-pin2').value='';$('#a-name').value='';
     addAccount(res);
-    toast(reg?'Akun @'+res.user.username+' berhasil dibuat 🎉':'Halo, '+res.user.name+'!');
+    // akun dengan ≥ 2 profil: layar "Siapa yang pakai?" sudah terbuka, sapaan muncul setelah profil dipilih
+    if(!isOpen('profiles'))toast(reg?'Akun @'+res.user.username+' berhasil dibuat 🎉':'Halo, '+res.user.name+'!');
   }catch(ex){show(ex&&ex.message==='bad-response'?'Server belum siap: pastikan Code.gs terbaru sudah diterapkan sebagai Versi baru (Terapkan → Kelola penerapan).':'Tidak bisa terhubung. Periksa internet lalu coba lagi.');}
   finally{btn.disabled=false;btn.textContent=authTab==='daftar'?'Buat akun':'Masuk';}
 }
@@ -2026,6 +2347,8 @@ const state={
   form:null,detailId:null,returnTo:null,
   catEd:null,     // editor kategori custom yang terbuka: {id|null, hue, from:'add'|'list'}
   histKey:null,   // kategori yang riwayatnya dibuka dari Grafik (Poin 8)
+  pfMode:'pick', // layar profil (Tahap 9): 'pick' = "Siapa yang pakai?", 'manage' = Kelola profil
+  profEd:null,    // editor profil yang terbuka: {id|null, avatar}
   // Tahap 8 (Poin 17): kegiatan yang daftar tugasnya sedang ditutup (diingat di HP ini, tidak di mode coba)
   fold:new Set([].concat(lsGet('pt.fold',[])||[]).filter(x=>typeof x==='string'))
 };
@@ -2071,8 +2394,10 @@ function taskRow(t,day){
   const parts=[];
   if(time)parts.push(ic('clock',2)+esc(time));
   if(dl)parts.push('<span class="m-dl '+dl.cls+'">'+ic('alarm',2)+esc(dlShort(t,dl))+'</span>');
+  // Tahap 9: pencentang ("✓ Budi") sebelum kategori, hanya kalau akun punya ≥ 2 profil
+  if(t.done&&multiProf()){const d=L.doneByOf(t,firstProf());parts.push('<span class="m-by" title="Dicentang '+esc(profName(d))+'">'+ic('check',2.6)+esc(profShort(d))+'</span>');}
   parts.push(esc(c.n));
-  return '<div class="task'+(t.done?' done':'')+'" data-id="'+esc(t.id)+'">'+catIc(c)+
+  return '<div class="task'+(t.done?' done':'')+'" data-id="'+esc(t.id)+'">'+whoIc(t,catIc(c))+
     '<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
     '<div class="task-meta">'+(sp?'<span class="span-tag" title="'+esc(spanTitle(t))+'">'+esc(sp)+'</span>':'')+(DIFF_N[t.diff]?'<span class="diff '+t.diff+'">'+DIFF_N[t.diff]+'</span>':'')+parts.join('<i>·</i>')+'</div>'+
     '</div><button class="check" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button></div>';
@@ -2101,7 +2426,7 @@ function kegBlock(e,day){
   const t=e.t,c=catOf(t.cat),pr=L.kegProgress(all(),t.id),n=e.kids.length,fold=n>0&&state.fold.has(t.id),sp=L.spanTag(t,day);
   const prog=pr.total?'<span class="keg-pr'+(pr.done===pr.total?' all':'')+'">'+pr.done+'/'+pr.total+' selesai</span>':'belum ada tugas';
   return '<div class="keg'+(fold?' fold':'')+'" data-kid="'+esc(t.id)+'" style="--h:'+c.h+'">'+
-    '<div class="keg-h" data-id="'+esc(t.id)+'">'+catIc(c)+'<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
+    '<div class="keg-h" data-id="'+esc(t.id)+'">'+whoIc(t,catIc(c))+'<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
     '<div class="task-meta"><span class="keg-tag">Kegiatan</span>'+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+ic('clock',2)+esc(kegTime(t))+'<i>·</i>'+prog+'<i>·</i>'+esc(c.n)+'</div></div>'+
     (n?'<button class="keg-fold" data-act="keg-fold" data-id="'+esc(t.id)+'" aria-expanded="'+!fold+'" aria-label="'+(fold?'Buka':'Tutup')+' daftar tugas '+esc(t.name)+'">'+ic('chevd',2.2)+'</button>':'')+'</div>'+
     (n?'<div class="keg-kids">'+e.kids.map(k=>taskRow(k,day)).join('')+'</div>':'')+'</div>';
@@ -2272,7 +2597,9 @@ function tbBlock(b,d,aw,kegs){
   const end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
   const time=b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
   const dl=dlInfo(t),sp=b.prev?'':L.spanTag(t,d);
-  const meta=(dl&&dl.cls==='over'?'<i class="tb-od" title="Lewat deadline"></i>':'')+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+esc(time);
+  const mp=multiProf(),f=firstProf(),by=mp?L.byOf(t,f):'',dby=mp?L.doneByOf(t,f):'';
+  const meta=(mp?avEl(profOf(by),'xxs',' title="Dibuat oleh '+esc(profName(by))+'"'):'')+(dl&&dl.cls==='over'?'<i class="tb-od" title="Lewat deadline"></i>':'')+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+esc(time)+
+    (dby?' · <span class="m-by">✓ '+esc(profShort(dby))+'</span>':'');
   const kc=kegs&&kegs.length&&!xs?'<div class="tb-kc" style="--kh:'+catOf(kegs[0].t.cat).h+'" title="'+esc('Kegiatan: '+kegs.map(k=>k.t.name).join(', '))+'">'+ic('layers',2.2)+
     '<span>'+esc(kegs.length>1?kegs.map(k=>k.t.name).join(', '):kegs[0].t.name+' · '+tbTime(kegs[0])+tbProg(kegs[0].t))+'</span></div>':'';
   const ln=xs?1:Math.max(1,Math.floor((hpx-6-15-(kc?17:0))/16));
@@ -2584,6 +2911,17 @@ function renderStats(){
     return '<button class="crow" data-act="cat-hist" data-k="'+esc(c.k)+'" aria-label="'+esc(cc.n)+': '+c.n+' tugas, lihat daftar">'+catIc(cc)+'<div class="grow"><div class="l1"><span>'+esc(cc.n)+'</span><b>'+c.n+' tugas</b></div>'+
     '<div class="l2"><i style="width:'+Math.max(4,c.n/maxC*72)+'%;background:'+colorOf[c.k]+'"></i><span>'+fmtPct(c.n/total*100)+(state.statFilter==='semua'?' · '+c.d+' selesai':'')+'</span></div></div>'+
     '<span class="chev">'+ic('chev',2)+'</span></button>';}).join('')+'</div>';
+  // Tahap 9 (Poin 18): profil yang paling banyak membuat & mencentang tugas di bulan ini (semua status, tanpa kegiatan)
+  const ps=L.profileStats(monthAll,profiles);
+  if(ps.rows.length>1){
+    const cnt=(id,k)=>(ps.rows.find(r=>r.id===id)||{})[k]||0,maxM=Math.max(1,...ps.rows.map(r=>r.made));
+    const best=(lbl,ids,k,none)=>'<div class="pf-best">'+(ids.length?avEl(profOf(ids[0])):'<span class="av gone">–</span>')+'<div class="grow"><span>'+lbl+'</span>'+
+      '<b>'+esc(ids.length?(ids.length>1?ids.map(profShort).join(' & '):profName(ids[0])):'Belum ada')+'</b><small>'+(ids.length?cnt(ids[0],k)+' tugas'+(ids.length>1?' · seri':''):none)+'</small></div></div>';
+    h+='<h3 class="sec-title">Per profil</h3><p class="sec-sub">'+esc(fmtMonth(mk))+' · semua status, tanpa kegiatan</p>'+
+      '<div class="pf-bests">'+best('Paling banyak membuat',ps.top.made,'made','belum ada tugas')+best('Paling banyak mencentang',ps.top.checked,'checked','belum ada yang selesai')+'</div>'+
+      '<div class="clist">'+ps.rows.map(r=>'<div class="crow prow" data-pid="'+esc(r.id)+'">'+avEl(profOf(r.id),'md')+'<div class="grow"><div class="l1"><span>'+esc(profName(r.id))+'</span><b>'+r.made+' dibuat</b></div>'+
+        '<div class="l2"><i style="width:'+(r.made?Math.max(4,r.made/maxM*72):0)+'%;background:var(--s1)'+(r.made?'':';min-width:0')+'"></i><span>'+r.checked+' dicentang</span></div></div></div>').join('')+'</div>';
+  }
   body.innerHTML=h;
   bindDonut(segs,total,fl);
   drawCurve($('#curve'),mk,per,showDone?perDone:null);
@@ -2681,16 +3019,25 @@ function renderMe(){
   const byCat={};l.forEach(t=>{const k=catKey(t.cat);byCat[k]=(byCat[k]||0)+1;});
   const fav=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a])[0];
   const st=syncState();
-  let h='<div class="me-card"><span class="av big">'+esc(initial(me))+'</span><div><b>'+esc(me.name||me.username)+'</b><p style="margin-top:1px">@'+esc(me.username)+'</p>'+
+  // Tahap 9: kartu = profil yang dipakai (ketuk avatar = Ganti foto profil); belum ada profil (server lama) = akun seperti dulu
+  const pr=curProf(),mp=multiProf();
+  let h='<div class="me-card">'+(pr?'<button class="me-pic" data-act="prof-photo" aria-label="Ganti foto profil">'+avEl(pr,'big')+'<span class="me-ed">'+ic('pen',2.4)+'</span></button>':'<span class="av big">'+esc(initial(me))+'</span>')+
+    '<div style="min-width:0"><b>'+esc(pr?pr.name:(me.name||me.username))+'</b><p style="margin-top:1px">@'+esc(me.username)+(mp?' · '+profiles.length+' profil':'')+'</p>'+
     (st[1]?'<p><i class="sync-dot '+st[0]+'"></i>'+esc(st[1])+(ops.length?' ('+ops.length+')':'')+'</p>':'')+'</div></div>';
   h+='<div class="tiles" style="grid-template-columns:repeat(3,1fr)">'+tile('Semua tugas',l.length,'tercatat')+tile('Selesai',d,pct(d,l.length).toString().replace('.',',')+'%')+
     tile('Paling sering',fav?catOf(fav).n:'-',fav?byCat[fav]+' tugas':'belum ada')+'</div>';
   if(canInstall)h+='<div class="menu" style="margin-top:14px"><button data-act="install">'+ic('phone')+'<div>Pasang sebagai aplikasi<small>Ikon di layar utama, terbuka penuh tanpa bilah browser</small></div></button></div>';
+  if(pr)h+='<div class="menu-h">Profil</div><div class="menu">'+
+    '<button data-act="prof-photo">'+avEl(pr)+'<div>Ganti foto profil<small>'+esc(AV[pr.avatar]?AV[pr.avatar][0]:'Huruf awal nama')+' · pilih dari 12 karakter</small></div></button>'+
+    '<button data-act="prof-edit-cur">'+ic('pen')+'<div>Ubah nama profil<small>'+esc(pr.name)+'</small></div></button>'+
+    (mp?'<button data-act="profiles">'+ic('people')+'<div>Ganti profil<small>'+profiles.length+' profil di akun ini · '+esc(pr.name)+' sedang dipakai</small></div></button>'+
+        '<button data-act="profiles" data-m="manage">'+ic('user')+'<div>Kelola profil<small>Tambah, ubah, atau hapus profil</small></div></button>'
+      :'<button data-act="prof-new">'+ic('people')+'<div>Tambah profil<small>Satu akun bisa dipakai sampai '+L.MAX_PROFILES+' orang, masing-masing dengan profilnya</small></div></button>')+'</div>';
   h+='<div class="menu-h">Kategori</div><div class="menu">'+
     '<button data-act="cats-manage">'+ic('layers')+'<div>Kategori saya<small>'+(cats.length?cats.length+' kategori buatanmu · tambah, ubah, hapus':'Buat kategori sendiri dengan nama dan warna')+'</small></div></button></div>';
   h+='<div class="menu-h">Akun</div><div class="menu">'+
     '<button data-act="accounts">'+ic('people')+'<div>Ganti akun<small>'+accounts.length+' akun tersimpan di HP ini</small></div></button>'+
-    '<button data-act="edit-name">'+ic('user')+'<div>Ubah nama tampilan<small>'+esc(me.name||me.username)+'</small></div></button>'+
+    '<button data-act="edit-name">'+ic('user')+'<div>Ubah nama akun<small>'+esc(me.name||me.username)+' · tampil di daftar akun</small></div></button>'+
     '<button data-act="change-pin">'+ic('clip')+'<div>Ubah PIN<small>Perangkat lain akan diminta masuk lagi</small></div></button>'+
     '<button data-act="sign-out" class="danger">'+ic('upload')+'<div>Keluar dari akun ini<small style="color:var(--muted)">Data tetap aman di spreadsheet</small></div></button></div>';
   h+='<div class="menu-h">Data</div><div class="menu">'+
@@ -2745,7 +3092,7 @@ function renderDetail(){
     (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
     '<div class="d-rows">'+dateRow(t)+timeRow(t,'Jam pengerjaan')+pr+
     (dl?'<div class="d-row '+dl.cls+'">'+ic('alarm')+'<div><small>Deadline</small><b>'+esc(fmtLong(t.dlDate))+' · '+esc(t.dlTime||'23:59')+'</b><em>'+esc(dl.rel)+'</em></div></div>':'<div class="d-row">'+ic('alarm')+'<div><small>Deadline</small><b>Tanpa deadline</b></div></div>')+
-    '</div><button class="btn-primary" data-act="detail-toggle">'+(t.done?'Tandai belum selesai':'✓ Tandai selesai')+'</button>'+
+    whoRows(t)+'</div><button class="btn-primary" data-act="detail-toggle">'+(t.done?'Tandai belum selesai':'✓ Tandai selesai')+'</button>'+
     '<div class="d-actions"><button class="btn-sec" data-act="detail-edit">Edit</button><button class="btn-sec danger" data-act="detail-delete">Hapus</button></div>';
 }
 // Detail kegiatan (Tahap 8): tanpa centang & deadline; progres + daftar tugas di dalamnya (bisa dicentang/dibuka dari sini)
@@ -2756,11 +3103,20 @@ function renderKegDetail(t){
   $('#detail').innerHTML='<div class="d-head">'+catIc(c,true)+'<div><small>Kegiatan · '+esc(c.n)+'</small><h3>'+esc(t.name)+'</h3></div></div>'+
     '<span class="d-status is-keg" style="--h:'+c.h+'">'+ic('layers',2)+'Kegiatan</span><span class="d-prog">'+(kids.length?dn+'/'+kids.length+' tugas selesai':'Belum ada tugas di dalamnya')+'</span>'+
     (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
-    '<div class="d-rows">'+dateRow(t)+timeRow(t,'Jam kegiatan')+'</div>'+
+    '<div class="d-rows">'+dateRow(t)+timeRow(t,'Jam kegiatan')+whoRows(t)+'</div>'+
     '<div class="d-kids"><div class="d-kids-h"><b>Tugas di dalamnya</b>'+(kids.length?'<span>'+dn+'/'+kids.length+' selesai</span>':'')+'</div>'+
     (kids.length?kids.map(k=>taskRow(k,L.onDay(k,t.date)?t.date:undefined)).join(''):'<p class="d-kids-empty">Tugas yang dimasukkan ke kegiatan ini tampil di sini. Kegiatan sendiri tidak bisa dicentang dan tidak dihitung di grafik.</p>')+'</div>'+
     '<button class="btn-primary" data-act="keg-add">+ Tambah tugas di kegiatan ini</button>'+
     '<div class="d-actions"><button class="btn-sec" data-act="detail-edit">Edit</button><button class="btn-sec danger" data-act="detail-delete">Hapus</button></div>';
+}
+
+// Tahap 9: "Dibuat oleh" + "Dicentang oleh" (tugas selesai) di detail, kalau akun punya ≥ 2 profil
+function fmtStamp(ms){const d=new Date(ms);return d.getDate()+' '+MON_S[d.getMonth()]+' '+d.getFullYear()+', '+pad(d.getHours())+'.'+pad(d.getMinutes());}
+function whoRows(t){
+  if(!multiProf())return '';
+  const f=firstProf(),b=L.byOf(t,f),d=L.doneByOf(t,f);
+  const row=(id,lbl,ms)=>'<div class="d-row d-who">'+avEl(profOf(id),'sm')+'<div><small>'+lbl+'</small><b>'+esc(profName(id))+'</b>'+(ms?'<em>'+esc(fmtStamp(ms))+'</em>':'')+'</div></div>';
+  return row(b,'Dibuat oleh',t.createdAt)+(d?row(d,'Dicentang oleh',t.doneAt):'');
 }
 
 /* ================= actions ================= */
@@ -3312,7 +3668,7 @@ function renderCatHist(){
 /* ---- overlays ---- */
 /* Layers (screens & sheets) + browser history so the phone's back button closes them */
 const LAYER_EL={auth:'#auth',accounts:'#acct-wrap',add:'#add-screen',form:'#form-wrap',detail:'#detail-wrap',search:'#search-screen',month:'#month-wrap',import:'#import-wrap',confirm:'#confirm-wrap',
-  cats:'#cats-wrap',cathist:'#cathist-screen'};
+  cats:'#cats-wrap',cathist:'#cathist-screen',profiles:'#prof-screen'};
 const layers=[];
 function isOpen(id){return layers.indexOf(id)>=0;}
 function showLayer(id){
@@ -3329,7 +3685,7 @@ function hideLayer(id){
   if(id==='add')state.form=null;
   if(id==='detail')state.detailId=null;
   if(id==='confirm'){cfCb=null;cfAlt=null;}
-  if(id==='import')state.catEd=null;
+  if(id==='import'){state.catEd=null;state.profEd=null;}
   if(id==='cathist')state.histKey=null;
   syncHist();return true;
 }
@@ -3445,6 +3801,7 @@ function render(){
   if(isOpen('search'))renderSearch();
   if(isOpen('cathist'))renderCatHist();
   if(isOpen('cats'))renderCatsList();
+  if(isOpen('profiles'))renderProfiles();
   if(isOpen('add')&&state.form)renderCatGrid();   // kategori custom bisa berubah setelah sinkron
 }
 
@@ -3551,6 +3908,20 @@ function handle(a,el,e){
     case 'import':showImport('','import');break;
     case 'install':if(installEvt){installEvt.prompt();installEvt.userChoice.then(c=>{if(c&&c.outcome==='accepted')toast('Aplikasi dipasang 🎉');installEvt=null;renderMe();}).catch(()=>{});}break;
     case 'accounts':renderAccounts();showLayer('accounts');break;
+    // ---- profil & foto profil (Tahap 9) ----
+    case 'profiles':showProfiles(el.dataset.m);break;
+    case 'close-profiles':hideLayer('profiles');break;
+    case 'prof-manage':state.pfMode=state.pfMode==='manage'?'pick':'manage';renderProfiles();break;
+    case 'prof-tile':{const id=el.dataset.id;if(state.pfMode==='manage'){openProfEditor(id);break;}
+      if(!profOf(id))break;const x=profOf(id);setProfile(id,true);hideLayer('profiles');toast('Halo, '+x.name+'!');break;}
+    case 'prof-use':{const id=el.dataset.id;if(!profOf(id))break;setProfile(id);hideLayer('accounts');break;}
+    case 'prof-new':openProfEditor(null);break;
+    case 'prof-edit-cur':openProfEditor(curProfile());break;
+    case 'prof-photo':openPhotoPicker();break;
+    case 'photo-pick':setPhoto(el.dataset.a||'');break;
+    case 'pe-av':if(state.profEd){state.profEd.avatar=el.dataset.a||'';syncProfEditor();}break;
+    case 'pe-save':saveProf();break;
+    case 'pe-del':if(state.profEd&&state.profEd.id)delProfAsk(state.profEd.id);break;
     case 'close-accounts':hideLayer('accounts');break;
     case 'switch-account':{const a=accounts.find(x=>x.id===el.dataset.id);if(!a)break;
       if(me&&a.id===me.id){hideLayer('accounts');break;}
@@ -3564,10 +3935,10 @@ function handle(a,el,e){
       const n=ops.length,u=me.username,id=me.id;
       confirmBox('Keluar dari @'+u+'?',(n?n+' perubahan belum terkirim ke server dan akan hilang. ':'')+'Kamu bisa masuk lagi kapan saja dengan username dan PIN.','Keluar',()=>{signOut(id);toast('Keluar dari @'+u);});break;}
     case 'sync-now':if(ops.length)flush();load();toast('Memuat ulang…');break;
-    case 'edit-name':openPanel('Ubah nama tampilan','<label class="fld"><span>Nama tampilan</span><input class="inp" id="nm-in" maxlength="40" value="'+esc(me.name||'')+'"></label><div class="err hidden" id="nm-err"></div><button class="btn-primary" data-act="name-save">Simpan</button>');break;
+    case 'edit-name':openPanel('Ubah nama akun','<label class="fld"><span>Nama akun</span><input class="inp" id="nm-in" maxlength="40" value="'+esc(me.name||'')+'"></label><div class="err hidden" id="nm-err"></div><button class="btn-primary" data-act="name-save">Simpan</button>');break;
     case 'name-save':{const v=$('#nm-in').value.trim(),er=$('#nm-err'),acc=me;el.disabled=true;el.textContent='Menyimpan…';
       api('apiProfile',acc.token,v).then(res=>{if(!res||!res.ok){if(res&&res.error==='auth')return apiErr(res);er.textContent=(res&&res.message)||'Gagal.';er.classList.remove('hidden');return;}
-        acc.name=res.user.name;saveAccounts();hideLayer('import');render();toast('Nama tampilan disimpan');})
+        acc.name=res.user.name;saveAccounts();hideLayer('import');render();toast('Nama akun disimpan');})
       .catch(()=>{er.textContent='Tidak bisa terhubung. Coba lagi.';er.classList.remove('hidden');})
       .finally(()=>{el.disabled=false;el.textContent='Simpan';});break;}
     case 'change-pin':openPanel('Ubah PIN','<label class="fld"><span>PIN lama</span><input class="inp pin" id="pin-old" type="password" inputmode="numeric" maxlength="6"></label>'+
@@ -3631,6 +4002,10 @@ $('#f-dl-off').innerHTML=Array.from({length:L.DL_OFF_MAX+1},(_,n)=>'<option valu
 const isKcName=t=>!!t&&t===$('#kc-name');
 document.addEventListener('input',e=>{if(isKcName(e.target)){catErr('');syncCatEditor();}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&isKcName(e.target)){e.preventDefault();saveCat();}});
+// editor profil (Tahap 9): sama seperti editor kategori
+const isPeName=t=>!!t&&t===$('#pe-name');
+document.addEventListener('input',e=>{if(isPeName(e.target)){profErr('');syncProfEditor();}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&isPeName(e.target)){e.preventDefault();saveProf();}});
 $('#search-q').addEventListener('input',renderSearch);
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(drag){dragCancel();return;}if(sugOpen()){hideSug();return;}if(layers.length)goBack();
   else if(state.view==='kalender'&&state.calEdit)setCalEdit(false);});
@@ -3649,7 +4024,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me){if(op
 window.addEventListener('online',()=>{if(me&&ops.length)flush();});
 initAccounts();
 if(DEMO_RE.test(location.search))startDemo();
-else if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(homeScroll);load();}
+else if(me){loadLocalFor(me);goView('tugas');requestAnimationFrame(homeScroll);syncAccProf();maybePick();load();}
 else{render();showAuth(accounts.length?'masuk':'daftar');}
 })();
 </script>
