@@ -385,3 +385,139 @@ test('mode coba: kategori custom bisa dibuat, dipakai, dan dihapus (tugas pindah
   assert.deepEqual(plain(r.cats), []);
   assert.equal(r.tasks.find(x => x.id === t.id).cat, 'lain_t', 'seperti Code.gs');
 });
+
+// ---- Tahap 4: banyak tugas sekaligus (Poin 12 + 13) ----
+const D = o => Object.assign({ cat: 'tkuliah', name: 'Kuis', detail: '', diff: '', date: '2026-12-01', multi: false, dates: [],
+  noTime: false, start: '08:00', end: '09:00', dlOn: false, dlDate: '', dlTime: '', dlOff: 0 }, o);
+let idN = 0;
+const seqId = () => 'tb' + (++idN);
+const OPTS = o => Object.assign({ now: 1000, by: 'p1', newId: seqId, isCat: isBuiltin, existing: 0 }, o);
+
+test('beberapa tanggal: pilih/batalkan, urut, tanpa kembar, ada batas', () => {
+  let r = L.toggleDate([], '2026-12-05');
+  r = L.toggleDate(r.dates, '2026-12-01');
+  r = L.toggleDate(r.dates, '2026-12-20');
+  assert.deepEqual(plain(r.dates), ['2026-12-01', '2026-12-05', '2026-12-20'], 'urut');
+  r = L.toggleDate(r.dates, '2026-12-05');
+  assert.deepEqual(plain(r.dates), ['2026-12-01', '2026-12-20'], 'tap lagi = batal');
+  assert.deepEqual(plain(L.toggleDate(['2026-12-01'], 'bukan-tanggal').dates), ['2026-12-01']);
+  const full = L.toggleDate(['2026-12-01', '2026-12-02'], '2026-12-03', 2);
+  assert.deepEqual([full.full, full.dates.length], [true, 2], 'sudah penuh → ditolak');
+  assert.equal(L.toggleDate(['2026-12-01', '2026-12-02'], '2026-12-02', 2).full, false, 'membatalkan saat penuh tetap boleh');
+  assert.deepEqual(plain(L.draftDates(D({ multi: true, dates: ['2026-12-09', 'x', '2026-12-02', '2026-12-09'] }))), ['2026-12-02', '2026-12-09']);
+  assert.deepEqual(plain(L.draftDates(D({ multi: false, dates: ['2026-12-09'] }))), ['2026-12-01'], 'tidak multi → tanggal biasa');
+});
+
+test('simpan banyak: satu form satu tanggal = sama persis dengan form lama', () => {
+  idN = 0;
+  const r = L.buildBatch([D({ name: '  Kuis Statistika  ', detail: ' bab 3 ', diff: 'sulit', dlOn: true, dlDate: '2026-12-02', dlTime: '10:00' })], OPTS());
+  assert.equal(r.ok, true);
+  assert.deepEqual(plain(r.tasks), [{ id: 'tb1', kind: 'tugas', parent: '', by: 'p1', cat: 'tkuliah', name: 'Kuis Statistika', detail: 'bab 3',
+    date: '2026-12-01', start: '08:00', end: '09:00', diff: 'sulit', dlDate: '2026-12-02', dlTime: '10:00',
+    done: false, doneAt: null, doneBy: '', createdAt: 1000, updatedAt: 1000 }]);
+  const nt = L.buildBatch([D({ noTime: true, dlOn: true, dlDate: '', dlTime: '' })], OPTS()).tasks[0];
+  assert.deepEqual([nt.start, nt.end, nt.dlDate, nt.dlTime], ['', '', '2026-12-01', '23:59'], 'tanpa jam; deadline kosong → tanggal tugas 23:59');
+  const long = L.buildBatch([D({ name: 'x'.repeat(300), detail: 'y'.repeat(3000) })], OPTS()).tasks[0];
+  assert.deepEqual([long.name.length, long.detail.length], [120, 2000]);
+});
+
+test('beberapa tanggal (Poin 12): satu tugas terpisah per tanggal, deadline ikut tiap tanggal', () => {
+  idN = 0;
+  const dates = ['2026-12-28', '2026-12-05', '2026-12-31'];
+  const r = L.buildBatch([D({ name: 'Piket', detail: 'lantai 2', diff: 'mudah', multi: true, dates, start: '07:00', end: '07:30',
+    dlOn: true, dlOff: 2, dlTime: '17:00', dlDate: '2026-12-01' })], OPTS());
+  assert.equal(r.ok, true);
+  assert.deepEqual(plain(r.tasks.map(t => [t.date, t.dlDate, t.dlTime])), [['2026-12-05', '2026-12-07', '17:00'], ['2026-12-28', '2026-12-30', '17:00'], ['2026-12-31', '2027-01-02', '17:00']],
+    'urut tanggal; deadline = tanggal + 2 hari (lewat tahun juga benar); dlDate form diabaikan saat multi');
+  assert.equal(new Set(r.tasks.map(t => t.id)).size, 3, 'ID berbeda = berdiri sendiri');
+  assert.ok(r.tasks.every(t => t.name === 'Piket' && t.detail === 'lantai 2' && t.cat === 'tkuliah' && t.start === '07:00' && t.end === '07:30' && t.diff === 'mudah'));
+  assert.deepEqual(plain(r.tasks.map(t => t.createdAt)), [1000, 1001, 1002], 'urutan dibuat naik');
+  const same = L.buildBatch([D({ multi: true, dates: ['2026-12-05'], dlOn: true, dlOff: 0 })], OPTS()).tasks[0];
+  assert.equal(same.dlDate, '2026-12-05', 'hari yang sama');
+  assert.equal(L.buildBatch([D({ multi: true, dates: ['2026-12-05'], dlOn: true, dlOff: 99 })], OPTS()).tasks[0].dlDate, '2026-12-12', 'jarak dibatasi 7 hari');
+  assert.equal(L.buildBatch([D({ multi: true, dates: ['2026-12-05'], dlOn: false, dlOff: 3 })], OPTS()).tasks[0].dlDate, '', 'deadline mati');
+});
+
+test('banyak form (Poin 13): kategori berbeda-beda; satu form belum lengkap → tidak ada yang disimpan', () => {
+  idN = 0;
+  const ok = L.buildBatch([D({ name: 'A', cat: 'tkuliah' }), D({ name: 'B', cat: 'tkerja', start: '09:00', end: '10:00' }),
+    D({ name: 'C', cat: 'belajar', multi: true, dates: ['2026-12-02', '2026-12-03'] })], OPTS());
+  assert.equal(ok.ok, true);
+  assert.deepEqual(plain(ok.tasks.map(t => [t.name, t.cat, t.date])), [['A', 'tkuliah', '2026-12-01'], ['B', 'tkerja', '2026-12-01'],
+    ['C', 'belajar', '2026-12-02'], ['C', 'belajar', '2026-12-03']], 'urutan = urutan form, lalu tanggal');
+
+  const bad = L.buildBatch([D({ name: 'A' }), D({ name: '   ' }), D({ name: 'C', cat: 'ngawur' }), D({ name: 'D', multi: true, dates: [] }),
+    D({ name: 'E', date: '' })], OPTS());
+  assert.equal(bad.ok, false);
+  assert.equal(bad.tasks, undefined, 'semua atau tidak sama sekali');
+  assert.deepEqual(plain(bad.errors).map(e => [e.i, Object.keys(e).filter(k => k !== 'i').join()]), [[1, 'name'], [2, 'cat'], [3, 'dates'], [4, 'date']]);
+  assert.equal(bad.msg, '4 form belum lengkap.');
+  assert.equal(L.buildBatch([D({ name: '' })], OPTS()).msg, '', 'satu form: pesan di kolomnya saja');
+  assert.equal(L.buildBatch([], OPTS()).ok, false);
+});
+
+test('simpan banyak: batas per simpan dan per akun dicek dulu (server diam-diam membuang kelebihan)', () => {
+  const gs = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
+  assert.equal(L.MAX_TASKS, Number((gs.match(/const MAX_TASKS = (\d+);/) || [])[1]), 'batas akun sama dengan Code.gs');
+  assert.equal(L.MAX_OPS, Number((gs.match(/ops\.slice\(0, (\d+)\)/) || [])[1]), 'op per kirim sama dengan Code.gs');
+  assert.ok(L.MAX_BATCH < L.MAX_OPS, 'satu simpan muat dalam satu kirim');
+  const many = n => Array.from({ length: n }, (_, i) => L.ymdAdd('2026-01-01', i));
+  assert.equal(L.buildBatch([D({ multi: true, dates: many(L.MAX_BATCH) })], OPTS()).tasks.length, L.MAX_BATCH);
+  const over = L.buildBatch([D({ multi: true, dates: many(60) }), D({ multi: true, dates: many(41) })], OPTS());
+  assert.deepEqual([over.ok, over.msg], [false, 'Total 101 tugas. Maksimal 100 tugas sekali simpan.']);
+  const forms = L.buildBatch(Array.from({ length: L.MAX_FORMS + 1 }, () => D({})), OPTS());
+  assert.equal(forms.ok, false);
+  const full = L.buildBatch([D({ multi: true, dates: many(11) })], OPTS({ existing: L.MAX_TASKS - 10 }));
+  assert.deepEqual([full.ok, full.tasks], [false, undefined]);
+  assert.match(full.msg, /2990 tugas/);
+  assert.equal(L.buildBatch([D({ multi: true, dates: many(10) })], OPTS({ existing: L.MAX_TASKS - 10 })).ok, true, 'pas di batas boleh');
+  // ID kembar dari newId / ID yang sudah dipakai → dibuat ulang
+  const ids = ['dup', 'dup', 'ada', 'baru'];
+  const r = L.buildBatch([D({ multi: true, dates: ['2026-12-01', '2026-12-02'] })], OPTS({ newId: () => ids.shift(), taken: id => id === 'ada' }));
+  assert.deepEqual(plain(r.tasks.map(t => t.id)), ['dup', 'baru']);
+  assert.equal(L.buildBatch([D({})], OPTS({ newId: () => 'tetap', taken: () => true })).ok, false, 'tidak macet kalau ID selalu kembar');
+});
+
+test('simpan banyak → server (Code.gs): semua tersimpan dalam satu kirim, tiap tugas berdiri sendiri', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  idN = 0;
+  const b = L.buildBatch([D({ name: 'Piket', multi: true, dates: ['2026-12-01', '2026-12-08', '2026-12-15'], dlOn: true, dlOff: 1, dlTime: '12:00' }),
+    D({ name: 'Rapat', cat: 'tkerja', start: '13:00', end: '14:00' })], OPTS());
+  let ops = [];
+  b.tasks.forEach(t => { ops = L.enqueue(ops, { op: 'upsert', task: L.toDoc(t) }); });
+  let res = S.post('apiSync', tok, ops);
+  assert.equal(res.ok, true);
+  assert.deepEqual(plain(res.tasks.map(t => [t.name, t.date, t.dlDate, t.dlTime, t.cat])).sort(), [
+    ['Piket', '2026-12-01', '2026-12-02', '12:00', 'tkuliah'], ['Piket', '2026-12-08', '2026-12-09', '12:00', 'tkuliah'],
+    ['Piket', '2026-12-15', '2026-12-16', '12:00', 'tkuliah'], ['Rapat', '2026-12-01', '', '', 'tkerja']]);
+  assert.equal(S.sheet('@adit').objects().length, 4);
+  // centang satu, ubah satu, hapus satu: yang lain tidak ikut berubah
+  const [p1, p2, p3] = b.tasks;
+  res = S.post('apiSync', tok, [
+    { op: 'upsert', task: L.toDoc(Object.assign({}, p1, { done: true, doneAt: 5, doneBy: 'p1', updatedAt: 2000 })) },
+    { op: 'upsert', task: L.toDoc(Object.assign({}, p2, { name: 'Piket (tukar)', updatedAt: 2000 })) },
+    { op: 'delete', id: p3.id }]);
+  const by = Object.fromEntries(res.tasks.map(t => [t.id, t]));
+  assert.deepEqual([by[p1.id].done, by[p1.id].name], [true, 'Piket']);
+  assert.deepEqual([by[p2.id].done, by[p2.id].name], [false, 'Piket (tukar)']);
+  assert.equal(by[p3.id], undefined);
+  assert.equal(res.tasks.length, 3);
+  // batas MAX_BATCH muat dalam satu kirim (server memproses maks 1000 op per kirim)
+  idN = 100;
+  const big = L.buildBatch([D({ multi: true, dates: Array.from({ length: L.MAX_BATCH }, (_, i) => L.ymdAdd('2027-01-01', i)) })], OPTS());
+  ops = [];
+  big.tasks.forEach(t => { ops = L.enqueue(ops, { op: 'upsert', task: L.toDoc(t) }); });
+  res = S.post('apiSync', tok, ops);
+  assert.equal(res.tasks.length, 3 + L.MAX_BATCH);
+});
+
+test('form baru dari "+": jam berurutan dengan durasi sama', () => {
+  assert.deepEqual(plain(L.nextSlot('08:00', '09:30')), { start: '09:30', end: '11:00' });
+  assert.deepEqual(plain(L.nextSlot('08:00', '')), { start: '09:00', end: '10:00' }, 'jam selesai kosong = 1 jam');
+  assert.deepEqual(plain(L.nextSlot('08:00', '08:00')), { start: '09:00', end: '10:00' }, 'durasi 0 → 1 jam');
+  assert.deepEqual(plain(L.nextSlot('22:00', '23:00')), { start: '23:00', end: '00:00' }, 'selesai lewat tengah malam boleh');
+  assert.deepEqual(plain(L.nextSlot('23:00', '00:30')), { start: '23:00', end: '00:30' }, 'mulai baru lewat tengah malam → sama persis');
+  assert.deepEqual(plain(L.nextSlot('', '')), { start: '', end: '' });
+  assert.deepEqual(plain(L.nextSlot('', '17:00')), { start: '', end: '17:00' });
+});

@@ -372,7 +372,7 @@ test('E2E Tahap 2: item ringkas, pop-up ×, label, kesulitan, tanpa jam, saran n
     await openForm('belajar');
     await p.fill('#f-name', 'Baca bab 3');
     assert.equal(await p.isVisible('#f-time-box'), true);
-    await p.tap('.opt-switch'); await wait(150);
+    await p.tap('.opt-switch:has(#f-notime)'); await wait(150);
     assert.equal(await p.isVisible('#f-time-box'), false, 'kolom jam & durasi disembunyikan');
     assert.equal(await p.isVisible('#f-notime-txt'), true);
     await p.tap('#f-save'); await wait(1500);
@@ -389,12 +389,12 @@ test('E2E Tahap 2: item ringkas, pop-up ×, label, kesulitan, tanpa jam, saran n
     assert.match(await p.textContent('#detail'), /Jam pengerjaanTanpa jam/);
     await p.tap('[data-act="detail-edit"]'); await wait(600);
     assert.equal(await p.isChecked('#f-notime'), true, 'edit: Tanpa jam tetap aktif');
-    await p.tap('.opt-switch'); await wait(100);
+    await p.tap('.opt-switch:has(#f-notime)'); await wait(100);
     await p.tap('#f-save'); await wait(1500);
     assert.equal(rowByName('Baca bab 3')['Jam mulai'], '08:00', 'Tanpa jam dimatikan → jam tersimpan lagi');
     // kalender: bagian Tanpa jam juga ada
     await openForm('belajar');
-    await p.fill('#f-name', 'Tanpa jam kalender'); await p.tap('.opt-switch'); await p.tap('#f-save'); await wait(800);
+    await p.fill('#f-name', 'Tanpa jam kalender'); await p.tap('.opt-switch:has(#f-notime)'); await p.tap('#f-save'); await wait(800);
     await p.click('#nav [data-view="kalender"]'); await wait(300);
     assert.equal(await p.locator('#cal-day-list .ntbox .task').count(), 1);
 
@@ -682,4 +682,258 @@ test('E2E Tahap 3: kategori custom (tambah, pakai, ubah, hapus + urungkan) dan r
   } finally {
     await close();
   }
+});
+
+test('E2E Tahap 4: beberapa tanggal (Poin 12) dan banyak form tugas (Poin 13), simpan sekaligus', { skip: !pw && 'Playwright tidak terpasang', timeout: 240000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const { p, base, st, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const isOpen = sel => p.evaluate(s => document.querySelector(s).classList.contains('open'), sel);
+  const rows = () => (S.sheet('@adit') ? S.sheet('@adit').objects() : []);
+  const named = n => rows().filter(o => o['Nama tugas'] === n).sort((a, b) => (a['Tanggal'] < b['Tanggal'] ? -1 : 1));
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();
+  const vis = sel => p.isVisible(sel);
+  const back = async () => { await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(350); };
+  const openForm = async cat => { await p.tap('.nav .fab'); await wait(350); await p.tap(`[data-act="pick-cat"][data-k="${cat}"]`); await wait(450); };
+  const day = d => p.tap(`#f-mcal-grid [data-d="${d}"]`);
+  const cards = () => p.evaluate(() => [...document.querySelectorAll('#f-pre .f-card, #f-post .f-card')].map(c => ({
+    name: c.querySelector('b').textContent, meta: c.querySelector('small').textContent, bad: c.classList.contains('bad'), pre: !!c.closest('#f-pre') })));
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ================= Poin 12: satu tugas untuk beberapa tanggal =================
+    await openForm('tkuliah');
+    assert.equal(await vis('#f-multi-row'), true, 'opsi "Beberapa tanggal" ada di form buat tugas');
+    assert.deepEqual([await vis('#f-mcal'), await vis('#f-one'), await vis('#f-more'), await vis('#f-ed-head')], [false, true, true, false]);
+    assert.equal(await txt('#f-save'), 'Simpan');
+    await p.fill('#f-name', 'Piket kelas');
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(150);
+    assert.deepEqual([await vis('#f-mcal'), await vis('#f-one')], [true, false], 'kalender multi-pilih menggantikan kolom tanggal');
+    assert.equal(await txt('#f-mcal-m'), 'November 2026');
+    assert.equal(await txt('#f-mcal-n'), '1 tanggal dipilih', 'tanggal form (hari ini) langsung terpilih');
+    assert.equal(await p.getAttribute('#f-mcal-grid [data-d="2026-11-10"]', 'aria-pressed'), 'true');
+    await day('2026-11-12'); await day('2026-11-17'); await wait(100);
+    assert.equal(await txt('#f-mcal-n'), '3 tanggal dipilih');
+    assert.equal(await txt('#f-save'), 'Simpan 3 tugas');
+    await day('2026-11-17'); await wait(80);
+    assert.equal(await txt('#f-mcal-n'), '2 tanggal dipilih', 'tap lagi = batal');
+    assert.equal(await p.getAttribute('#f-mcal-grid [data-d="2026-11-17"]', 'aria-pressed'), 'false');
+    await day('2026-11-17');
+    await p.tap('[data-act="mcal-nav"][data-d="1"]'); await wait(80);
+    assert.equal(await txt('#f-mcal-m'), 'Desember 2026');
+    await day('2026-12-01'); await wait(80);
+    assert.equal(await txt('#f-mcal-n'), '4 tanggal dipilih (3 di bulan lain)');
+    await p.tap('[data-act="mcal-nav"][data-d="-1"]'); await wait(80);
+    // tugas lain di form: jam & deadline (deadline ikut tiap tanggal: jarak hari + jam)
+    await p.fill('#f-start', '07:00'); await p.fill('#f-end', '07:30');
+    assert.equal(await p.isChecked('#f-dl-on'), true, 'deadline bawaan ON untuk kelompok Tugas');
+    assert.deepEqual([await vis('#f-dl-date'), await vis('#f-dl-off'), await vis('#f-dl-hint')], [false, true, true]);
+    assert.equal(await p.inputValue('#f-dl-off'), '0', 'bawaan: hari yang sama');
+    await p.selectOption('#f-dl-off', '1'); await p.fill('#f-dl-time', '12:00');
+    await p.tap('[data-act="pick-diff"][data-v="mudah"]');
+    await p.locator('#f-mcal').scrollIntoViewIfNeeded();
+    await shot('t4-01-beberapa-tanggal');
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await isOpen('#add-screen'), false);
+    assert.equal(await txt('#toast-msg'), '4 tugas ditambahkan');
+    assert.equal(await vis('#toast-btn'), true, 'banyak tugas → bisa diurungkan');
+    const piket = named('Piket kelas');
+    assert.deepEqual(piket.map(o => [o['Tanggal'], o['Jam mulai'], o['Jam selesai'], o['Deadline (tanggal)'], o['Deadline (jam)'], o['Kode kategori'], o['Kesulitan']]), [
+      ['2026-11-10', '07:00', '07:30', '2026-11-11', '12:00', 'tkuliah', 'Mudah'], ['2026-11-12', '07:00', '07:30', '2026-11-13', '12:00', 'tkuliah', 'Mudah'],
+      ['2026-11-17', '07:00', '07:30', '2026-11-18', '12:00', 'tkuliah', 'Mudah'], ['2026-12-01', '07:00', '07:30', '2026-12-02', '12:00', 'tkuliah', 'Mudah']],
+      'satu tugas terpisah per tanggal, isi sama, deadline per tanggal');
+    assert.equal(new Set(piket.map(o => o.ID)).size, 4);
+    assert.equal(await p.locator('#home-list .task').count(), 3, '3 tugas di November tampil di daftar');
+    await shot('t4-02-home-setelah-simpan');
+
+    // setiap tugas berdiri sendiri: centang satu, hapus satu, edit satu
+    const [k10, k12, k17, k01] = piket.map(o => o.ID);
+    await p.tap(`#home-list .task[data-id="${k12}"] .check`); await wait(1500);
+    assert.deepEqual(named('Piket kelas').map(o => o['Status']), ['Belum', 'Selesai', 'Belum', 'Belum'], 'centang satu tidak ikut yang lain');
+    await p.tap(`#home-list .task[data-id="${k17}"]`); await wait(400);
+    await p.tap('[data-act="detail-delete"]'); await wait(300); await p.tap('[data-act="confirm-yes"]'); await wait(1500);
+    assert.deepEqual(named('Piket kelas').map(o => o.ID), [k10, k12, k01], 'hapus satu tidak ikut yang lain');
+    await p.tap(`#home-list .task[data-id="${k10}"]`); await wait(400);
+    await p.tap('[data-act="detail-edit"]'); await wait(700);
+    assert.equal(await isOpen('#form-wrap'), true);
+    assert.deepEqual([await vis('#f-multi-row'), await vis('#f-more'), await txt('#f-save')], [false, false, 'Simpan perubahan'], 'edit = satu tugas saja');
+    await p.fill('#f-name', 'Piket kelas (ganti hari)'); await p.tap('#f-save'); await wait(1500);
+    assert.deepEqual(rows().filter(o => o['Nama tugas'].startsWith('Piket')).map(o => o['Nama tugas']).sort(), ['Piket kelas', 'Piket kelas', 'Piket kelas (ganti hari)'], 'edit satu tidak ikut yang lain');
+
+    // urungkan simpan banyak → semua tugas yang baru dibuat hilang lagi
+    await openForm('belajar');
+    await p.fill('#f-name', 'Coba urungkan');
+    await p.tap('.opt-switch:has(#f-multi)'); await day('2026-11-20'); await wait(80);
+    assert.equal(await txt('#f-save'), 'Simpan 2 tugas');
+    await p.tap('#f-save'); await wait(1300);
+    assert.equal(named('Coba urungkan').length, 2);
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.equal(named('Coba urungkan').length, 0, 'urungkan menghapus semua tugas dari simpan itu');
+
+    // "Beberapa tanggal" tanpa tanggal → ditandai, tidak disimpan
+    const before = rows().length;
+    await openForm('belajar');
+    await p.fill('#f-name', 'Tanpa tanggal');
+    await p.tap('.opt-switch:has(#f-multi)'); await p.tap('[data-act="mcal-clear"]'); await wait(80);
+    assert.equal(await txt('#f-mcal-n'), 'Belum ada tanggal dipilih');
+    await p.tap('#f-save'); await wait(600);
+    assert.equal(await isOpen('#form-wrap'), true, 'form tetap terbuka');
+    assert.equal(await txt('#f-date-err'), 'Pilih minimal 1 tanggal.');
+    await day('2026-11-11'); await wait(80);
+    assert.equal(await vis('#f-date-err'), false, 'pesan hilang setelah memilih');
+    // matikan lagi → kembali ke satu tanggal (tanggal pilihan pertama)
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(80);
+    assert.deepEqual([await vis('#f-one'), await p.inputValue('#f-date'), await txt('#f-save')], [true, '2026-11-11', 'Simpan']);
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(rows().length, before + 1);
+    assert.equal(named('Tanpa tanggal')[0]['Tanggal'], '2026-11-11');
+
+    // ================= Poin 13: banyak form tugas =================
+    await openForm('tkerja');
+    await p.fill('#f-name', 'Kirim laporan');
+    await p.fill('#f-start', '09:00'); await p.fill('#f-end', '10:00');
+    await p.tap('#f-more'); await wait(350);
+    assert.deepEqual(await cards(), [{ name: 'Kirim laporan', meta: 'Tugas 1 · Hari ini · 09:00–10:00', bad: false, pre: true }], 'form 1 jadi ringkas di atas');
+    assert.equal(await txt('#f-ed-n'), 'Tugas 2 dari 2');
+    assert.equal(await p.inputValue('#f-name'), '', 'nama kosong');
+    assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), 'f-name', 'kolom nama langsung fokus');
+    assert.deepEqual([await p.inputValue('#f-start'), await p.inputValue('#f-end'), await txt('#f-cat-name'), await p.inputValue('#f-date')], ['10:00', '11:00', 'Tugas Kerjaan', '2026-11-10'],
+      'salinan form sebelumnya, jam berurutan');
+    assert.equal(await txt('#f-save'), 'Simpan 2 tugas');
+    // ganti kategori form 2 saja
+    await p.tap('.form-cat [data-act="form-collapse"]'); await wait(400);
+    assert.equal(await txt('#add-hint'), 'Pilih kategori untuk Tugas 2');
+    await p.tap('[data-act="pick-cat"][data-k="belanja"]'); await wait(450);
+    assert.equal(await txt('#f-cat-name'), 'Belanja');
+    assert.equal(await txt('#f-ed-n'), 'Tugas 2 dari 2');
+    // form 3: beberapa tanggal di dalam form tambahan (K4)
+    await p.tap('#f-more'); await wait(350);
+    assert.equal(await txt('#f-cat-name'), 'Belanja', 'kategori ikut form sebelumnya');
+    assert.deepEqual([await p.inputValue('#f-start'), await p.inputValue('#f-end')], ['11:00', '12:00']);
+    await p.fill('#f-name', 'Bayar listrik');
+    await p.tap('.opt-switch:has(#f-multi)'); await day('2026-11-15'); await wait(80);
+    assert.equal(await txt('#f-save'), 'Simpan 4 tugas', '1 + 1 + 2 tanggal');
+    // simpan saat form 2 belum bernama → tidak ada yang tersimpan, form 2 dibuka & ditandai
+    const n0 = rows().length;
+    await p.tap('#f-save'); await wait(700);
+    assert.equal(rows().length, n0, 'satu form belum lengkap → tidak ada yang disimpan');
+    assert.equal(await isOpen('#form-wrap'), true);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 2 dari 3', 'form yang belum lengkap dibuka');
+    assert.equal(await txt('#f-name-err'), 'Nama wajib diisi.');
+    assert.equal(await vis('#f-batch-err'), false, 'satu form: pesan di kolomnya saja');
+    assert.deepEqual((await cards()).map(c => [c.name, c.bad]), [['Kirim laporan', false], ['Bayar listrik', false]]);
+    // dua form belum lengkap → keduanya ditandai merah + pesan di atas Simpan
+    await p.tap('#f-pre [data-act="item-open"]'); await wait(300);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 1 dari 3');
+    assert.equal(await p.inputValue('#f-name'), 'Kirim laporan', 'isi form 1 tetap');
+    await p.fill('#f-name', '');
+    await p.tap('#f-save'); await wait(700);
+    assert.equal(rows().length, n0);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 1 dari 3');
+    assert.deepEqual((await cards()).map(c => [c.name, c.bad, c.meta]), [['Belum ada nama', true, 'Tugas 2 · Nama wajib diisi.'], ['Bayar listrik', false, 'Tugas 3 · 2 tanggal · 10 Nov – 15 Nov · 11:00–12:00']]);
+    assert.match(await txt('#f-batch-err'), /2 form belum lengkap/);
+    await shot('t4-03-form-belum-lengkap');
+    await p.fill('#f-name', 'Kirim laporan');
+    await p.tap('#f-post [data-act="item-open"][data-i="1"]'); await wait(300);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 2 dari 3');
+    assert.equal(await txt('#f-name-err'), 'Nama wajib diisi.', 'tanda tetap saat dibuka');
+    await p.fill('#f-name', 'Beli galon'); await wait(80);
+    assert.equal(await vis('#f-name-err'), false);
+    // form 4 lalu hapus (×) + urungkan, lalu hapus lagi dari ringkasannya
+    await p.tap('#f-more'); await wait(300);
+    await p.fill('#f-name', 'Hapus aku');
+    await p.tap('#f-ed-head [data-act="item-del"]'); await wait(250);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 3 dari 3', 'form yang terbuka dihapus → form sebelumnya terbuka');
+    assert.match(await txt('#toast-msg'), /Form "Hapus aku" dihapus/);
+    await p.tap('#toast-btn'); await wait(250);
+    assert.deepEqual((await cards()).map(c => c.name), ['Kirim laporan', 'Beli galon', 'Hapus aku'], 'urungkan mengembalikan form');
+    assert.equal(await txt('#f-ed-n'), 'Tugas 3 dari 4');
+    await p.tap('#f-post [data-act="item-del"][data-i="3"]'); await wait(250);
+    assert.deepEqual((await cards()).map(c => c.name), ['Kirim laporan', 'Beli galon']);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 3 dari 3');
+    await p.locator('#f-ed').scrollIntoViewIfNeeded();
+    await shot('t4-04-banyak-form');
+    await p.evaluate(() => { document.querySelector('#form-wrap .sheet').scrollTop = 0; }); await wait(100);
+    await shot('t4-05-ringkasan-atas');
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(150);
+    await p.evaluate(() => { const s = document.querySelector('#form-wrap .sheet'); s.scrollTop = s.scrollHeight; }); await wait(100);
+    await shot('t4-06-bawah-360');
+    assert.equal(await p.evaluate(() => { const s = document.querySelector('#form-wrap .sheet'); return s.scrollWidth <= s.clientWidth; }), true, 'tidak ada geser ke samping di layar 360px');
+    await p.tap('#f-pre [data-act="item-open"][data-i="0"]'); await wait(300);
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    await p.locator('#f-mcal').scrollIntoViewIfNeeded(); await shot('t4-07-kalender-360');
+    const cell = await p.locator('#f-mcal-grid .md').first().boundingBox();
+    assert.ok(cell.height >= 44 && cell.width >= 40, 'tanggal di kalender mudah dipencet (' + cell.width + '×' + cell.height + ')');
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    await p.setViewportSize({ width: 390, height: 844 }); await wait(150);
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await isOpen('#add-screen'), false);
+    assert.equal(await txt('#toast-msg'), '4 tugas ditambahkan');
+    assert.deepEqual(rows().length, n0 + 4);
+    const pick = o => [o['Nama tugas'], o['Kode kategori'], o['Tanggal'], o['Jam mulai'], o['Jam selesai']];
+    assert.deepEqual([...named('Kirim laporan'), ...named('Beli galon'), ...named('Bayar listrik')].map(pick), [
+      ['Kirim laporan', 'tkerja', '2026-11-10', '09:00', '10:00'], ['Beli galon', 'belanja', '2026-11-10', '10:00', '11:00'],
+      ['Bayar listrik', 'belanja', '2026-11-10', '11:00', '12:00'], ['Bayar listrik', 'belanja', '2026-11-15', '11:00', '12:00']], 'kategori per form');
+    assert.equal(st.calls > 0, true);
+
+    // batal saat ada beberapa form → tanya dulu (Batal maupun tombol back HP); maks 10 form
+    await openForm('tkuliah');
+    for (let i = 0; i < 9; i++) { await p.tap('#f-more'); await wait(120); }
+    assert.equal(await txt('#f-ed-n'), 'Tugas 10 dari 10');
+    assert.deepEqual([await vis('#f-more'), await txt('#f-more-max')], [false, 'Maksimal 10 form sekali simpan.']);
+    await back();
+    assert.deepEqual([await isOpen('#form-wrap'), await isOpen('#add-screen')], [false, true], 'back #1: kembali ke pilihan kategori, form tetap ada');
+    await back();
+    assert.equal(await isOpen('#confirm-wrap'), true, 'back #2: tanya dulu');
+    assert.match(await txt('#cf-title'), /Buang 10 tugas/);
+    await p.tap('#confirm-wrap .btn-sec[data-act="confirm-no"]'); await wait(300);
+    assert.equal(await isOpen('#add-screen'), true, 'tidak jadi → isian tetap');
+    await p.tap('[data-act="pick-cat"][data-k="tkuliah"]'); await wait(400);
+    assert.equal(await txt('#f-ed-n'), 'Tugas 10 dari 10');
+    await p.tap('.form-cat [data-act="form-collapse"]'); await wait(300);
+    await p.tap('[data-act="add-cancel"]'); await wait(300);
+    assert.equal(await isOpen('#confirm-wrap'), true, 'tombol Batal juga bertanya');
+    await p.tap('[data-act="confirm-yes"]'); await wait(400);
+    assert.equal(await isOpen('#add-screen'), false);
+    assert.equal(rows().length, n0 + 4, 'tidak ada yang tersimpan');
+    // satu form saja → Batal langsung menutup seperti dulu
+    await openForm('tkuliah');
+    await p.tap('.form-cat [data-act="form-collapse"]'); await wait(300);
+    await p.tap('[data-act="add-cancel"]'); await wait(300);
+    assert.deepEqual([await isOpen('#confirm-wrap'), await isOpen('#add-screen')], [false, false]);
+
+    // muat ulang: semuanya tetap
+    await p.reload(); await wait(1500);
+    assert.equal(await p.locator('#home-list .task').count(), rows().filter(o => o['Tanggal'].startsWith('2026-11')).length);
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});
+
+test('E2E antrean offline lebih dari 1000 perubahan: terkirim bertahap, tidak ada yang hilang', { skip: !pw && 'Playwright tidak terpasang', timeout: 120000 }, async () => {
+  // Code.gs hanya memproses 1000 op per kirim; sebelum Tahap 4 aplikasi menganggap semuanya terkirim → kelebihannya hilang
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const N = 1205;
+  const tasks = {}, ops = [];
+  for (let i = 0; i < N; i++) {
+    const t = { id: 'q' + i, cat: 'tkuliah', name: 'Antre ' + i, detail: '', date: '2026-10-' + String(1 + (i % 28)).padStart(2, '0'), start: '', end: '',
+      dlDate: '', dlTime: '', done: false, doneAt: null, createdAt: 1762740000000 + i, updatedAt: 1762740000000 + i, kind: 'tugas', diff: '', parent: '', by: 'p1', doneBy: '' };
+    tasks[t.id] = t; ops.push({ op: 'upsert', task: t });
+  }
+  const { p, base, st, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id,
+    ['pt.cache.' + reg.user.id]: { v: 2, tasks, ops, cats: [], profiles: [{ id: 'p1', name: 'Adit', avatar: '' }] } } });
+  try {
+    await p.goto(base);
+    for (let i = 0; i < 40 && S.sheet('@adit').objects().length < N; i++) await wait(500);
+    assert.equal(S.sheet('@adit').objects().length, N, 'semua perubahan sampai di server');
+    await wait(800);
+    const left = await p.evaluate(id => JSON.parse(localStorage.getItem('pt.cache.' + id)).ops.length, reg.user.id);
+    assert.equal(left, 0, 'antrean kosong');
+    assert.ok(st.calls >= 3, 'dikirim bertahap (' + st.calls + ' panggilan)');
+    assert.match(await p.getAttribute('#sync-dot', 'class'), /\bok\b/);
+    assert.deepEqual(errs, []);
+  } finally { await close(); }
 });

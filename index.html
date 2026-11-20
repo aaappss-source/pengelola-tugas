@@ -245,6 +245,52 @@ textarea.inp{resize:vertical;min-height:76px;line-height:1.4}
 .switch i::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
 .switch input:checked+i{background:var(--accent)}
 .switch input:checked+i::after{transform:translateX(20px);background:#1b1b1b}
+/* banyak tugas sekaligus (Tahap 4). Poin 12: kalender "Beberapa tanggal". Poin 13: satu form terbuka (.f-ed),
+   form lain ringkas (.f-card) di atas/bawahnya, tombol "Tambah tugas lain" (.f-more). */
+.err.f-err{margin:8px 2px 0}
+#f-batch-err{margin:14px 2px 0}
+.mcal{background:#1e1e1e;border:1px solid #3b3b3b;border-radius:14px;padding:2px 6px 4px}
+.mcal-head{display:flex;align-items:center;justify-content:space-between}
+.mcal-head b{font-size:15.5px;font-weight:500}
+.mcal-head .icon-btn svg{width:22px;height:22px}
+.mcal-wk,.mcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.mcal-wk{text-align:center;font-size:12px;color:var(--muted);padding:0 0 2px}
+.mcal-grid .md{position:relative;z-index:0;height:44px;display:grid;place-items:center;font-size:15px;color:var(--text);font-variant-numeric:tabular-nums}
+.mcal-grid .md::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:38px;height:38px;border-radius:50%;transform:translate(-50%,-50%);transition:background .12s}
+.mcal-grid .md:active::before{background:#3a3a3a}
+.mcal-grid .md.past{color:var(--muted)}
+.mcal-grid .md.today{color:var(--accent);font-weight:700}
+.mcal-grid .md.today::before{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.mcal-grid .md.on{color:var(--accent-ink);font-weight:700}
+.mcal-grid .md.on::before{background:var(--accent)}
+.mcal-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 6px;font-size:14px}
+.mcal-foot b{font-weight:500;color:var(--accent)}
+.mcal-foot b.none{color:var(--muted)}
+.f-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.f-cards:empty{display:none}
+#f-post{margin:12px 0 0}
+.f-card{display:flex;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:14px}
+.f-card.bad{border-color:var(--danger)}
+.f-card-b{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:9px 2px 9px 12px;text-align:left;min-height:58px}
+.f-card-b .cat-ic{width:36px;height:36px}
+.f-card-b .cat-ic svg{width:19px;height:19px}
+.f-card-b .cat-ic .cat-l{font-size:16px}
+.f-card-b .grow{flex:1;min-width:0}
+.f-card-b b,.f-card-b small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-card-b b{font-size:15px;font-weight:500}
+.f-card-b b.empty-n{color:var(--muted);font-weight:400}
+.f-card-b small{margin-top:1px;font-size:12.5px;color:var(--text2)}
+.f-card.bad .f-card-b small{color:var(--danger)}
+.f-x{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;color:var(--muted)}
+.f-x:active{background:#3a3a3a}
+.f-x svg{width:18px;height:18px}
+.f-ed.many{border:1.5px solid var(--accent);border-radius:16px;padding:0 12px 14px;margin:0 -8px}
+.f-ed-head{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin-right:-8px}
+.f-ed-head b{font-size:13.5px;font-weight:500;color:var(--accent)}
+.f-more{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;margin-top:16px;border:1.5px dashed #555;border-radius:14px;color:var(--accent);font-size:15.5px;font-weight:500}
+.f-more:active{background:var(--card2)}
+.f-more svg{width:20px;height:20px}
+.f-more-max{text-align:center;margin-top:12px}
 .btn-primary{display:block;width:100%;background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:15px;font-size:16.5px;font-weight:700;margin-top:18px}
 .btn-primary:active{filter:brightness(.92)}
 .btn-sec{flex:1;border-radius:14px;padding:13px;font-size:15.5px;font-weight:500;background:#333;color:var(--text)}
@@ -624,6 +670,10 @@ button.crow{width:100%;text-align:left}
   <div class="sheet">
     <div class="sheet-top"><button type="button" class="back-btn" data-act="form-collapse" aria-label="Kembali ke pilihan kategori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><b id="form-top-title">Detail tugas</b></div>
     <form id="task-form" novalidate autocomplete="off">
+      <!-- Tahap 4 (Poin 13): form lain tampil ringkas di atas/bawah form yang sedang dibuka -->
+      <div class="f-cards" id="f-pre"></div>
+      <div class="f-ed" id="f-ed">
+      <div class="f-ed-head hidden" id="f-ed-head"><b id="f-ed-n">Tugas 1</b><button type="button" class="f-x" data-act="item-del" aria-label="Hapus form tugas ini"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       <div class="form-cat">
         <div class="cat-ic" id="f-cat-ic"></div>
         <div class="grow"><small>Kategori</small><b id="f-cat-name">-</b></div>
@@ -642,13 +692,27 @@ button.crow{width:100%;text-align:left}
         </div>
       </div>
       <div class="fld">
-        <span>Tanggal dikerjakan</span>
-        <div class="quick" id="f-quick">
-          <button type="button" data-act="quick-date" data-d="0">Hari ini</button>
-          <button type="button" data-act="quick-date" data-d="1">Besok</button>
-          <button type="button" data-act="quick-date" data-d="2">Lusa</button>
+        <div class="fld-head"><span>Tanggal dikerjakan</span><label class="opt-switch" id="f-multi-row">Beberapa tanggal<span class="switch"><input type="checkbox" id="f-multi" aria-label="Beberapa tanggal"><i></i></span></label></div>
+        <div id="f-one">
+          <div class="quick" id="f-quick">
+            <button type="button" data-act="quick-date" data-d="0">Hari ini</button>
+            <button type="button" data-act="quick-date" data-d="1">Besok</button>
+            <button type="button" data-act="quick-date" data-d="2">Lusa</button>
+          </div>
+          <input class="inp" type="date" id="f-date">
         </div>
-        <input class="inp" type="date" id="f-date">
+        <!-- Tahap 4 (Poin 12): kalender pilih banyak tanggal -->
+        <div class="mcal hidden" id="f-mcal">
+          <div class="mcal-head">
+            <button type="button" class="icon-btn" data-act="mcal-nav" data-d="-1" aria-label="Bulan sebelumnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg></button>
+            <b id="f-mcal-m"></b>
+            <button type="button" class="icon-btn" data-act="mcal-nav" data-d="1" aria-label="Bulan berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button>
+          </div>
+          <div class="mcal-wk" aria-hidden="true"><span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div>
+          <div class="mcal-grid" id="f-mcal-grid"></div>
+          <div class="mcal-foot"><b id="f-mcal-n" aria-live="polite"></b><button type="button" class="link" data-act="mcal-clear" id="f-mcal-clear">Kosongkan</button></div>
+        </div>
+        <div class="err f-err hidden" id="f-date-err"></div>
       </div>
       <div class="fld">
         <div class="fld-head"><span>Jam pengerjaan</span><label class="opt-switch">Tanpa jam<span class="switch"><input type="checkbox" id="f-notime" aria-label="Tanpa jam"><i></i></span></label></div>
@@ -669,7 +733,13 @@ button.crow{width:100%;text-align:left}
         <div><span class="lbl">Deadline</span><small>Batas akhir tugas harus selesai</small></div>
         <label class="switch"><input type="checkbox" id="f-dl-on" aria-label="Pakai deadline"><i></i></label>
       </div>
-      <div class="two2" id="f-dl-box"><input class="inp" type="date" id="f-dl-date" aria-label="Tanggal deadline"><input class="inp" type="time" id="f-dl-time" aria-label="Jam deadline"></div>
+      <div class="two2" id="f-dl-box"><input class="inp" type="date" id="f-dl-date" aria-label="Tanggal deadline"><select class="inp hidden" id="f-dl-off" aria-label="Jarak deadline dari tanggal tugas"></select><input class="inp" type="time" id="f-dl-time" aria-label="Jam deadline"></div>
+      <small class="hint hidden" id="f-dl-hint">Deadline tiap tugas dihitung dari tanggalnya masing-masing.</small>
+      </div>
+      <div class="f-cards" id="f-post"></div>
+      <button type="button" class="f-more" id="f-more" data-act="item-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah tugas lain</button>
+      <small class="hint f-more-max hidden" id="f-more-max"></small>
+      <div class="err f-err hidden" id="f-batch-err" role="alert"></div>
       <button type="submit" class="btn-primary" id="f-save">Simpan</button>
     </form>
   </div>
@@ -964,6 +1034,89 @@ function byTime(a,b){
 /** Riwayat per kategori (Poin 8) dan pencarian: kebalikan byTime = terbaru dulu. */
 const newestFirst=(a,b)=>byTime(b,a);
 
+/* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
+   Satu "draft" = isi satu form: {cat, name, detail, diff, date, multi, dates, noTime, start, end, dlOn, dlDate, dlTime, dlOff}.
+   multi = "Beberapa tanggal" aktif → satu tugas berdiri sendiri per tanggal di `dates` (bukan tugas multi-hari).
+   Deadline saat multi = tanggal tugas itu + dlOff hari (0 = hari yang sama), jamnya sama (keputusan Tahap 4). */
+const MAX_FORMS=10;             // form tugas dalam satu layar +
+const MAX_BATCH=100;            // tugas baru sekali simpan (semua form × tanggal); antrean sinkron tetap jauh di bawah 1000 op per kirim
+const MAX_TASKS=3000;           // batas tugas per akun, sama dengan MAX_TASKS di Code.gs (server diam-diam membuang kelebihannya)
+const MAX_OPS=1000;             // op per kirim (apiSync), sama dengan ops.slice(0, 1000) di Code.gs; sisanya dikirim berikutnya
+const DL_OFF_MAX=7;             // pilihan jarak deadline: hari yang sama … 7 hari setelahnya
+const NAME_MAX=120,DETAIL_MAX=2000;
+/** Tanggal yang dibuat dari satu draft: semua tanggal pilihan (urut, tanpa kembar) kalau multi, selain itu `date`. */
+function draftDates(d){
+  if(!d)return [];
+  if(!d.multi)return okD(d.date)?[d.date]:[];
+  const seen=Object.create(null);
+  return (Array.isArray(d.dates)?d.dates:[]).filter(x=>{if(!okD(x)||seen[x])return false;seen[x]=1;return true;}).sort();
+}
+/** Pilih/batalkan satu tanggal di kalender "Beberapa tanggal". → {dates (urut), full: true kalau ditolak karena sudah `max`}. */
+function toggleDate(dates,d,max){
+  const list=(Array.isArray(dates)?dates:[]).filter(okD);
+  if(!okD(d))return {dates:list.slice().sort(),full:false};
+  if(list.indexOf(d)>=0)return {dates:list.filter(x=>x!==d).sort(),full:false};
+  if(list.length>=(max||MAX_BATCH))return {dates:list.slice().sort(),full:true};
+  return {dates:list.concat([d]).sort(),full:false};
+}
+/** Jarak deadline (hari) yang dipakai saat multi: dibulatkan dan dibatasi 0…DL_OFF_MAX. */
+const dlOffOf=x=>{const n=Math.round(+x);return isFinite(n)?Math.max(0,Math.min(DL_OFF_MAX,n)):0;};
+/** Isi draft → field tugas untuk satu tanggal (sama dengan form satu tugas sebelum Tahap 4). */
+function draftFields(d,date){
+  const nt=!!d.noTime,dl=!!d.dlOn;
+  return {cat:d.cat,name:String(d.name||'').trim().slice(0,NAME_MAX),detail:String(d.detail||'').trim().slice(0,DETAIL_MAX),date:date,
+    start:nt?'':okT(d.start),end:nt?'':okT(d.end),diff:DIFFS.indexOf(d.diff)>=0?d.diff:'',
+    dlDate:dl?(d.multi?ymdAdd(date,dlOffOf(d.dlOff)):(okD(d.dlDate)||date)):'',dlTime:dl?(okT(d.dlTime)||'23:59'):''};
+}
+/** Isian yang belum lengkap di satu draft → {field: pesan} (kosong = lengkap). isCat(k) = kategori dikenal. */
+function draftErrors(d,isCat){
+  const e={};
+  if(!d||typeof d!=='object')return {name:'Nama wajib diisi.'};
+  if(!String(d.name||'').trim())e.name='Nama wajib diisi.';
+  if(!isCat(d.cat))e.cat='Pilih kategori.';
+  if(d.multi){
+    const n=draftDates(d).length;
+    if(!n)e.dates='Pilih minimal 1 tanggal.';
+    else if(n>MAX_BATCH)e.dates='Maksimal '+MAX_BATCH+' tanggal.';
+  }else if(!okD(d.date))e.date='Tanggal belum diisi.';
+  return e;
+}
+/** Satu fungsi simpan untuk Poin 12 + 13: semua draft → tugas baru, SEMUA ATAU TIDAK SAMA SEKALI.
+ *  Kalau satu form belum lengkap, atau jumlahnya melewati batas, tidak ada satu tugas pun yang dibuat.
+ *  opts = {now, by, newId(), isCat(k), existing: jumlah tugas akun sekarang, taken(id): ID sudah dipakai?}
+ *  → {ok:true, tasks:[…]} | {ok:false, errors:[{i, name?, cat?, date?, dates?}], msg}
+ *  createdAt naik 1 ms per tugas supaya urutan form dipertahankan di daftar (byTime). */
+function buildBatch(drafts,opts){
+  const list=Array.isArray(drafts)?drafts:[],o=opts||{},isCat=o.isCat||(()=>true);
+  if(!list.length)return {ok:false,errors:[],msg:'Belum ada tugas untuk disimpan.'};
+  if(list.length>MAX_FORMS)return {ok:false,errors:[],msg:'Maksimal '+MAX_FORMS+' form tugas sekali simpan.'};
+  const errors=[];let total=0;
+  list.forEach((d,i)=>{const e=draftErrors(d,isCat);if(Object.keys(e).length)errors.push(Object.assign({i:i},e));else total+=draftDates(d).length;});
+  if(errors.length)return {ok:false,errors:errors,msg:errors.length>1?errors.length+' form belum lengkap.':''};
+  if(total>MAX_BATCH)return {ok:false,errors:[],msg:'Total '+total+' tugas. Maksimal '+MAX_BATCH+' tugas sekali simpan.'};
+  const have=Math.max(0,+o.existing||0);
+  if(have+total>MAX_TASKS)return {ok:false,errors:[],msg:'Akun ini sudah berisi '+have+' tugas. Maksimal '+MAX_TASKS+' tugas per akun.'};
+  const now=+o.now||Date.now(),seen=Object.create(null),out=[];
+  const fresh=()=>{for(let n=0;n<20;n++){const id=o.newId();if(isId(id)&&!seen[id]&&!(o.taken&&o.taken(id))){seen[id]=1;return id;}}return null;};
+  for(const d of list){
+    for(const date of draftDates(d)){
+      const id=fresh();if(!id)return {ok:false,errors:[],msg:'Gagal membuat ID tugas. Coba lagi.'};
+      const at=now+out.length;
+      out.push(Object.assign({id:id,kind:'tugas',parent:'',by:o.by},draftFields(d,date),{done:false,doneAt:null,doneBy:'',createdAt:at,updatedAt:at}));
+    }
+  }
+  return {ok:true,tasks:out};
+}
+/** Jam untuk form baru dari tombol "+" (keputusan Tahap 4: jam berurutan): mulai = jam selesai form sebelumnya,
+ *  durasi sama (jam selesai kosong / sama = 1 jam). Jam mulai kosong → disalin apa adanya. Kalau jam mulai barunya
+ *  lewat tengah malam (tanggal tidak ikut maju), jamnya disalin sama persis. */
+function nextSlot(start,end){
+  const s=toMin(start);if(s==null)return {start:okT(start),end:okT(end)};
+  const dur=durMin(start,end)||DEF_DUR,ns=s+dur;
+  if(ns>=1440)return {start:okT(start),end:okT(end)};
+  return {start:fromMin(ns),end:fromMin(ns+dur)};
+}
+
 /* ---- Mode coba (dibuka dari portofolio): tanpa daftar, tanpa server, tanpa localStorage ---- */
 /** Token sesi mode coba. Ada tanda '-', jadi tidak mungkin sama dengan username (argumen pertama apiLogin/apiRegister). */
 const DEMO_TOKEN='mode-coba';
@@ -1025,7 +1178,9 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   DIFFS:DIFFS,DEF_DUR:DEF_DUR,toMin:toMin,fromMin:fromMin,durMin:durMin,endAfter:endAfter,crossesMidnight:crossesMidnight,fmtDur:fmtDur,
   suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer,
   CAT_NAME_MAX:CAT_NAME_MAX,CAT_HUES:CAT_HUES,checkCatName:checkCatName,nextCatHue:nextCatHue,deleteCat:deleteCat,
-  byTime:byTime,newestFirst:newestFirst};
+  byTime:byTime,newestFirst:newestFirst,
+  MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
+  dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
 })();
 </script>
 <script>
@@ -1088,6 +1243,7 @@ const P={
  cal:'<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
  check:'<path d="M5 12.5l4.2 4.2L19 7"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
+ x:'<path d="M6 6l12 12M18 6 6 18"/>',
  trash:'<path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12.5A2 2 0 0 0 8.5 21h7a2 2 0 0 0 2-1.5L18.5 7M9 7V4h6v3"/>',
  copy:'<rect x="8" y="8" width="13" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8"/>',
  upload:'<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15"/>',
@@ -1200,7 +1356,9 @@ function scheduleFlush(ms){clearTimeout(net.timer);net.timer=setTimeout(flush,ms
 async function flush(){
   if(!me||net.inflight||!ops.length)return;
   net.inflight=true;setNet('saving');
-  const acc=me,sent=ops.slice();
+  // server hanya memproses L.MAX_OPS op per kirim: kirim sebanyak itu, sisanya di kiriman berikutnya (dulu kelebihannya
+  // ikut dianggap terkirim dan hilang)
+  const acc=me,sent=ops.slice(0,L.MAX_OPS);
   try{
     const res=await api('apiSync',acc.token,sent);
     if(acc!==me)return;
@@ -1756,12 +1914,14 @@ function openAdd(opts){
   const ed=opts.editId?tasks[opts.editId]:null;
   const date=ed?ed.date:(opts.date||today());
   // noTime: "Tanpa jam" (Poin 3). Tugas lama yang hanya punya jam selesai ("s/d 17:00") tetap dianggap berjam di form.
+  // Field per form (cat, diff, noTime, dlTouched, startPrev, multi, dates, mcal, dlOff) = milik form yang sedang terbuka.
+  // items = isi semua form (Tahap 4, Poin 13); items[cur] diperbarui dari layar lewat syncCur() sebelum dibaca.
   state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed&&catOf(ed.cat).g||'tugas',dlTouched:!!ed,
-    diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end):false};
+    diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end):false,
+    multi:false,dates:[],mcal:mkey(date),dlOff:0,items:[],cur:0};
   state.returnTo=opts.returnTo||state.view;
   $('#add-title').textContent=ed?'Edit Tugas':'Tambahkan';
-  $('#add-hint').textContent=ed?'Ketuk kategori untuk mengganti':'Pilih kategori untuk tugas baru';
-  $('#f-save').textContent=ed?'Simpan perubahan':'Simpan';$('#form-top-title').textContent=ed?'Edit tugas':'Detail tugas';
+  $('#form-top-title').textContent=ed?'Edit tugas':'Detail tugas';
   $('#f-name').value=ed?ed.name:'';$('#f-detail').value=ed?ed.detail:'';
   $('#f-date').value=date;
   let st='08:00',en='09:00';
@@ -1771,8 +1931,10 @@ function openAdd(opts){
   $('#f-start').value=st;$('#f-end').value=en;state.form.startPrev=st;
   $('#f-dl-on').checked=ed?!!ed.dlDate:true;
   $('#f-dl-date').value=ed&&ed.dlDate?ed.dlDate:date;$('#f-dl-time').value=ed&&ed.dlTime?ed.dlTime:'23:59';
-  $('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');
-  hideSug();syncDl();syncQuick();syncDiff();syncTime();renderCatGrid();
+  $('#f-dl-off').value='0';
+  clearErrs();
+  hideSug();syncDl();syncQuick();syncDiff();syncTime();syncMulti();
+  state.form.items=[snapItem()];renderItems();
   $('#add-screen').scrollTop=0;showLayer('add');
   if(ed)setTimeout(()=>openForm(),120);
 }
@@ -1780,6 +1942,7 @@ function openAdd(opts){
 // dengan tombol "Kelola" dan "Baru".
 function renderCatGrid(){
   const f=state.form;if(!f)return;
+  $('#add-hint').textContent=f.editId?'Ketuk kategori untuk mengganti':f.items.length>1?'Pilih kategori untuk Tugas '+(f.cur+1):'Pilih kategori untuk tugas baru';
   document.querySelectorAll('#add-seg button').forEach(b=>b.classList.toggle('on',b.dataset.g===f.group));
   const btn=c=>'<button class="cat-btn'+(f.cat===c.k?' on':'')+(c.custom?' cu':'')+'" data-act="pick-cat" data-k="'+esc(c.k)+'" style="--h:'+c.h+'"><div class="ring">'+catGlyph(c,1.5)+'</div><span>'+esc(c.n)+'</span></button>';
   $('#cat-grid').innerHTML=CATS.filter(c=>c.g===f.group).map(btn).join('')+
@@ -1796,12 +1959,22 @@ function pickCat(k){
   if(!f.editId&&!$('#f-name').value)setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}} ,320);
 }
 function openForm(){
-  const c=catOf(state.form.cat);
-  const fi=$('#f-cat-ic');fi.style.setProperty('--h',c.h);fi.innerHTML=catGlyph(c);
-  $('#f-cat-name').textContent=c.n;
-  $('#form-wrap .sheet').scrollTop=0;showLayer('form');
+  fillCat();showLayer('form');
+  // banyak form: gulir ke form yang sedang dibuka (form lain tampil ringkas di atasnya)
+  const sh=$('#form-wrap .sheet');sh.scrollTop=state.form.items.length>1?Math.max(0,$('#f-ed').offsetTop-56):0;
 }
-function syncDl(){$('#f-dl-box').classList.toggle('hidden',!$('#f-dl-on').checked);}
+function fillCat(){
+  const f=state.form,ok=!!f.cat&&(isBuiltinCat(f.cat)||!!customCat(f.cat)),c=catOf(f.cat);
+  const fi=$('#f-cat-ic');fi.style.setProperty('--h',c.h);fi.innerHTML=catGlyph(c);
+  $('#f-cat-name').textContent=ok?c.n:'Belum dipilih';
+}
+// Deadline: satu tanggal = tanggal + jam; "Beberapa tanggal" = jarak dari tanggal tiap tugas + jam (Tahap 4)
+function syncDl(){
+  const on=$('#f-dl-on').checked,m=!!(state.form&&state.form.multi);
+  $('#f-dl-box').classList.toggle('hidden',!on);
+  $('#f-dl-date').classList.toggle('hidden',m);$('#f-dl-off').classList.toggle('hidden',!m);
+  $('#f-dl-hint').classList.toggle('hidden',!on||!m);
+}
 function syncQuick(){const d=$('#f-date').value,t=today();document.querySelectorAll('#f-quick button').forEach(b=>b.classList.toggle('on',d===addDays(t,+b.dataset.d)));}
 // Kesulitan (Poin 2): opsional, tap pilihan yang sama lagi = kosongkan
 function syncDiff(){const v=state.form?state.form.diff:'';document.querySelectorAll('#f-diff button').forEach(b=>{const on=b.getAttribute('data-v')===v;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
@@ -1835,30 +2008,219 @@ function hideSug(){
 }
 const sugOpen=()=>!$('#f-sug').classList.contains('hidden');
 function closeAdd(){hideLayer('add');}
+// Batal / tombol back saat ada beberapa form: tanya dulu supaya isian tidak hilang karena salah pencet
+const addNeedsAsk=()=>{const f=state.form;return !!f&&!f.editId&&f.items.length>1;};
+function closeAddAsk(){
+  const f=state.form;
+  if(!addNeedsAsk()){closeAdd();return;}
+  confirmBox('Buang '+f.items.length+' tugas?','Isian di semua form belum disimpan dan akan hilang.','Buang',()=>{if(state.form===f)closeAdd();});
+}
+
+/* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
+   Layar form tetap satu set kolom (#f-name, #f-date, …) = form yang sedang terbuka (items[cur]). Form lain disimpan di
+   state.form.items dan tampil ringkas (.f-card) di #f-pre / #f-post; tap untuk membukanya. Simpan = L.buildBatch
+   (semua form × tanggal, semua atau tidak sama sekali) lalu satu kali masuk antrean → satu kali kirim ke server. */
+const isCatOk=k=>isBuiltinCat(k)||!!customCat(k);
+const dayDiff=(a,b)=>Math.round((parseYmd(b).getTime()-parseYmd(a).getTime())/864e5);
+// isi form yang sedang terbuka → draft
+function snapItem(){
+  const f=state.form;
+  return {cat:f.cat,name:$('#f-name').value,detail:$('#f-detail').value,diff:f.diff||'',date:$('#f-date').value,
+    multi:!!f.multi,dates:(f.dates||[]).slice(),mcal:f.mcal,noTime:!!f.noTime,start:$('#f-start').value,end:$('#f-end').value,startPrev:f.startPrev,
+    dlOn:$('#f-dl-on').checked,dlDate:$('#f-dl-date').value,dlTime:$('#f-dl-time').value,dlOff:L.dlOffOf(f.dlOff),dlTouched:!!f.dlTouched,err:null};
+}
+function syncCur(){const f=state.form;if(f&&f.items.length){const e=f.items[f.cur]&&f.items[f.cur].err;f.items[f.cur]=snapItem();f.items[f.cur].err=e;}}
+// draft → layar
+function putItem(d){
+  const f=state.form;
+  Object.assign(f,{cat:d.cat,diff:d.diff,multi:!!d.multi,dates:d.dates.slice(),mcal:d.mcal,noTime:!!d.noTime,startPrev:d.startPrev,dlOff:d.dlOff,dlTouched:!!d.dlTouched});
+  $('#f-name').value=d.name;$('#f-detail').value=d.detail;$('#f-date').value=d.date;
+  $('#f-start').value=d.start;$('#f-end').value=d.end;
+  $('#f-dl-on').checked=d.dlOn;$('#f-dl-date').value=d.dlDate;$('#f-dl-time').value=d.dlTime;$('#f-dl-off').value=String(d.dlOff||0);
+  hideSug();clearErrs();fillCat();syncDl();syncQuick();syncDiff();syncTime();syncMulti();
+  if(d.err)showErrs(d.err);
+}
+function clearErrs(){
+  ['#f-name-err','#f-date-err','#f-batch-err'].forEach(s=>$(s).classList.add('hidden'));
+  $('#f-name').classList.remove('bad');$('#f-date').classList.remove('bad');$('#f-mcal').classList.remove('bad');
+}
+function showErrs(e){
+  if(e.name){$('#f-name-err').textContent=e.name;$('#f-name-err').classList.remove('hidden');$('#f-name').classList.add('bad');}
+  const de=e.dates||e.date;
+  if(de){const el=$('#f-date-err');el.textContent=de;el.classList.remove('hidden');$(e.dates?'#f-mcal':'#f-date').classList.add('bad');}
+}
+const shortName=n=>{n=String(n||'').trim();return n.length>28?n.slice(0,28)+'…':n;};
+// ringkasan satu form: "Besok · 08:00–09:00" / "5 tanggal · 3–28 Des · Tanpa jam"
+function itemMeta(d){
+  let when;
+  if(d.multi){const ds=L.draftDates(d),n=ds.length;
+    when=n?n+' tanggal · '+fmtShort(ds[0])+(n>1?' – '+fmtShort(ds[n-1]):''):'Belum ada tanggal';}
+  else when=d.date?(relDay(d.date)||fmtShort(d.date)):'Tanggal kosong';
+  const tm=d.noTime||!d.start?'Tanpa jam':d.start+(d.end?'–'+d.end:'');
+  return when+' · '+tm;
+}
+function renderItems(){
+  const f=state.form;if(!f)return;
+  const it=f.items,n=it.length,many=n>1;
+  const card=(d,i)=>{
+    if(d.err)d.err=L.draftErrors(d,isCatOk);            // sudah diperbaiki → tanda merah hilang
+    const er=d.err&&Object.keys(d.err).length?d.err:null,c=catOf(d.cat),nm=d.name.trim();
+    return '<div class="f-card'+(er?' bad':'')+'"><button type="button" class="f-card-b" data-act="item-open" data-i="'+i+'">'+catIc(c)+
+      '<span class="grow"><b'+(nm?'':' class="empty-n"')+'>'+esc(nm||'Belum ada nama')+'</b><small>Tugas '+(i+1)+' · '+esc(er?(er.name||er.cat||er.dates||er.date):itemMeta(d))+'</small></span></button>'+
+      '<button type="button" class="f-x" data-act="item-del" data-i="'+i+'" aria-label="Hapus form Tugas '+(i+1)+'">'+ic('x',2.2)+'</button></div>';
+  };
+  $('#f-pre').innerHTML=it.slice(0,f.cur).map((d,i)=>card(d,i)).join('');
+  $('#f-post').innerHTML=it.slice(f.cur+1).map((d,j)=>card(d,f.cur+1+j)).join('');
+  $('#f-ed').classList.toggle('many',many);
+  $('#f-ed-head').classList.toggle('hidden',!many);
+  $('#f-ed-n').textContent='Tugas '+(f.cur+1)+' dari '+n;
+  const full=n>=L.MAX_FORMS;
+  $('#f-more').classList.toggle('hidden',!!f.editId||full);
+  $('#f-more-max').classList.toggle('hidden',!!f.editId||!full);
+  $('#f-more-max').textContent='Maksimal '+L.MAX_FORMS+' form sekali simpan.';
+  syncSaveLbl();renderCatGrid();
+}
+// tombol Simpan menyebut jumlah tugas yang akan dibuat (semua form × tanggal)
+function syncSaveLbl(){
+  const f=state.form;if(!f)return;
+  if(f.editId){$('#f-save').textContent='Simpan perubahan';return;}
+  const cur=snapItem();
+  const total=f.items.reduce((s,d,i)=>s+L.draftDates(i===f.cur?cur:d).length,0);
+  $('#f-save').textContent=total>1?'Simpan '+total+' tugas':'Simpan';
+}
+function scrollEd(){requestAnimationFrame(()=>{const sh=$('#form-wrap .sheet');sh.scrollTo({top:Math.max(0,$('#f-ed').offsetTop-56),behavior:'smooth'});});}
+// tombol "+": form baru di paling bawah, isinya salinan form terakhir (kategori, tanggal, deadline), jam berurutan,
+// Nama/Detail/Kesulitan kosong (keputusan Tahap 4)
+function addItem(){
+  const f=state.form;if(!f||f.editId||f.items.length>=L.MAX_FORMS)return;
+  syncCur();
+  const last=f.items[f.items.length-1];
+  const nx=Object.assign({},last,{name:'',detail:'',diff:'',dates:last.dates.slice(),err:null});
+  if(!last.noTime){const s=L.nextSlot(last.start,last.end);nx.start=s.start;nx.end=s.end;nx.startPrev=s.start;}
+  f.items.push(nx);f.cur=f.items.length-1;
+  putItem(nx);renderItems();scrollEd();
+  setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}},60);
+}
+function openItem(i){
+  const f=state.form;if(!f||i===f.cur||!f.items[i])return;
+  syncCur();f.cur=i;putItem(f.items[i]);renderItems();scrollEd();
+}
+function delItem(i){
+  const f=state.form;if(!f||f.items.length<2||!f.items[i])return;
+  syncCur();
+  const d=f.items[i];f.items.splice(i,1);
+  if(i<f.cur)f.cur--;
+  else if(i===f.cur){f.cur=Math.min(i,f.items.length-1);putItem(f.items[f.cur]);}
+  renderItems();
+  if(d.name.trim()||d.detail.trim())undoToast('Form "'+shortName(d.name||d.detail)+'" dihapus',()=>{
+    if(state.form!==f||!isOpen('add')||f.items.length>=L.MAX_FORMS)return;
+    syncCur();const at=Math.min(i,f.items.length);f.items.splice(at,0,d);if(at<=f.cur)f.cur++;renderItems();
+  });
+}
+/* ---- Poin 12: "Beberapa tanggal" ---- */
+function syncMulti(){
+  const f=state.form,on=!!f.multi&&!f.editId;
+  $('#f-multi-row').classList.toggle('hidden',!!f.editId);
+  $('#f-multi').checked=on;
+  $('#f-one').classList.toggle('hidden',on);$('#f-mcal').classList.toggle('hidden',!on);
+  if(on)renderMcal();
+  syncDl();
+}
+function renderMcal(){
+  const f=state.form,mk=f.mcal||mkey(today()),[y,m]=mk.split('-').map(Number);
+  const first=new Date(y,m-1,1).getDay(),n=dim(mk),td=today(),sel=new Set(f.dates);
+  $('#f-mcal-m').textContent=MON[m-1]+' '+y;
+  let h='';for(let i=0;i<first;i++)h+='<span></span>';
+  for(let d=1;d<=n;d++){const ds=mk+'-'+pad(d),on=sel.has(ds);
+    h+='<button type="button" class="md'+(on?' on':'')+(ds===td?' today':'')+(ds<td?' past':'')+'" data-act="mcal-day" data-d="'+ds+'" aria-pressed="'+on+'" aria-label="'+esc(fmtLong(ds))+'">'+d+'</button>';}
+  $('#f-mcal-grid').innerHTML=h;
+  const c=f.dates.length,other=f.dates.filter(x=>mkey(x)!==mk).length,lb=$('#f-mcal-n');
+  lb.textContent=c?c+' tanggal dipilih'+(other?' ('+other+' di bulan lain)':''):'Belum ada tanggal dipilih';
+  lb.classList.toggle('none',!c);
+  $('#f-mcal-clear').classList.toggle('hidden',!c);
+  syncSaveLbl();
+}
+function setMulti(on){
+  const f=state.form;if(!f||f.editId)return;
+  const date=$('#f-date').value,dl=$('#f-dl-date').value;
+  if(on){
+    if(!f.dates.length&&date)f.dates=[date];
+    f.mcal=mkey(f.dates[0]||date||today());
+    // jarak deadline diambil dari isian deadline yang sudah ada (mis. tanggal 5 → deadline 7 = 2 hari setelahnya)
+    f.dlOff=date&&dl?L.dlOffOf(dayDiff(date,dl)):0;$('#f-dl-off').value=String(f.dlOff);
+  }else{
+    const d=f.dates[0]||date||today();
+    $('#f-date').value=d;$('#f-dl-date').value=addDays(d,f.dlOff||0);syncQuick();
+  }
+  f.multi=on;
+  $('#f-date-err').classList.add('hidden');$('#f-date').classList.remove('bad');$('#f-mcal').classList.remove('bad');
+  syncMulti();syncSaveLbl();
+}
+
 function saveForm(e){
   if(e)e.preventDefault();
-  const f=state.form;if(!f||!f.cat)return;
-  hideSug();
-  const name=$('#f-name').value.trim();
-  if(!name){$('#f-name-err').classList.remove('hidden');$('#f-name').classList.add('bad');$('#f-name').focus();return;}
-  const date=$('#f-date').value||today();
-  const dlOn=$('#f-dl-on').checked,nt=!!f.noTime;
-  const data={cat:f.cat,name:name.slice(0,120),detail:$('#f-detail').value.trim().slice(0,2000),date:date,
-    start:nt?'':($('#f-start').value||''),end:nt?'':($('#f-end').value||''),diff:DIFF_N[f.diff]?f.diff:'',
-    dlDate:dlOn?($('#f-dl-date').value||date):'',dlTime:dlOn?($('#f-dl-time').value||'23:59'):''};
-  const now=Date.now();let id;
-  if(f.editId&&tasks[f.editId]){id=f.editId;Object.assign(tasks[id],data,{updatedAt:now});}
-  else{id=newId();tasks[id]=Object.assign({id:id,kind:'tugas',diff:'',parent:'',by:curProfile()},data,{done:false,doneAt:null,doneBy:'',createdAt:now,updatedAt:now});}
-  const wasEdit=!!f.editId,ret=state.returnTo;
+  const f=state.form;if(!f)return;
+  hideSug();syncCur();clearErrs();
+  if(f.editId)return saveEdit(f);
+  const r=L.buildBatch(f.items,{now:Date.now(),by:curProfile(),newId:newId,isCat:isCatOk,existing:Object.keys(tasks).length,taken:id=>!!tasks[id]});
+  if(!r.ok){
+    // tandai form yang belum lengkap, buka yang pertama; tidak ada yang disimpan
+    r.errors.forEach(x=>{const d=f.items[x.i];if(d){d.err=Object.assign({},x);delete d.err.i;}});
+    if(r.errors.length){
+      const first=r.errors[0].i;
+      if(first!==f.cur){f.cur=first;putItem(f.items[first]);}else showErrs(f.items[first].err);
+      renderItems();
+      if(r.msg){$('#f-batch-err').textContent=r.msg+' Form yang ditandai merah perlu dilengkapi.';$('#f-batch-err').classList.remove('hidden');toast(r.msg+' Belum ada yang disimpan.');}
+      const er=f.items[first].err;
+      if(er.cat){hideLayer('form');toast('Pilih kategori untuk Tugas '+(first+1));return;}
+      if(er.name){scrollEd();setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}},60);}
+      else scrollEd();
+    }else{const be=$('#f-batch-err');be.textContent=r.msg;be.classList.remove('hidden');be.scrollIntoView({block:'nearest'});}
+    return;
+  }
+  const list=r.tasks,ids=list.map(t=>t.id);
+  // satu kali masuk antrean + satu kali simpan di HP → terkirim ke server dalam satu apiSync (satu kunci, satu tulis)
+  list.forEach(t=>{tasks[t.id]=t;ops=L.enqueue(ops,{op:'upsert',task:toDoc(t)});});
+  saveLocal();
+  const date=list.map(t=>t.date).sort()[0],ret=state.returnTo;
   closeAdd();
+  goToDate(ret,date);
+  render();scheduleFlush(500);
+  flashRows(ids);
+  if(list.length===1){toast('Tugas ditambahkan ke '+fmtShort(date));return;}
+  undoToast(list.length+' tugas ditambahkan',()=>{
+    ids.forEach(id=>{if(tasks[id]){delete tasks[id];ops=L.enqueue(ops,{op:'delete',id:id});}});
+    saveLocal();render();scheduleFlush(500);
+  });
+}
+function saveEdit(f){
+  const d=f.items[0],er=L.draftErrors(d,isCatOk),id=f.editId;
+  if(er.cat){hideLayer('form');toast('Pilih kategori');return;}
+  if(er.name||er.date){showErrs(er);if(er.name)$('#f-name').focus();return;}
+  if(!tasks[id]){closeAdd();toast('Tugas sudah tidak ada');return;}
+  const data=L.draftFields(d,d.date);
+  Object.assign(tasks[id],data,{updatedAt:Date.now()});
+  const ret=state.returnTo;
+  closeAdd();goToDate(ret,data.date);
+  persist(id);
+  if(state.detailId===id&&isOpen('detail'))renderDetail();
+  flashRows([id]);
+  toast('Perubahan disimpan');
+}
+// setelah simpan: tampilan asal pindah ke bulan/tanggal tugas
+function goToDate(ret,date){
   if(ret==='kalender'){state.calMonth=mkey(date);state.calSel=date;}
   else if(ret==='grafik'){state.statMonth=mkey(date);}
   else if(ret==='tugas'){state.homeMonth=mkey(date);if(state.homeFilter==='selesai')state.homeFilter='semua';}
-  persist(id);
-  if(state.detailId===id&&isOpen('detail'))renderDetail();
-  requestAnimationFrame(()=>{const row=document.querySelector('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"]');
-    if(row){updateHdr();const r=row.getBoundingClientRect();if(r.top<120||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});row.classList.add('flash');}});
-  toast(wasEdit?'Perubahan disimpan':'Tugas ditambahkan ke '+fmtShort(date));
+}
+function flashRows(ids){
+  requestAnimationFrame(()=>{
+    const rows=ids.map(id=>document.querySelector('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"]')).filter(Boolean);
+    if(!rows.length)return;
+    updateHdr();const r=rows[0].getBoundingClientRect();
+    if(r.top<120||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});
+    rows.forEach(x=>x.classList.add('flash'));
+  });
 }
 
 /* ---- kategori custom (Tahap 3, Poin 10) ----
@@ -1921,6 +2283,7 @@ function deleteCatNow(id){
   r.moved.forEach(tid=>queueOp(tid));
   queueMeta({op:'cat-del',id:id});
   const f=state.form;if(f&&f.cat===id)f.cat=f.editId?'lain_t':null;
+  if(f){f.items.forEach((d,i)=>{if(i!==f.cur&&d.cat===id)d.cat=null;});fillCat();renderItems();}
   hideLayer('import');refreshCats();
   undoToast('"'+c.name+'" dihapus'+(r.moved.length?' · '+r.moved.length+' tugas ke Lainnya':''),()=>{
     if(cats.some(x=>x.id===id))return;
@@ -1987,7 +2350,7 @@ function hideLayer(id){
   syncHist();return true;
 }
 function goBack(){
-  if(layers.length){hideLayer(layers[layers.length-1]);return;}
+  if(layers.length){const top=layers[layers.length-1];if(top==='add'&&addNeedsAsk()){closeAddAsk();return;}hideLayer(top);return;}
   if(state.view!=='tugas')goView('tugas');
 }
 // Tombol back HP: satu entri "penjaga" di riwayat selama ada layar terbuka atau tab selain Tugas
@@ -2005,7 +2368,7 @@ function onBack(){
   if(now-lastBack<60)return;lastBack=now;
   if(now<ignoreUntil){ignoreUntil=0;return;}
   guard=false;
-  if(layers.length)hideLayer(layers[layers.length-1]);
+  if(layers.length){const top=layers[layers.length-1];if(top==='add'&&addNeedsAsk())closeAddAsk();else hideLayer(top);}
   else if(state.view!=='tugas')goView('tugas');
   else syncHist();
 }
@@ -2108,7 +2471,7 @@ function handle(a,el,e){
     case 'nav':goView(el.dataset.view);break;
     case 'add':openAdd({date:state.view==='kalender'?state.calSel:(state.homeMonth!==mkey(today())&&state.view==='tugas'?state.homeMonth+'-01':today()),returnTo:state.view});break;
     case 'add-on-date':openAdd({date:state.calSel,returnTo:'kalender'});break;
-    case 'add-cancel':closeAdd();break;
+    case 'add-cancel':closeAddAsk();break;
     case 'back':goBack();break;
     case 'add-group':state.form.group=el.dataset.g;renderCatGrid();break;
     case 'pick-cat':pickCat(el.dataset.k);break;
@@ -2125,6 +2488,15 @@ function handle(a,el,e){
     case 'close-cathist':hideLayer('cathist');break;
     case 'ch-open':openDetail(el.dataset.id);break;
     case 'form-collapse':hideLayer('form');break;
+    // ---- banyak tugas sekaligus (Tahap 4) ----
+    case 'item-add':addItem();break;
+    case 'item-open':openItem(+el.dataset.i);break;
+    case 'item-del':{const f=state.form;if(f)delItem(el.dataset.i!=null?+el.dataset.i:f.cur);break;}
+    case 'mcal-day':{const f=state.form;if(!f)break;const r=L.toggleDate(f.dates,el.dataset.d,L.MAX_BATCH);
+      if(r.full)toast('Maksimal '+L.MAX_BATCH+' tanggal');
+      f.dates=r.dates;$('#f-date-err').classList.add('hidden');$('#f-mcal').classList.remove('bad');renderMcal();break;}
+    case 'mcal-nav':if(state.form){state.form.mcal=mAdd(state.form.mcal,+el.dataset.d);renderMcal();}break;
+    case 'mcal-clear':if(state.form){state.form.dates=[];renderMcal();}break;
     case 'quick-date':{const d=addDays(today(),+el.dataset.d);setFormDate(d);break;}
     case 'pick-diff':{const v=el.dataset.v;state.form.diff=state.form.diff===v?'':v;syncDiff();break;}
     case 'pick-dur':{const s=$('#f-start').value;
@@ -2206,6 +2578,9 @@ function setFormDate(d){
 $('#f-date').addEventListener('change',()=>{const v=$('#f-date').value;if(!v)return;
   if(!state.form.dlTouched)$('#f-dl-date').value=v;syncQuick();});
 $('#f-dl-on').addEventListener('change',()=>{state.form.dlTouched=true;syncDl();});
+$('#f-dl-off').addEventListener('change',()=>{const f=state.form;if(!f)return;f.dlOff=L.dlOffOf($('#f-dl-off').value);f.dlTouched=true;});
+$('#f-multi').addEventListener('change',()=>setMulti($('#f-multi').checked));
+$('#f-date').addEventListener('input',()=>{$('#f-date-err').classList.add('hidden');$('#f-date').classList.remove('bad');});
 $('#f-dl-date').addEventListener('change',()=>{state.form.dlTouched=true;});
 $('#f-dl-time').addEventListener('change',()=>{state.form.dlTouched=true;});
 $('#f-name').addEventListener('input',()=>{$('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');renderSug();});
@@ -2231,6 +2606,7 @@ $('#f-start').addEventListener('change',()=>{const f=state.form,s=$('#f-start').
 $('#f-end').addEventListener('change',syncTime);
 $('#f-notime').addEventListener('change',()=>{if(state.form){state.form.noTime=$('#f-notime').checked;syncTime();}});
 $('#task-form').addEventListener('submit',saveForm);
+$('#f-dl-off').innerHTML=Array.from({length:L.DL_OFF_MAX+1},(_,n)=>'<option value="'+n+'">'+(n?n+' hari setelahnya':'Hari yang sama')+'</option>').join('');
 // editor kategori custom (isinya dibuat ulang setiap dibuka, jadi listener dipasang di document)
 const isKcName=t=>!!t&&t===$('#kc-name');
 document.addEventListener('input',e=>{if(isKcName(e.target)){catErr('');syncCatEditor();}});
