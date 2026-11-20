@@ -1918,3 +1918,60 @@ test('E2E Tahap 8: Tugas vs Kegiatan (Poin 17) — form, masuk ke kegiatan, tamp
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });
+
+test('E2E Tahap 8 (perbaikan): nama kegiatan di Time Blocking tidak tertutup tugas yang jamnya sama', { skip: !pw && 'Playwright tidak terpasang', timeout: 120000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, start, end, extra) => Object.assign({ id, cat: 'tkerja', name, detail: '', date: '2026-11-10', start, end, dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '',
+    createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  S.post('apiSync', reg.token, [
+    T('kerja', 'Kerja kantor', '10:00', '17:00', { cat: 'jamkerja', kind: 'kegiatan' }),
+    T('cek', 'Cek kerjaan', '10:00', '17:00', { parent: 'kerja' }),               // laporan user: jam kegiatan = jam tugas
+    T('kul', 'Kuliah malam', '18:00', '21:00', { cat: 'kuliah', kind: 'kegiatan' }),
+    T('pres', 'Presentasi', '18:00', '18:30', { parent: 'kul' }),                 // menutupi 30 mnt pertama → label di 18:30
+    T('pagi', 'Olahraga pagi', '06:00', '07:00', { cat: 'olahraga', kind: 'kegiatan' })
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id, 'pt.homeView': 'tb' } });
+  try {
+    await p.goto(base); await wait(1500);
+    assert.equal(await p.isVisible('#tb'), true);
+    const scrollTo = min => p.evaluate(m => { const g = document.getElementById('tb-grid'), sc = document.getElementById('sc');
+      sc.scrollTo(0, g.getBoundingClientRect().top + sc.scrollTop + 10 + m - document.getElementById('home-top').offsetHeight - document.getElementById('tb-bar').offsetHeight - 30); }, min);
+    // setiap kegiatan: namanya terlihat (label di latar yang tidak tertutup, atau label di blok tugas penutup)
+    const seen = () => p.evaluate(() => [...document.querySelectorAll('#tb-body .tb-k')].map(k => {
+      const id = k.dataset.id, name = k.title.replace(/^Kegiatan: /, '').split(' · ')[0];
+      const l = k.querySelector('.tb-kl');
+      if (l) { const r = l.getBoundingClientRect(), hit = document.elementFromPoint(r.left + 20, r.top + r.height / 2);
+        return id + ':latar:' + (!!hit && l.contains(hit)) + ':' + l.textContent; }
+      const c = [...document.querySelectorAll('#tb-body .tb-kc')].find(x => x.textContent.startsWith(name));
+      return id + ':tugas:' + (c ? c.closest('.tb-b').dataset.id + ':' + c.textContent : 'TIDAK ADA');
+    }));
+    await scrollTo(600); await wait(200);
+    let s = await seen();
+    assert.deepEqual(s, [
+      'pagi:latar:false:Olahraga pagi06:00–07:00',            // di luar layar saat ini (elementFromPoint di luar viewport), dicek di bawah
+      'kerja:tugas:cek:Kerja kantor · 10:00–17:00 · 0/1 selesai',
+      'kul:latar:false:Kuliah malam18:00–21:00 · 0/1 selesai'
+    ].map(x => x), 'urutan & tempat label');
+    // blok tugas tetap utuh: nama tugas di bawah label kegiatan, tombol centang ada, label latar kegiatan tidak digambar
+    const cek = await p.evaluate(() => { const b = document.querySelector('.tb-b[data-id="cek"]'), c = b.querySelector('.tb-kc'), n = b.querySelector('.tb-n');
+      return { below: n.getBoundingClientRect().top >= c.getBoundingClientRect().bottom - 0.5, name: n.textContent, chk: !!b.querySelector('.check'), bgLabel: !!document.querySelector('.tb-k[data-id="kerja"] .tb-kl') }; });
+    assert.deepEqual(cek, { below: true, name: 'Cek kerjaan', chk: true, bgLabel: false });
+    if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, 't8-12-label-jam-sama.png') }); }
+    // label di latar benar-benar terlihat (tidak tertutup blok tugas) saat digulir ke sana
+    await scrollTo(1080); await wait(200);
+    assert.match((await seen())[2], /^kul:latar:true:Kuliah malam/, 'label Kuliah di 18:30, di bawah Presentasi');
+    assert.equal(await p.evaluate(() => Math.round(document.querySelector('.tb-k[data-id="kul"] .tb-kl').getBoundingClientRect().top - document.querySelector('.tb-k[data-id="kul"]').getBoundingClientRect().top)), 31);
+    await scrollTo(360); await wait(200);
+    assert.match((await seen())[0], /^pagi:latar:true:/);
+    // centang dari blok yang memuat label kegiatan → progres di label ikut berubah
+    await scrollTo(600); await wait(200);
+    await p.click('.tb-b[data-id="cek"] .check'); await wait(400);
+    assert.equal(await p.textContent('.tb-b[data-id="cek"] .tb-kc'), 'Kerja kantor · 10:00–17:00 · 1/1 selesai');
+    // tap label kegiatan di blok tugas = detail tugas (blok tugas), latar di garis kiri = detail kegiatan
+    await p.click('.tb-b[data-id="cek"] .tb-kc'); await wait(400);
+    assert.equal(await p.textContent('#detail-top'), 'Detail tugas');
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});

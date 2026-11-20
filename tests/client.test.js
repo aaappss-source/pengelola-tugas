@@ -1042,3 +1042,24 @@ test('mode coba: contoh kegiatan + aturan server sama dengan Code.gs (serverRule
   const del = [{ op: 'delete', id: 'k1' }];
   assert.deepEqual(pick(call('apiSync', [L.DEMO_TOKEN, del])), pick(S.post('apiSync', tok, del)));
 });
+
+test('Time Blocking (perbaikan Tahap 8): nama kegiatan tidak boleh tertutup tugas — label di celah dekat awal, atau di blok tugas penutup', () => {
+  const lab = (bg, fg) => plain(L.tbLabels(L.tbLayout(bg, 20), L.tbLayout(fg, 20), 20, 60, 40));
+  const k = (s, e) => LB('k', s, e), t = (id, s, e) => LB(id, s, e);
+  assert.deepEqual(lab([k(480, 1020)], []), [{ at: 480, host: -1 }], 'tanpa tugas: di awal kegiatan');
+  assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 540)]), [{ at: 540, host: -1 }], 'tugas 1 jam di awal: label tepat di bawahnya');
+  // laporan user: kegiatan & tugas 10:00–17:00 → dulu label tertutup seluruhnya; sekarang di blok tugas itu
+  assert.deepEqual(lab([k(600, 1020)], [t('cek', 600, 1020)]), [{ at: null, host: 0 }]);
+  // celah ada tapi jauh (tugas 08–12 di kegiatan 08–17) → tetap di blok tugas supaya terlihat di atas
+  assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 720)]), [{ at: null, host: 0 }]);
+  // dua tugas berdampingan di awal → blok kolom kiri; tugas yang mulai paling dekat dengan awal kegiatan dipilih
+  const two = L.tbLayout([t('kiri', 600, 900), t('kanan', 600, 1020)], 20);
+  assert.equal(two[plain(L.tbLabels(L.tbLayout([k(600, 1020)], 20), two, 20, 60, 40))[0].host].col, 0);
+  assert.equal(plain(L.tbLayout([t('lebih-awal', 420, 1020), t('pas', 600, 1020)], 20))[lab([k(600, 1020)], [t('lebih-awal', 420, 1020), t('pas', 600, 1020)])[0].host].t.id, 'pas');
+  // blok penutup terlalu pendek untuk label (< 40 mnt) → celah jauh kalau ada, kalau tidak ada tempat sama sekali → null
+  assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 515), t('b', 515, 550)]), [{ at: 550, host: -1 }]);
+  assert.deepEqual(lab([k(600, 630)], [t('a', 600, 630)]), [{ at: null, host: -1 }]);
+  // beberapa kegiatan sekaligus; masukan kosong/rusak aman
+  assert.deepEqual(lab([k(480, 600), LB('k2', 900, 960)], [t('x', 900, 960)]), [{ at: 480, host: -1 }, { at: null, host: 0 }]);
+  assert.deepEqual(plain(L.tbLabels(null, null, 20, 60, 40)), []);
+});

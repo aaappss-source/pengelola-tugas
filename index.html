@@ -505,6 +505,11 @@ button.d-row .chev{margin-left:auto;align-self:center}
 .tb-kl b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;font-size:12.5px;color:hsl(var(--h) 75% 87%)}
 .tb-kl span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tb-fg{position:absolute;top:0;bottom:0;right:0;pointer-events:none}
+/* nama kegiatan yang awalnya tertutup tugas (mis. jam sama persis) tampil di atas nama tugas itu (perbaikan Tahap 8) */
+.tb-kc{display:flex;align-items:center;gap:4px;max-width:100%;width:max-content;height:16px;margin-bottom:1px;padding:0 6px 0 4px;border-radius:6px;background:hsl(var(--kh) 40% 28%);color:hsl(var(--kh) 85% 86%);font-size:11.5px;font-weight:500;line-height:16px;white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
+.tb-kc svg{flex:none;width:12px;height:12px}
+.tb-kc span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tb-b.done .tb-kc{opacity:.7}
 .tb-fg .tb-b{pointer-events:auto}
 /* dialog dengan tiga pilihan (hapus kegiatan: keluarkan / hapus semua / batal) tersusun ke bawah */
 .dialog.three .d-actions{flex-direction:column;gap:8px}
@@ -1336,6 +1341,27 @@ function tbLabelAt(bg,busy,h){
   for(const b of list){if(b.start>=y+h)break;if(ve(b)>y)y=ve(b);}
   return y+h<=end?y:null;
 }
+/** Tempat label tiap kegiatan (perbaikan Tahap 8, laporan user: kegiatan & tugas di jam yang sama → nama kegiatan tertutup).
+ *  bg/fg = hasil tbLayout untuk latar kegiatan / blok tugas. Untuk setiap kegiatan → {at, host}:
+ *  - at = menit label di latar kegiatan: celah pertama (tbLabelAt) kalau jaraknya ≤ `near` menit dari awal kegiatan;
+ *  - host = indeks blok tugas (fg) yang menutupi awal kegiatan dan cukup tinggi (≥ hostMin menit): nama kegiatan ditaruh
+ *    di dalam blok tugas itu (baris kecil di atas nama tugas), supaya tetap terlihat di bagian atas kegiatan;
+ *  - tidak ada keduanya → celah yang jauh kalau ada, selain itu {at:null, host:-1} (tidak ada tempat; kegiatan sangat pendek). */
+function tbLabels(bg,fg,h,near,hostMin){
+  const ve=b=>isFinite(b.vEnd)?b.vEnd:b.end;h=Math.max(0,+h||0);
+  return (Array.isArray(bg)?bg:[]).map(k=>{
+    const at=tbLabelAt(k,fg,h);
+    if(!k||!isFinite(k.start))return {at:null,host:-1};
+    if(at!=null&&at-k.start<=near)return {at:at,host:-1};
+    let host=-1;
+    (Array.isArray(fg)?fg:[]).forEach((b,i)=>{
+      if(!b||!isFinite(b.start)||!(b.start<k.start+h&&ve(b)>k.start)||ve(b)-b.start<hostMin)return;
+      const p=fg[host];
+      if(host<0||Math.abs(b.start-k.start)<Math.abs(p.start-k.start)||(b.start===p.start&&(b.col||0)<(p.col||0)))host=i;
+    });
+    return host>=0?{at:null,host:host}:{at:at,host:-1};
+  });
+}
 /** Susunan blok supaya yang bertabrakan tampil berdampingan, tidak bertumpuk (Poin 16).
  *  Tabrakan dihitung dengan tinggi tampil minimal `minLen` menit (blok 0–10 menit tetap terbaca dan tidak tertimpa blok
  *  sesudahnya). Blok yang saling beririsan (langsung atau berantai) jadi satu kelompok; di dalamnya tiap blok mendapat
@@ -1615,7 +1641,7 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   byTime:byTime,newestFirst:newestFirst,
   spanEnd:spanEnd,isMulti:isMulti,spanDays:spanDays,onDay:onDay,dayOf:dayOf,spanTag:spanTag,byClock:byClock,tasksOn:tasksOn,
   monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,shiftDates:shiftDates,
-  DAY_MIN:DAY_MIN,tbItems:tbItems,tbLayout:tbLayout,weekDays:weekDays,tbScrollMin:tbScrollMin,tbLabelAt:tbLabelAt,
+  DAY_MIN:DAY_MIN,tbItems:tbItems,tbLayout:tbLayout,weekDays:weekDays,tbScrollMin:tbScrollMin,tbLabelAt:tbLabelAt,tbLabels:tbLabels,
   isKeg:isKeg,tasksOnly:tasksOnly,parentOf:parentOf,kidsOf:kidsOf,kegProgress:kegProgress,kegOn:kegOn,nest:nest,outsideKeg:outsideKeg,
   shiftKids:shiftKids,moveItem:moveItem,kegDelete:kegDelete,serverRules:serverRules,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
@@ -2159,6 +2185,8 @@ function scrollToDate(d,smooth){
    tombol centang (jawaban user); tap blok = detail. Bulan di kepala halaman ikut bulan hari yang tampil. */
 const TB_PX=1,TB_TOP=10,TB_MIN=20,TB_CHK=45;   // 1 menit = 1px; jarak atas grid; tinggi tampil minimal (mnt); centang ≥ 45 mnt
 const TB_RAIL=12,TB_KL=20;   // Tahap 8: geser tugas dari kiri saat ada kegiatan (px); tinggi label kegiatan (mnt)
+// label kegiatan: celah ≤ TB_NEAR mnt dari awal kegiatan; kalau tidak ada, di blok tugas penutup yang tingginya ≥ TB_HOST mnt
+const TB_NEAR=60,TB_HOST=40;
 const DAYS_S=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const tbOn=()=>state.view==='tugas'&&state.homeView==='tb';
 const HV_NAME={list:'To Do List',tb:'Time Blocking'};
@@ -2225,37 +2253,48 @@ function renderTB(){
     if(i<24)h+='<div class="tb-hr half" style="top:'+(TB_TOP+(i*60+30)*TB_PX)+'px;left:52px"></div>';
   }
   // Tahap 8: kegiatan = blok latar (disusun sesama kegiatan), tugas di lapisan atasnya (.tb-fg, bergeser TB_RAIL px dari kiri
-  // supaya garis kiri kegiatan tetap terlihat). Label kegiatan di celah pertama yang tidak tertutup tugas (L.tbLabelAt).
+  // supaya garis kiri kegiatan tetap terlihat). Label kegiatan (L.tbLabels): di celah dekat awal kegiatan yang tidak tertutup
+  // tugas; kalau awal kegiatan tertutup tugas (mis. jamnya sama persis), nama kegiatan ditaruh di dalam blok tugas itu.
   const fg=L.tbLayout(it.blocks,TB_MIN),bg=L.tbLayout(it.bg,TB_MIN),inset=bg.length?TB_RAIL:0;
+  const lab=L.tbLabels(bg,fg,TB_KL,TB_NEAR,TB_HOST),hosted={};
+  lab.forEach((x,i)=>{if(x.host>=0)(hosted[x.host]=hosted[x.host]||[]).push(bg[i]);});
   // perkiraan lebar area blok (px): blok yang terlalu sempit tidak diberi tombol centang (tetap bisa lewat detail)
   const aw=Math.max(120,Math.min(innerWidth||360,480)-60-inset);
-  h+='<div class="tb-area">'+bg.map(b=>tbBg(b,fg)).join('')+'<div class="tb-fg" style="left:'+inset+'px">'+fg.map(b=>tbBlock(b,d,aw)).join('')+'</div></div>';
+  h+='<div class="tb-area">'+bg.map((b,i)=>tbBg(b,lab[i])).join('')+'<div class="tb-fg" style="left:'+inset+'px">'+fg.map((b,i)=>tbBlock(b,d,aw,hosted[i])).join('')+'</div></div>';
   if(d===td){const n=new Date(),m=n.getHours()*60+n.getMinutes();
     h+='<div class="tb-now" style="top:'+(TB_TOP+m*TB_PX)+'px" aria-hidden="true"><span>'+pad(n.getHours())+':'+pad(n.getMinutes())+'</span></div>';}
   $('#tb-body').innerHTML=h+'</div>';
 }
-function tbBlock(b,d,aw){
+// kegs = kegiatan yang awalnya tertutup blok ini (L.tbLabels): namanya tampil sebagai label kecil di atas nama tugas
+function tbBlock(b,d,aw,kegs){
   const t=b.t,c=catOf(t.cat),len=b.end-b.start,hpx=Math.max(len,TB_MIN)*TB_PX-2;
   const xs=hpx<34,chk=len>=TB_CHK&&aw*b.span/b.cols>=104;
   const end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
   const time=b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
   const dl=dlInfo(t),sp=b.prev?'':L.spanTag(t,d);
   const meta=(dl&&dl.cls==='over'?'<i class="tb-od" title="Lewat deadline"></i>':'')+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+esc(time);
-  const ln=xs?1:Math.max(1,Math.floor((hpx-6-15)/16));
+  const kc=kegs&&kegs.length&&!xs?'<div class="tb-kc" style="--kh:'+catOf(kegs[0].t.cat).h+'" title="'+esc('Kegiatan: '+kegs.map(k=>k.t.name).join(', '))+'">'+ic('layers',2.2)+
+    '<span>'+esc(kegs.length>1?kegs.map(k=>k.t.name).join(', '):kegs[0].t.name+' · '+tbTime(kegs[0])+tbProg(kegs[0].t))+'</span></div>':'';
+  const ln=xs?1:Math.max(1,Math.floor((hpx-6-15-(kc?17:0))/16));
   return '<div class="tb-b'+(t.done?' done':'')+(xs?' xs':'')+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc(t.name+' · '+time)+'"'+
     ' style="--h:'+c.h+';--ln:'+ln+';top:'+(TB_TOP+b.start*TB_PX+1)+'px;height:'+hpx+'px;left:calc('+(b.col/b.cols*100).toFixed(3)+'% + 1px);width:calc('+(b.span/b.cols*100).toFixed(3)+'% - 2px)">'+
-    '<div class="tb-bt"><div class="tb-n">'+esc(t.name)+'</div><div class="tb-m">'+meta+'</div></div>'+
+    '<div class="tb-bt">'+kc+'<div class="tb-n">'+esc(t.name)+'</div><div class="tb-m">'+meta+'</div></div>'+
     (chk?'<button class="check tb-chk" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button>':'')+'</div>';
 }
-// blok latar kegiatan (Tahap 8): selebar kolomnya, label "nama · jam · progres" di celah pertama yang tidak tertutup tugas
-function tbBg(b,fg){
-  const t=b.t,c=catOf(t.cat),hpx=Math.max(b.end-b.start,TB_MIN)*TB_PX-2,pr=L.kegProgress(all(),t.id);
-  const end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
-  const time=b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
-  const at=L.tbLabelAt(b,fg,TB_KL),ly=(at==null?b.start:at)-b.start;
+// jam & progres kegiatan untuk label: "08:00–17:00", "22:00 s/d 02:00 besok", "Lanjutan, s/d 02:00" · "1/3 selesai"
+function tbTime(b){
+  const t=b.t,end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
+  return b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
+}
+function tbProg(t){const pr=L.kegProgress(all(),t.id);return pr.total?' · '+pr.done+'/'+pr.total+' selesai':'';}
+// blok latar kegiatan (Tahap 8): selebar kolomnya. lab = {at, host} dari L.tbLabels: label "nama · jam · progres" di menit
+// `at`; host ≥ 0 = label ditaruh di blok tugas yang menutupi awal kegiatan (tbBlock), jadi di latar tidak ada label (dulu
+// label tetap digambar di awal dan tertutup tugas, hanya ujung hurufnya yang terlihat di garis kiri).
+function tbBg(b,lab){
+  const t=b.t,c=catOf(t.cat),hpx=Math.max(b.end-b.start,TB_MIN)*TB_PX-2,time=tbTime(b);
   return '<div class="tb-k'+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc('Kegiatan: '+t.name+' · '+time)+'"'+
     ' style="--h:'+c.h+';top:'+(TB_TOP+b.start*TB_PX+1)+'px;height:'+hpx+'px;left:calc('+(b.col/b.cols*100).toFixed(3)+'% + 1px);width:calc('+(b.span/b.cols*100).toFixed(3)+'% - 2px)">'+
-    '<div class="tb-kl" style="top:'+(ly*TB_PX)+'px"><b>'+esc(t.name)+'</b><span>'+esc(time)+(pr.total?' · '+pr.done+'/'+pr.total+' selesai':'')+'</span></div></div>';
+    (lab&&lab.at!=null?'<div class="tb-kl" style="top:'+((lab.at-b.start)*TB_PX)+'px"><b>'+esc(t.name)+'</b><span>'+esc(time+tbProg(t))+'</span></div>':'')+'</div>';
 }
 
 /* ================= CALENDAR ================= */
