@@ -372,7 +372,7 @@ html.dragging .cday.drop{outline:none}
 .drag-ghost .dg-to{margin:2px 0 0 36px;font-size:12.5px;font-weight:500;color:var(--accent);white-space:nowrap}
 .add-here{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 16px 0;padding:13px;border-radius:14px;border:1.5px dashed #555;color:var(--accent);font-weight:500;width:calc(100% - 32px)}
 .add-here svg{width:20px;height:20px}
-.cal-legend{display:flex;gap:14px;justify-content:center;padding:12px 0 0;font-size:12px;color:var(--muted)}
+.cal-legend{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;padding:12px 8px 0;font-size:12px;color:var(--muted)}
 .cal-legend span{display:inline-flex;gap:5px;align-items:center}
 .cal-legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
 
@@ -442,6 +442,76 @@ html.dragging .cday.drop{outline:none}
 /* layar sempit: judul + 4 tombol di kepala halaman muat; strip 7 hari selebar mungkin */
 @media (max-width:400px){.titlebar .icon-btn{width:40px}.titlebar h1{font-size:19px;gap:6px}}
 @media (max-width:380px){.tb-bar{padding:10px 2px 0}.tb-nav{width:34px}.tb-days{gap:0}}
+/* Tahap 8: keterangan kalender + "kegiatan" tetap satu baris di layar 360px (Roboto); kalau tidak muat, turun ke baris kedua */
+@media (max-width:380px){.cal-legend{column-gap:10px;font-size:11.5px;padding:12px 4px 0}}
+
+/* ---------- Tugas vs Kegiatan (Tahap 8, Poin 17) ---------- */
+/* form: pilihan Tugas | Kegiatan di atas form (versi kecil .seg); isian khusus tugas (.only-t) disembunyikan untuk kegiatan */
+.seg.kind-seg{margin:2px 0 8px}
+.seg.kind-seg button{font-size:15.5px;padding:0;min-height:42px}
+.kind-hint{margin:-2px 2px 10px}
+#task-form.is-keg .only-t{display:none!important}
+.par-pick{margin-bottom:0}
+.par-pick button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:36px}
+.par-pick button small{color:inherit;opacity:.8;font-size:12.5px;margin-left:5px;font-variant-numeric:tabular-nums}
+.hint.warn{color:var(--warn)}
+/* kegiatan di daftar: kartu berwarna dengan garis kiri, tanpa tombol centang; tugas di dalamnya di bawahnya (buka-tutup) */
+.keg{--h:200;margin:6px 10px;border-radius:14px;background:hsl(var(--h) 18% 15.5%);border-left:4px solid hsl(var(--h) 62% 64%);overflow:hidden}
+.keg-h{display:flex;gap:12px;align-items:center;min-height:52px;padding:7px 2px 7px 10px;position:relative;cursor:pointer}
+.keg-h:active{background:rgba(255,255,255,.04)}
+.keg-h .cat-ic{width:36px;height:36px}
+.keg-h .cat-ic svg{width:19px;height:19px}
+.keg-h .cat-ic .cat-l{font-size:16px}
+.keg-tag{display:inline-block;font-size:11.5px;font-weight:500;line-height:16px;padding:0 6px;border-radius:6px;margin-right:6px;vertical-align:1px;background:hsl(var(--h) 40% 28%);color:hsl(var(--h) 85% 86%);letter-spacing:.2px}
+.keg-pr{color:var(--text)}
+.keg-pr.all{color:var(--good)}
+.keg-fold{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--text2)}
+.keg-fold svg{width:22px;height:22px;transition:transform .2s}
+.keg-fold:active{background:rgba(255,255,255,.08)}
+.keg.fold .keg-fold svg{transform:rotate(-90deg)}
+.keg-kids{border-top:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.16)}
+.keg.fold .keg-kids{display:none}
+.keg-kids .task{padding-left:12px}
+.keg-kids .task::after{left:60px}
+.keg-h.flash{animation:flash 1.6s}
+.keg-h.pressing{background:rgba(255,212,59,.13);transition:background .35s}
+.keg-h.drag-src,.keg-h.drag-src+.keg-kids{opacity:.35}
+#v-kalender.editing #cal-day-list .keg-h{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#v-kalender.editing #cal-day-list .keg-fold{display:none}
+#v-kalender.editing #cal-day-list .keg-h::before{content:"";order:9;flex:none;width:28px;height:28px;margin:0 8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238d8c86' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01'/%3E%3C/svg%3E") center/22px no-repeat}
+/* kalender: garis kecil di bawah sel = ada kegiatan (kegiatan tidak ikut "n tugas") */
+.cday .kd{position:absolute;left:10px;right:10px;bottom:4px;height:3px;border-radius:2px;background:#7fb2f0}
+.cal-legend i.kd-l{width:12px;height:3px;border-radius:2px;background:#7fb2f0}
+/* detail kegiatan: tanda "Kegiatan" + progres + daftar tugas di dalamnya */
+.d-status.is-keg{background:hsl(var(--h) 38% 25%);color:hsl(var(--h) 85% 86%)}
+.d-prog{display:inline-block;margin:14px 0 0 6px;font-size:13px;color:var(--text2);vertical-align:middle}
+.d-kids{margin:16px -18px 0;border-top:1px solid var(--line)}
+.d-kids-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 18px 2px;font-size:13px;color:var(--text2)}
+.d-kids-h b{color:var(--text);font-weight:500;font-size:15px}
+.d-kids .task{padding-left:18px}
+.d-kids .task::after{left:66px}
+.d-kids-empty{padding:6px 18px 10px;margin:0;color:var(--muted);font-size:13.5px}
+button.d-row{width:100%;text-align:left}
+button.d-row:active{background:#2c2c2c}
+button.d-row .chev{margin-left:auto;align-self:center}
+/* Time Blocking: kegiatan = blok latar selebar area (berdampingan kalau sesama kegiatan bertabrakan), tugas di atasnya
+   (.tb-fg, bergeser 12px dari kiri supaya garis kegiatan tetap terlihat). Label kegiatan di celah pertama yang tidak tertutup tugas. */
+.tb-k{--h:200;position:absolute;border-radius:10px;background:hsl(var(--h) 22% 15%);border:1px dashed hsl(var(--h) 35% 34%);border-left:4px solid hsl(var(--h) 62% 62%);cursor:pointer;overflow:hidden}
+.tb-k:active{filter:brightness(1.18)}
+.tb-k.cont{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.tb-k.prev{border-top-left-radius:0;border-top-right-radius:0}
+.tb-k.flash{animation:tbflash 1.6s}
+.tb-kl{position:absolute;left:5px;right:6px;display:flex;gap:6px;align-items:baseline;white-space:nowrap;overflow:hidden;font-size:12px;line-height:18px;color:hsl(var(--h) 40% 76%);font-variant-numeric:tabular-nums}
+.tb-kl b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;font-size:12.5px;color:hsl(var(--h) 75% 87%)}
+.tb-kl span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tb-fg{position:absolute;top:0;bottom:0;right:0;pointer-events:none}
+.tb-fg .tb-b{pointer-events:auto}
+/* dialog dengan tiga pilihan (hapus kegiatan: keluarkan / hapus semua / batal) tersusun ke bawah */
+.dialog.three .d-actions{flex-direction:column;gap:8px}
+.dialog.three .d-actions button{flex:none}
+.dialog.three #cf-alt{order:1}
+.dialog.three #cf-yes{order:2}
+.dialog.three [data-act="confirm-no"]{order:3}
 
 /* ---------- stats ---------- */
 .st-top{background:var(--bg2);position:sticky;top:0;z-index:5}
@@ -769,9 +839,10 @@ button.crow{width:100%;text-align:left}
     <span class="spacer"></span>
   </div>
   <div class="add-top">
-    <div class="seg" id="add-seg">
-      <button data-act="add-group" data-g="tugas" class="on">Tugas</button>
-      <button data-act="add-group" data-g="kegiatan">Kegiatan</button>
+    <!-- Tahap 8 (Poin 17): pemilih JENIS yang dibuat (dulu hanya menyaring kelompok kategori) -->
+    <div class="seg" id="add-seg" role="group" aria-label="Jenis yang dibuat">
+      <button data-act="set-kind" data-k="tugas" class="on" aria-pressed="true">Tugas</button>
+      <button data-act="set-kind" data-k="kegiatan" aria-pressed="false">Kegiatan</button>
     </div>
     <p class="add-hint" id="add-hint">Pilih kategori untuk tugas baru</p>
   </div>
@@ -788,6 +859,12 @@ button.crow{width:100%;text-align:left}
       <div class="f-cards" id="f-pre"></div>
       <div class="f-ed" id="f-ed">
       <div class="f-ed-head hidden" id="f-ed-head"><b id="f-ed-n">Tugas 1</b><button type="button" class="f-x" data-act="item-del" aria-label="Hapus form tugas ini"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+      <!-- Tahap 8 (Poin 17): Tugas | Kegiatan di bagian atas form (sama dengan pilihan di layar +) -->
+      <div class="seg kind-seg" id="f-kind" role="group" aria-label="Jenis">
+        <button type="button" data-act="set-kind" data-k="tugas" aria-pressed="true">Tugas</button>
+        <button type="button" data-act="set-kind" data-k="kegiatan" aria-pressed="false">Kegiatan</button>
+      </div>
+      <small class="hint kind-hint hidden" id="f-kind-hint"></small>
       <div class="form-cat">
         <div class="cat-ic" id="f-cat-ic"></div>
         <div class="grow"><small>Kategori</small><b id="f-cat-name">-</b></div>
@@ -797,7 +874,7 @@ button.crow{width:100%;text-align:left}
       <div class="sug hidden" id="f-sug" role="listbox" aria-label="Saran nama dari tugas sebelumnya"></div>
       <div class="err hidden" id="f-name-err">Nama wajib diisi.</div>
       <label class="fld"><span>Detail</span><textarea class="inp" id="f-detail" rows="3" maxlength="2000" placeholder="Catatan, link, atau langkah-langkahnya (opsional)"></textarea></label>
-      <div class="fld">
+      <div class="fld only-t">
         <span>Tingkat kesulitan <small>(opsional)</small></span>
         <div class="quick diff-pick" id="f-diff">
           <button type="button" data-act="pick-diff" data-v="mudah" aria-pressed="false">Mudah</button>
@@ -806,7 +883,7 @@ button.crow{width:100%;text-align:left}
         </div>
       </div>
       <div class="fld">
-        <div class="fld-head"><span>Tanggal dikerjakan</span><label class="opt-switch" id="f-multi-row">Beberapa tanggal<span class="switch"><input type="checkbox" id="f-multi" aria-label="Beberapa tanggal"><i></i></span></label></div>
+        <div class="fld-head"><span id="f-date-lbl">Tanggal dikerjakan</span><label class="opt-switch" id="f-multi-row">Beberapa tanggal<span class="switch"><input type="checkbox" id="f-multi" aria-label="Beberapa tanggal"><i></i></span></label></div>
         <div id="f-one">
           <div class="quick" id="f-quick">
             <button type="button" data-act="quick-date" data-d="0">Hari ini</button>
@@ -828,8 +905,14 @@ button.crow{width:100%;text-align:left}
         </div>
         <div class="err f-err hidden" id="f-date-err"></div>
       </div>
+      <!-- Tahap 8 (Poin 17): tugas boleh masuk ke kegiatan di tanggal yang sama (opsional; tampil kalau ada kegiatannya) -->
+      <div class="fld only-t hidden" id="f-par-fld">
+        <span>Masuk ke kegiatan <small>(opsional)</small></span>
+        <div class="quick par-pick" id="f-par" role="group" aria-label="Masuk ke kegiatan"></div>
+        <small class="hint hidden" id="f-par-hint"></small>
+      </div>
       <div class="fld">
-        <div class="fld-head"><span>Jam pengerjaan</span><label class="opt-switch">Tanpa jam<span class="switch"><input type="checkbox" id="f-notime" aria-label="Tanpa jam"><i></i></span></label></div>
+        <div class="fld-head"><span id="f-time-lbl">Jam pengerjaan</span><label class="opt-switch only-t">Tanpa jam<span class="switch"><input type="checkbox" id="f-notime" aria-label="Tanpa jam"><i></i></span></label></div>
         <div id="f-time-box">
           <div class="two"><input class="inp" type="time" id="f-start" aria-label="Jam mulai"><em>sampai</em><input class="inp" type="time" id="f-end" aria-label="Jam selesai"></div>
           <div class="quick dur" id="f-dur" aria-label="Durasi">
@@ -842,13 +925,14 @@ button.crow{width:100%;text-align:left}
           <small class="hint" id="f-dur-txt"></small>
         </div>
         <small class="hint hidden" id="f-notime-txt">Hanya tanggal, tampil di bagian "Tanpa jam".</small>
+        <div class="err f-err hidden" id="f-time-err"></div>
       </div>
-      <div class="switch-row">
+      <div class="switch-row only-t">
         <div><span class="lbl">Deadline</span><small>Batas akhir tugas harus selesai</small></div>
         <label class="switch"><input type="checkbox" id="f-dl-on" aria-label="Pakai deadline"><i></i></label>
       </div>
-      <div class="two2" id="f-dl-box"><input class="inp" type="date" id="f-dl-date" aria-label="Tanggal deadline"><select class="inp hidden" id="f-dl-off" aria-label="Jarak deadline dari tanggal tugas"></select><input class="inp" type="time" id="f-dl-time" aria-label="Jam deadline"></div>
-      <small class="hint hidden" id="f-dl-hint">Deadline tiap tugas dihitung dari tanggalnya masing-masing.</small>
+      <div class="two2 only-t" id="f-dl-box"><input class="inp" type="date" id="f-dl-date" aria-label="Tanggal deadline"><select class="inp hidden" id="f-dl-off" aria-label="Jarak deadline dari tanggal tugas"></select><input class="inp" type="time" id="f-dl-time" aria-label="Jam deadline"></div>
+      <small class="hint hidden only-t" id="f-dl-hint">Deadline tiap tugas dihitung dari tanggalnya masing-masing.</small>
       </div>
       <div class="f-cards" id="f-post"></div>
       <button type="button" class="f-more" id="f-more" data-act="item-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah tugas lain</button>
@@ -862,7 +946,7 @@ button.crow{width:100%;text-align:left}
 <!-- detail sheet -->
 <div class="sheet-wrap" id="detail-wrap">
   <div class="backdrop" data-act="close-detail"></div>
-  <div class="sheet"><div class="sheet-top"><button class="back-btn" data-act="close-detail" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><b>Detail tugas</b></div><div id="detail"></div></div>
+  <div class="sheet"><div class="sheet-top"><button class="back-btn" data-act="close-detail" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg></button><b id="detail-top">Detail tugas</b></div><div id="detail"></div></div>
 </div>
 
 <!-- month picker -->
@@ -935,7 +1019,8 @@ button.crow{width:100%;text-align:left}
   <div class="dialog" role="dialog" aria-modal="true">
     <h3 id="cf-title">Hapus?</h3>
     <p id="cf-msg"></p>
-    <div class="d-actions"><button class="btn-sec" data-act="confirm-no">Batal</button><button class="btn-danger" data-act="confirm-yes" id="cf-yes">Hapus</button></div>
+    <!-- #cf-alt: pilihan ketiga (Tahap 8: hapus kegiatan → "Keluarkan tugas"); tombol tersusun ke bawah saat dipakai -->
+    <div class="d-actions"><button class="btn-sec hidden" data-act="confirm-alt" id="cf-alt"></button><button class="btn-sec" data-act="confirm-no">Batal</button><button class="btn-danger" data-act="confirm-yes" id="cf-yes">Hapus</button></div>
   </div>
 </div>
 
@@ -1220,22 +1305,36 @@ function shiftDates(t,from,to){
    lewat tasksOn). Lewat tengah malam (jawaban user Tahap 7): blok dipotong di 24:00 dan lanjutannya 00:00–jam selesai
    tampil di hari berikutnya sebagai tugas yang sama. */
 const DAY_MIN=1440;
-/** Isi Time Blocking tanggal d → {untimed: [tugas…] (urut seperti tasksOn), blocks: [{t, start, end, cont, prev}]}.
- *  start/end = menit sejak 00:00 hari itu; cont = berlanjut ke besok (dipotong di 24:00); prev = lanjutan dari kemarin. */
+/** Isi Time Blocking tanggal d → {untimed: [tugas…] (urut seperti tasksOn), blocks: [{t, start, end, cont, prev}], bg: […]}.
+ *  start/end = menit sejak 00:00 hari itu; cont = berlanjut ke besok (dipotong di 24:00); prev = lanjutan dari kemarin.
+ *  Sejak Tahap 8: Kegiatan berjam tidak masuk `blocks` tapi `bg` (blok latar, bentuknya sama), supaya tugas tidak
+ *  disusun berdampingan dengan kegiatan tetapi tampil di atasnya. Kegiatan tanpa jam tetap di `untimed`. */
 function tbItems(list,d){
-  const out={untimed:[],blocks:[]};if(!okD(d))return out;
+  const out={untimed:[],blocks:[],bg:[]};if(!okD(d))return out;
   tasksOn(list,d).forEach(t=>{
     const s=toMin(t.start);
     if(s==null){out.untimed.push(t);return;}
     const e=s+durMin(t.start,t.end);
-    out.blocks.push({t:t,start:s,end:Math.min(e,DAY_MIN),cont:e>DAY_MIN,prev:false});
+    (isKeg(t)?out.bg:out.blocks).push({t:t,start:s,end:Math.min(e,DAY_MIN),cont:e>DAY_MIN,prev:false});
   });
   tasksOn(list,ymdAdd(d,-1)).forEach(t=>{
     const s=toMin(t.start);if(s==null)return;
     const e=s+durMin(t.start,t.end);
-    if(e>DAY_MIN)out.blocks.push({t:t,start:0,end:e-DAY_MIN,cont:false,prev:true});
+    if(e>DAY_MIN)(isKeg(t)?out.bg:out.blocks).push({t:t,start:0,end:e-DAY_MIN,cont:false,prev:true});
   });
   return out;
+}
+/** Menit tempat label kegiatan (nama · jam · progres) ditaruh di blok latarnya (Tahap 8): menit pertama mulai dari awal
+ *  kegiatan yang tidak tertutup blok tugas selama `h` menit, supaya label tidak tertimpa tugas yang mulai bersamaan.
+ *  busy = blok tugas hasil tbLayout ({start, vEnd}). null kalau tidak ada celah (label ditaruh di awal, boleh tertutup). */
+function tbLabelAt(bg,busy,h){
+  if(!bg||!isFinite(bg.start)||!isFinite(bg.end))return null;
+  h=Math.max(0,+h||0);
+  const end=Math.max(bg.end,bg.start+h),ve=b=>isFinite(b.vEnd)?b.vEnd:b.end;
+  const list=(Array.isArray(busy)?busy:[]).filter(b=>b&&isFinite(b.start)&&b.start<end&&ve(b)>bg.start).sort((a,b)=>a.start-b.start);
+  let y=bg.start;
+  for(const b of list){if(b.start>=y+h)break;if(ve(b)>y)y=ve(b);}
+  return y+h<=end?y:null;
 }
 /** Susunan blok supaya yang bertabrakan tampil berdampingan, tidak bertumpuk (Poin 16).
  *  Tabrakan dihitung dengan tinggi tampil minimal `minLen` menit (blok 0–10 menit tetap terbaca dan tidak tertimpa blok
@@ -1282,8 +1381,84 @@ function tbScrollMin(blocks,nowMin){
   return first===Infinity?420:Math.max(0,first-30);
 }
 
+/* ---- Tugas vs Kegiatan (Tahap 8, Poin 17) ----
+   Kegiatan (kind 'kegiatan') = hal yang dijalani dalam rentang jam, mis. "Jam Kerja 08:00–17:00". Tidak bisa dicentang dan
+   tidak dihitung sebagai tugas (jumlah, progres, grafik). Tugas boleh masuk ke satu kegiatan di tanggal yang sama (field
+   parent = ID kegiatan). Aturannya sama dengan Code.gs (cleanTask_/normRows_): kegiatan tidak pernah selesai dan tidak punya
+   induk; induk yang tidak ada / bukan kegiatan / diri sendiri tidak berlaku. Tugas lama tanpa field kind = tugas (Q2). */
+function isKeg(t){return !!t&&t.kind==='kegiatan';}
+/** Hanya tugas (tanpa kegiatan): dipakai semua hitungan "n tugas", progres, dan grafik. */
+function tasksOnly(list){return (Array.isArray(list)?list:[]).filter(t=>t&&!isKeg(t));}
+/** Kegiatan induk yang berlaku untuk tugas t (byId = peta ID → tugas), null kalau tidak ada / tidak berlaku. */
+function parentOf(t,byId){
+  if(!t||isKeg(t)||!isId(t.parent)||t.parent===t.id||!byId||!has(byId,t.parent))return null;
+  const p=byId[t.parent];return isKeg(p)?p:null;
+}
+/** Tugas di dalam kegiatan kid, urut tanggal → jam. */
+function kidsOf(list,kid){return (Array.isArray(list)?list:[]).filter(t=>t&&!isKeg(t)&&t.parent===kid&&t.id!==kid).sort(byTime);}
+/** Progres kegiatan: {done, total} tugas di dalamnya (contoh "2/5 selesai"). */
+function kegProgress(list,kid){const k=kidsOf(list,kid);return {done:k.filter(t=>t.done).length,total:k.length};}
+/** Kegiatan yang tampil di tanggal d (pilihan "Masuk ke kegiatan" di form tugas), urut jam. */
+function kegOn(list,d){return tasksOn(list,d).filter(isKeg);}
+/** Daftar satu tanggal (sudah urut) → baris tampilan [{t, kids}]. Tugas yang kegiatan induknya ADA di daftar yang sama
+ *  ditaruh di bawah kegiatan itu (urutan daftar), tidak di tempatnya sendiri. Induk yang tidak ada di daftar ini (tanggal
+ *  lain / terhapus / bukan kegiatan) = tugas tampil biasa. dropEmpty: kegiatan tanpa tugas di daftar ini tidak ikut
+ *  (filter Belum/Selesai). */
+function nest(list,dropEmpty){
+  list=Array.isArray(list)?list:[];
+  const keg=Object.create(null),out=[];
+  list.forEach(t=>{if(isKeg(t)&&!keg[t.id])keg[t.id]={t:t,kids:[]};});
+  list.forEach(t=>{
+    if(isKeg(t)){const e=keg[t.id];if(e.t===t&&out.indexOf(e)<0)out.push(e);return;}
+    const p=isId(t.parent)&&t.parent!==t.id?keg[t.parent]:null;
+    if(p)p.kids.push(t);else out.push({t:t,kids:[]});
+  });
+  return dropEmpty?out.filter(e=>!isKeg(e.t)||e.kids.length):out;
+}
+/** K6: jam tugas di luar jam kegiatan? Boleh dimasukkan, tapi diberi peringatan kecil. false kalau salah satunya tanpa jam.
+ *  Keduanya di tanggal yang sama; kegiatan yang lewat tengah malam dihitung sampai jam selesainya besok. */
+function outsideKeg(t,k){
+  const s=toMin(t&&t.start),ks=toMin(k&&k.start);if(s==null||ks==null)return false;
+  return s<ks||s+durMin(t.start,t.end)>ks+durMin(k.start,k.end);
+}
+/** Kegiatan kid dipindah dari tanggal `from` ke `to` (drag di kalender / ubah tanggal di Edit): tugas di dalamnya ikut
+ *  bergeser selisih hari yang sama (jawaban user Tahap 8), tetap di dalam kegiatan. → [{id, date, dlDate}] untuk tugasnya. */
+function shiftKids(list,kid,from,to){
+  const out=[];kidsOf(list,kid).forEach(t=>{const r=shiftDates(t,from,to);if(r)out.push({id:t.id,date:r.date,dlDate:r.dlDate});});
+  return out;
+}
+/** Pindah satu item (drag di kalender) dari tanggal `from` ke `to`. → [{id, date, dlDate, parent?}] (item itu dulu), atau []
+ *  kalau tidak berubah. Kegiatan: tugas di dalamnya ikut (shiftKids). Tugas di dalam kegiatan yang dipindah ke tanggal tempat
+ *  kegiatannya tidak tampil → keluar dari kegiatan itu (parent ''), karena tugas hanya boleh masuk kegiatan di tanggal yang sama. */
+function moveItem(byId,id,from,to){
+  const t=byId&&has(byId,id)?byId[id]:null,r=t?shiftDates(t,from,to):null;if(!r)return [];
+  const me={id:id,date:r.date,dlDate:r.dlDate};
+  if(isKeg(t)){const list=Object.keys(byId).map(k=>byId[k]);return [me].concat(shiftKids(list,id,from,to));}
+  const p=parentOf(t,byId);if(p&&!onDay(p,r.date))me.parent='';
+  return [me];
+}
+/** Hapus kegiatan kid (Poin 17: tanya dulu). mode 'all' = tugas di dalamnya ikut dihapus; selain itu tugasnya dikeluarkan dari
+ *  kegiatan (parent '' + updatedAt, diubah di tempat). → {del: [ID yang dihapus, kegiatan dulu], out: [ID tugas yang dikeluarkan]} */
+function kegDelete(list,kid,mode,now){
+  const del=[kid],out=[];
+  kidsOf(list,kid).forEach(t=>{if(mode==='all')del.push(t.id);else{t.parent='';t.updatedAt=now;out.push(t.id);}});
+  return {del:del,out:out};
+}
+/** Aturan server untuk Jenis & Kegiatan induk (sama dengan Code.gs cleanTask_ + normRows_), dipakai "server" mode coba.
+ *  docs diubah di tempat: kegiatan → belum selesai & tanpa induk; induk yang hilang/bukan kegiatan/diri sendiri → ''. */
+function serverRules(docs){
+  const keg=Object.create(null);(docs||[]).forEach(d=>{if(d&&d.kind==='kegiatan')keg[d.id]=1;});
+  (docs||[]).forEach(d=>{
+    if(!d)return;
+    if(d.kind==='kegiatan'){d.done=false;d.doneAt=null;d.doneBy='';d.parent='';}
+    else if(d.parent&&(d.parent===d.id||!keg[d.parent]))d.parent='';
+  });
+  return docs;
+}
+
 /* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
    Satu "draft" = isi satu form: {cat, name, detail, diff, date, multi, dates, noTime, start, end, dlOn, dlDate, dlTime, dlOff}.
+   Sejak Tahap 8 + kind ('tugas'|'kegiatan') dan parent (ID kegiatan untuk tugas, opsional).
    multi = "Beberapa tanggal" aktif → satu tugas berdiri sendiri per tanggal di `dates` (bukan tugas multi-hari).
    Deadline saat multi = tanggal tugas itu + dlOff hari (0 = hari yang sama), jamnya sama (keputusan Tahap 4). */
 const MAX_FORMS=10;             // form tugas dalam satu layar +
@@ -1309,12 +1484,15 @@ function toggleDate(dates,d,max){
 }
 /** Jarak deadline (hari) yang dipakai saat multi: dibulatkan dan dibatasi 0…DL_OFF_MAX. */
 const dlOffOf=x=>{const n=Math.round(+x);return isFinite(n)?Math.max(0,Math.min(DL_OFF_MAX,n)):0;};
-/** Isi draft → field tugas untuk satu tanggal (sama dengan form satu tugas sebelum Tahap 4). */
+/** Isi draft → field tugas untuk satu tanggal (sama dengan form satu tugas sebelum Tahap 4).
+ *  Sejak Tahap 8 + kind & parent. Draft kegiatan (kind 'kegiatan'): selalu berjam, tanpa kesulitan, tanpa deadline, tanpa
+ *  induk. Tugas: parent hanya untuk satu tanggal ("Beberapa tanggal" = tugas terpisah di tanggal berbeda → tanpa induk). */
 function draftFields(d,date){
-  const nt=!!d.noTime,dl=!!d.dlOn;
+  const keg=d.kind==='kegiatan',nt=!keg&&!!d.noTime,dl=!keg&&!!d.dlOn;
   return {cat:d.cat,name:String(d.name||'').trim().slice(0,NAME_MAX),detail:String(d.detail||'').trim().slice(0,DETAIL_MAX),date:date,
-    start:nt?'':okT(d.start),end:nt?'':okT(d.end),diff:DIFFS.indexOf(d.diff)>=0?d.diff:'',
-    dlDate:dl?(d.multi?ymdAdd(date,dlOffOf(d.dlOff)):(okD(d.dlDate)||date)):'',dlTime:dl?(okT(d.dlTime)||'23:59'):''};
+    start:nt?'':okT(d.start),end:nt?'':okT(d.end),diff:!keg&&DIFFS.indexOf(d.diff)>=0?d.diff:'',
+    dlDate:dl?(d.multi?ymdAdd(date,dlOffOf(d.dlOff)):(okD(d.dlDate)||date)):'',dlTime:dl?(okT(d.dlTime)||'23:59'):'',
+    kind:keg?'kegiatan':'tugas',parent:!keg&&!d.multi&&isId(d.parent)?d.parent:''};
 }
 /** Isian yang belum lengkap di satu draft → {field: pesan} (kosong = lengkap). isCat(k) = kategori dikenal. */
 function draftErrors(d,isCat){
@@ -1327,12 +1505,14 @@ function draftErrors(d,isCat){
     if(!n)e.dates='Pilih minimal 1 tanggal.';
     else if(n>MAX_BATCH)e.dates='Maksimal '+MAX_BATCH+' tanggal.';
   }else if(!okD(d.date))e.date='Tanggal belum diisi.';
+  if(d.kind==='kegiatan'&&toMin(d.start)==null)e.time='Isi jam mulai kegiatan.';   // kegiatan = rentang jam (Tahap 8)
   return e;
 }
 /** Satu fungsi simpan untuk Poin 12 + 13: semua draft → tugas baru, SEMUA ATAU TIDAK SAMA SEKALI.
  *  Kalau satu form belum lengkap, atau jumlahnya melewati batas, tidak ada satu tugas pun yang dibuat.
- *  opts = {now, by, newId(), isCat(k), existing: jumlah tugas akun sekarang, taken(id): ID sudah dipakai?}
- *  → {ok:true, tasks:[…]} | {ok:false, errors:[{i, name?, cat?, date?, dates?}], msg}
+ *  opts = {now, by, newId(), isCat(k), existing: jumlah tugas akun sekarang, taken(id): ID sudah dipakai?,
+ *          parentOk(id, tanggal): kegiatan induk masih ada & tampil di tanggal itu? (Tahap 8; tidak = tanpa induk)}
+ *  → {ok:true, tasks:[…]} | {ok:false, errors:[{i, name?, cat?, date?, dates?, time?}], msg}
  *  createdAt naik 1 ms per tugas supaya urutan form dipertahankan di daftar (byTime). */
 function buildBatch(drafts,opts){
   const list=Array.isArray(drafts)?drafts:[],o=opts||{},isCat=o.isCat||(()=>true);
@@ -1349,8 +1529,9 @@ function buildBatch(drafts,opts){
   for(const d of list){
     for(const date of draftDates(d)){
       const id=fresh();if(!id)return {ok:false,errors:[],msg:'Gagal membuat ID tugas. Coba lagi.'};
-      const at=now+out.length;
-      out.push(Object.assign({id:id,kind:'tugas',parent:'',by:o.by},draftFields(d,date),{done:false,doneAt:null,doneBy:'',createdAt:at,updatedAt:at}));
+      const at=now+out.length,f=draftFields(d,date);
+      if(f.parent&&o.parentOk&&!o.parentOk(f.parent,date))f.parent='';
+      out.push(Object.assign({id:id,kind:'tugas',parent:'',by:o.by},f,{done:false,doneAt:null,doneBy:'',createdAt:at,updatedAt:at}));
     }
   }
   return {ok:true,tasks:out};
@@ -1394,6 +1575,11 @@ function demoSeed(todayYmd,now){
     return {id:'coba'+(i+1),cat:r[1],name:r[2],detail:r[3],date:date,start:r[4],end:r[5],
       dlDate:r[6]==null?'':ymdAdd(todayYmd,r[6]),dlTime:r[6]==null?'':r[7],done:done,doneAt:doneAt,createdAt:at,updatedAt:done?doneAt:at,
       kind:'tugas',diff:r[9],parent:'',by:'p1',doneBy:done?'p1':''};});
+  // Tahap 8: satu contoh Kegiatan hari ini berisi tugas "Kirim laporan pembelian" (jumlah tugas contoh tetap 12)
+  const kAt=now-(rows.length+1)*3600000;
+  tasks.push({id:'coba13',cat:'jamkerja',name:'Jam kerja',detail:'Shift pagi di kantor.',date:todayYmd,start:'08:00',end:'16:00',dlDate:'',dlTime:'',
+    done:false,doneAt:null,createdAt:kAt,updatedAt:kAt,kind:'kegiatan',diff:'',parent:'',by:'p1',doneBy:''});
+  tasks[4].parent='coba13';
   return {user:{id:'coba',username:'coba',name:'Tamu'},tasks:tasks,cats:[],profiles:[{id:'p1',name:'Tamu',avatar:''}]};
 }
 /** "Server" mode coba: data hanya di memori, jawabannya berbentuk sama dengan Code.gs (apiLoad/apiSync/apiProfile).
@@ -1412,7 +1598,7 @@ function demoServer(seed,isBuiltinCat){
       const m=mergeServer(db,Array.isArray(args[1])?args[1]:[],{cats:db.cats,profiles:db.profiles},isBuiltinCat);
       // seperti Code.gs: tugas yang kategori custom-nya sudah tidak ada → "Lainnya"
       const known=Object.create(null);m.cats.forEach(c=>{known[c.id]=1;});
-      db={tasks:Object.keys(m.tasks).map(k=>{const d=toDoc(m.tasks[k]);if(isCustomCat(d.cat)&&!known[d.cat])d.cat='lain_t';return d;}),cats:m.cats,profiles:m.profiles};
+      db={tasks:serverRules(Object.keys(m.tasks).map(k=>{const d=toDoc(m.tasks[k]);if(isCustomCat(d.cat)&&!known[d.cat])d.cat='lain_t';return d;})),cats:m.cats,profiles:m.profiles};
       return bundle();
     }
     if(fn==='apiProfile'){user.name=cleanName(args[1],40)||user.username;return out();}
@@ -1429,7 +1615,9 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   byTime:byTime,newestFirst:newestFirst,
   spanEnd:spanEnd,isMulti:isMulti,spanDays:spanDays,onDay:onDay,dayOf:dayOf,spanTag:spanTag,byClock:byClock,tasksOn:tasksOn,
   monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,shiftDates:shiftDates,
-  DAY_MIN:DAY_MIN,tbItems:tbItems,tbLayout:tbLayout,weekDays:weekDays,tbScrollMin:tbScrollMin,
+  DAY_MIN:DAY_MIN,tbItems:tbItems,tbLayout:tbLayout,weekDays:weekDays,tbScrollMin:tbScrollMin,tbLabelAt:tbLabelAt,
+  isKeg:isKeg,tasksOnly:tasksOnly,parentOf:parentOf,kidsOf:kidsOf,kegProgress:kegProgress,kegOn:kegOn,nest:nest,outsideKeg:outsideKeg,
+  shiftKids:shiftKids,moveItem:moveItem,kegDelete:kegDelete,serverRules:serverRules,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
   dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
 })();
@@ -1504,6 +1692,7 @@ const P={
  phone:'<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
  alarm:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M4 4.5 6.5 2.5M20 4.5l-2.5-2"/>',
  chev:'<path d="m9.5 6 6 6-6 6"/>',
+ chevd:'<path d="m6 9.5 6 6 6-6"/>',
  move:'<path d="M12 3v18M3 12h18"/><path d="m9 5.5 3-2.5 3 2.5M9 18.5l3 2.5 3-2.5M5.5 9 3 12l2.5 3M18.5 9l2.5 3-2.5 3"/>'
 };
 const ic=(k,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||1.7)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[k]||'')+'</svg>';
@@ -1550,7 +1739,9 @@ function customCat(k){
 }
 const catOf=k=>isBuiltinCat(k)?CAT[k]:(customCat(k)||CAT.lain_t);   // kode yang tidak dikenal tampil "Lainnya"
 // kunci pengelompokan (grafik, riwayat): kode custom yang sudah tidak ada digabung ke "Lainnya", sama seperti tampilannya
-const catKey=k=>isBuiltinCat(k)||customCat(k)?k:'lain_t';
+// Tahap 8: pengelompokan kategori Tugas/Kegiatan dihapus → dua "Lainnya" bawaan (lain_t, lain_k) digabung jadi satu
+// (PROGRESS §4 6a). Kode di sheet tidak diubah.
+const catKey=k=>k==='lain_k'?'lain_t':isBuiltinCat(k)||customCat(k)?k:'lain_t';
 const catLetter=n=>(Array.from(String(n||'').trim())[0]||'?').toUpperCase();
 const catGlyph=(c,sw)=>c.custom?'<span class="cat-l">'+esc(catLetter(c.n))+'</span>':ic(c.i,sw);
 const catIc=(c,big)=>'<div class="cat-ic'+(big?' big':'')+'" style="--h:'+c.h+'">'+catGlyph(c)+'</div>';
@@ -1808,9 +1999,16 @@ const state={
   pickYear:new Date().getFullYear(),
   form:null,detailId:null,returnTo:null,
   catEd:null,     // editor kategori custom yang terbuka: {id|null, hue, from:'add'|'list'}
-  histKey:null    // kategori yang riwayatnya dibuka dari Grafik (Poin 8)
+  histKey:null,   // kategori yang riwayatnya dibuka dari Grafik (Poin 8)
+  // Tahap 8 (Poin 17): kegiatan yang daftar tugasnya sedang ditutup (diingat di HP ini, tidak di mode coba)
+  fold:new Set([].concat(lsGet('pt.fold',[])||[]).filter(x=>typeof x==='string'))
 };
 const all=()=>Object.values(tasks);
+/* Tahap 8 (Poin 17): Kegiatan tidak bisa dicentang dan tidak dihitung sebagai tugas → setiap angka "n tugas", progres,
+   dan grafik memakai onlyT(). Tugas di dalam kegiatan (parent) tampil di bawah kegiatannya (L.nest). */
+const isKeg=L.isKeg,onlyT=L.tasksOnly;
+const kegOf=t=>L.parentOf(t,tasks);   // kegiatan induk yang berlaku, atau null
+function saveFold(){if(!(me&&me.demo))lsSet('pt.fold',Array.from(state.fold).slice(-300));}
 // Tahap 5 (Poin 15): tugas multi-hari (deadline lebih lambat dari tanggalnya) tampil di setiap tanggal rentangnya, tapi
 // tetap SATU data. inMonth = tugas yang rentangnya menyentuh bulan itu (dihitung 1 di setiap bulan yang dilewati),
 // onDate = tugas yang tampil di satu tanggal (urut jam). Logikanya di PT_LIB (diuji di Node).
@@ -1826,7 +2024,7 @@ function dur(ms){
   const d=Math.floor(h/24);return d+' hari'+(h%24&&d<3?' '+(h%24)+' jam':'');
 }
 function dlInfo(t){
-  const ms=dlMs(t);if(ms==null)return null;
+  const ms=isKeg(t)?null:dlMs(t);if(ms==null)return null;   // kegiatan tidak punya deadline
   const when=fmtShort(t.dlDate)+', '+(t.dlTime||'23:59');
   if(t.done){const late=t.doneAt&&t.doneAt>ms;return{cls:late?'late-done':'ok',when:when,rel:late?'Selesai terlambat':'Selesai tepat waktu'};}
   const diff=ms-Date.now();
@@ -1834,7 +2032,7 @@ function dlInfo(t){
   if(diff<864e5)return{cls:'soon',when:when,rel:'Sisa '+dur(diff)};
   return{cls:'',when:when,rel:'Sisa '+dur(diff)};
 }
-const isOver=t=>!t.done&&dlMs(t)!=null&&dlMs(t)<Date.now();
+const isOver=t=>!isKeg(t)&&!t.done&&dlMs(t)!=null&&dlMs(t)<Date.now();
 
 /* ================= task row ================= */
 const DIFF_N={mudah:'Mudah',sedang:'Sedang',sulit:'Sulit'};
@@ -1862,9 +2060,25 @@ function dlShort(t,dl){
 }
 // Tugas satu tanggal: bagian "Tanpa jam" (start kosong) di atas, lalu tugas berjam urut jam (Poin 3).
 // day = tanggal daftar ini (untuk tanda "Hari n/m" tugas multi-hari).
-function dayRows(list,day){
-  const nt=list.filter(t=>!t.start),tm=list.filter(t=>!!t.start),row=t=>taskRow(t,day);
+// Tahap 8: kegiatan tampil sebagai kartu (kegBlock) di jam mulainya, tugas di dalamnya di bawahnya (L.nest; tugas tanpa jam
+// di dalam kegiatan juga ikut di bawah kegiatannya). dropEmpty = filter Belum/Selesai: kegiatan tanpa tugas yang cocok
+// tidak ditampilkan. '' kalau tidak ada yang tampil.
+function dayRows(list,day,dropEmpty){
+  const ent=L.nest(list,dropEmpty),row=e=>isKeg(e.t)?kegBlock(e,day):taskRow(e.t,day);
+  const nt=ent.filter(e=>!e.t.start),tm=ent.filter(e=>!!e.t.start);
   return (nt.length?'<div class="ntbox"><div class="subhead">Tanpa jam</div>'+nt.map(row).join('')+'</div>':'')+tm.map(row).join('');
+}
+// Kegiatan di daftar (Poin 17): bentuknya beda dari tugas (kartu berwarna + garis kiri, tanda "Kegiatan", tanpa tombol
+// centang) + progres tugas di dalamnya ("1/2 selesai") + tombol buka-tutup daftar tugasnya. e = {t, kids} dari L.nest.
+function kegTime(t){return t.start?(t.start+(t.end?'–'+t.end:'')):(t.end?'s/d '+t.end:'Tanpa jam');}
+function kegBlock(e,day){
+  const t=e.t,c=catOf(t.cat),pr=L.kegProgress(all(),t.id),n=e.kids.length,fold=n>0&&state.fold.has(t.id),sp=L.spanTag(t,day);
+  const prog=pr.total?'<span class="keg-pr'+(pr.done===pr.total?' all':'')+'">'+pr.done+'/'+pr.total+' selesai</span>':'belum ada tugas';
+  return '<div class="keg'+(fold?' fold':'')+'" data-kid="'+esc(t.id)+'" style="--h:'+c.h+'">'+
+    '<div class="keg-h" data-id="'+esc(t.id)+'">'+catIc(c)+'<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
+    '<div class="task-meta"><span class="keg-tag">Kegiatan</span>'+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+ic('clock',2)+esc(kegTime(t))+'<i>·</i>'+prog+'<i>·</i>'+esc(c.n)+'</div></div>'+
+    (n?'<button class="keg-fold" data-act="keg-fold" data-id="'+esc(t.id)+'" aria-expanded="'+!fold+'" aria-label="'+(fold?'Buka':'Tutup')+' daftar tugas '+esc(t.name)+'">'+ic('chevd',2.2)+'</button>':'')+'</div>'+
+    (n?'<div class="keg-kids">'+e.kids.map(k=>taskRow(k,day)).join('')+'</div>':'')+'</div>';
 }
 // Rentang tanggal ringkas: "5–7 Nov 2026", "30 Nov – 2 Des 2026", "30 Des 2026 – 2 Jan 2027"
 function fmtRange(a,b){
@@ -1877,13 +2091,14 @@ const spanTitle=t=>L.isMulti(t)?'Tugas '+L.spanDays(t)+' hari: '+fmtRange(t.date
 
 /* ================= HOME ================= */
 function renderHome(){
-  const mk=state.homeMonth,list=inMonth(mk);
+  // items = tugas + kegiatan yang tampil di bulan ini; list = tugas saja (semua angka, Tahap 8)
+  const mk=state.homeMonth,items=inMonth(mk),list=onlyT(items);
   const done=list.filter(t=>t.done).length;
   const [y,m]=mk.split('-').map(Number);
   $('#h-year').textContent=y;$('#h-month').textContent=MON_S[m-1];
   $('#h-total').textContent=list.length;$('#h-done').textContent=done;$('#h-left').textContent=list.length-done;
   const p=list.length?Math.round(done/list.length*100):0;
-  const td=onDate(today()),tdLeft=td.filter(t=>!t.done).length;
+  const td=onlyT(onDate(today())),tdLeft=td.filter(t=>!t.done).length;
   const over=all().filter(isOver).length;
   $('#banner').innerHTML='<div class="banner-top"><b>Progres '+esc(fmtMonth(mk))+'</b><span>'+done+' dari '+list.length+' selesai · '+p+'%</span></div>'+
     '<div class="bar" role="progressbar" aria-valuenow="'+p+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+p+'%"></i></div>'+
@@ -1895,26 +2110,29 @@ function renderHome(){
   const cnt={semua:list.length,belum:list.length-done,selesai:done};
   $('#home-chips').innerHTML=[['semua','Semua'],['belum','Belum selesai'],['selesai','Selesai']].map(f=>
     '<button class="chip'+(state.homeFilter===f[0]?' on':'')+'" data-act="home-filter" data-f="'+f[0]+'">'+f[1]+'<span class="n">'+cnt[f[0]]+'</span></button>').join('');
-  let shown=list;
-  if(state.homeFilter==='belum')shown=list.filter(t=>!t.done);
-  if(state.homeFilter==='selesai')shown=list.filter(t=>t.done);
-  shown.sort(byTime);
-  const box=$('#home-list');
-  if(!shown.length){
-    box.innerHTML='<div class="empty"><div class="em-ic">'+ic(list.length?'check':'cal',1.8)+'</div><h3>'+
-      (list.length?(state.homeFilter==='belum'?'Semua tugas sudah selesai!':'Belum ada yang selesai'):'Belum ada tugas di '+esc(fmtMonth(mk)))+'</h3><p>'+
-      (list.length?'Coba lihat filter lain.':'Tekan tombol + untuk mencatat tugas atau kegiatan pertamamu.')+'</p>'+
-      (list.length?'':'<button class="btn-ghost" data-act="add">+ Tambah tugas</button>')+'</div>';
-    return;
-  }
+  // filter Belum/Selesai menyaring tugas; kegiatan ikut tampil hanya kalau berisi tugas yang cocok (dayRows dropEmpty)
+  const f=state.homeFilter,drop=f!=='semua';
+  let shown=items;
+  if(f==='belum')shown=items.filter(t=>isKeg(t)||!t.done);
+  if(f==='selesai')shown=items.filter(t=>isKeg(t)||t.done);
   const groups=L.byDay(shown,mk);   // tugas multi-hari muncul di setiap tanggalnya (bulan ini saja)
   let h='';
   Object.keys(groups).sort().forEach(d=>{
-    const g=groups[d],dn=g.filter(t=>t.done).length,dt=parseYmd(d),rel=relDay(d);
+    const g=groups[d],rows=dayRows(g,d,drop);if(!rows)return;
+    const gt=onlyT(g),dn=gt.filter(t=>t.done).length,nk=g.length-gt.length,dt=parseYmd(d),rel=relDay(d);
     h+='<div class="dhead" id="g-'+d+'"><div class="dl"><b>'+dt.getDate()+' '+MON_S[dt.getMonth()]+'</b><span>'+DAYS[dt.getDay()]+'</span>'+
-      (rel?'<span class="badge'+(rel==='Hari ini'?'':' dim')+'">'+rel+'</span>':'')+'</div><span>'+dn+'/'+g.length+' selesai</span></div>';
-    h+=dayRows(g,d);
+      (rel?'<span class="badge'+(rel==='Hari ini'?'':' dim')+'">'+rel+'</span>':'')+'</div><span>'+(gt.length||!nk?dn+'/'+gt.length+' selesai':nk+' kegiatan')+'</span></div>';
+    h+=rows;
   });
+  const box=$('#home-list');
+  if(!h){
+    const any=items.length;
+    box.innerHTML='<div class="empty"><div class="em-ic">'+ic(any?'check':'cal',1.8)+'</div><h3>'+
+      (any?(f==='belum'?(list.length?'Semua tugas sudah selesai!':'Belum ada tugas'):'Belum ada yang selesai'):'Belum ada tugas di '+esc(fmtMonth(mk)))+'</h3><p>'+
+      (any?'Coba lihat filter lain.':'Tekan tombol + untuk mencatat tugas atau kegiatan pertamamu.')+'</p>'+
+      (any?'':'<button class="btn-ghost" data-act="add">+ Tambah tugas</button>')+'</div>';
+    return;
+  }
   box.innerHTML=h;
 }
 function updateHdr(){const h=$('#home-top');if(h)document.documentElement.style.setProperty('--hdr',h.offsetHeight+'px');}
@@ -1940,6 +2158,7 @@ function scrollToDate(d,smooth){
    tengah malam dipotong di 24:00 + lanjutannya di pagi berikutnya, yang bertabrakan berdampingan. Blok ≥ 45 menit punya
    tombol centang (jawaban user); tap blok = detail. Bulan di kepala halaman ikut bulan hari yang tampil. */
 const TB_PX=1,TB_TOP=10,TB_MIN=20,TB_CHK=45;   // 1 menit = 1px; jarak atas grid; tinggi tampil minimal (mnt); centang ≥ 45 mnt
+const TB_RAIL=12,TB_KL=20;   // Tahap 8: geser tugas dari kiri saat ada kegiatan (px); tinggi label kegiatan (mnt)
 const DAYS_S=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const tbOn=()=>state.view==='tugas'&&state.homeView==='tb';
 const HV_NAME={list:'To Do List',tb:'Time Blocking'};
@@ -1973,38 +2192,44 @@ function tbScroll(smooth){
   if(!tbOn())return;
   const g=$('#tb-grid'),tb=$('#tb');if(!g||!tb)return;
   updateHdr();
-  const d=state.tbDay,it=L.tbItems(all(),d),n=new Date();
+  const d=state.tbDay,it=L.tbItems(all(),d),n=new Date(),bl=it.blocks.concat(it.bg);   // + blok latar kegiatan (Tahap 8)
   const hdr=$('#home-top').offsetHeight,base=SC.scrollTop;
   let y;
-  if(!it.blocks.length&&it.untimed.length)y=tb.getBoundingClientRect().top+base-hdr;
-  else y=g.getBoundingClientRect().top+base+TB_TOP+L.tbScrollMin(it.blocks,d===today()?n.getHours()*60+n.getMinutes():null)*TB_PX-hdr-$('#tb-bar').offsetHeight-6;
+  if(!bl.length&&it.untimed.length)y=tb.getBoundingClientRect().top+base-hdr;
+  else y=g.getBoundingClientRect().top+base+TB_TOP+L.tbScrollMin(bl,d===today()?n.getHours()*60+n.getMinutes():null)*TB_PX-hdr-$('#tb-bar').offsetHeight-6;
   SC.scrollTo({top:Math.max(0,Math.round(y)),behavior:smooth?'smooth':'auto'});
 }
 function renderTB(){
   const d=state.tbDay,td=today(),list=all(),dt=parseYmd(d);
-  const on=onDate(d),done=on.filter(t=>t.done).length,it=L.tbItems(list,d),rel=relDay(d);
+  // jumlah = tugas saja; kegiatan disebut terpisah (Tahap 8)
+  const on=onDate(d),ot=onlyT(on),done=ot.filter(t=>t.done).length,nk=on.length-ot.length,it=L.tbItems(list,d),rel=relDay(d);
   const arrow=(n,lbl,path)=>'<button class="tb-nav" data-act="tb-step" data-n="'+n+'" aria-label="'+lbl+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg></button>';
   const days=L.weekDays(d).map(x=>{
-    const l=onDate(x),n=l.length,xd=parseYmd(x),sel=x===d;
-    return '<button class="tb-day'+(sel?' sel':'')+(x===td?' today':'')+'" data-act="tb-day" data-d="'+x+'" aria-label="'+esc(fmtLong(x))+', '+n+' tugas"'+(sel?' aria-current="date"':'')+'>'+
-      '<small>'+DAYS_S[xd.getDay()]+'</small><b>'+xd.getDate()+'</b>'+(n?'<i'+(l.every(t=>t.done)?' class="all"':'')+'></i>':'')+'</button>';
+    const l=onDate(x),lt=onlyT(l),n=lt.length,k=l.length-n,xd=parseYmd(x),sel=x===d;
+    return '<button class="tb-day'+(sel?' sel':'')+(x===td?' today':'')+'" data-act="tb-day" data-d="'+x+'" aria-label="'+esc(fmtLong(x))+', '+n+' tugas'+(k?', '+k+' kegiatan':'')+'"'+(sel?' aria-current="date"':'')+'>'+
+      '<small>'+DAYS_S[xd.getDay()]+'</small><b>'+xd.getDate()+'</b>'+(l.length?'<i'+(n&&lt.every(t=>t.done)?' class="all"':'')+'></i>':'')+'</button>';
   }).join('');
+  const sum=[];if(ot.length)sum.push(ot.length+' tugas, '+done+' selesai');if(nk)sum.push(nk+' kegiatan');
   $('#tb-bar').innerHTML='<div class="tb-week">'+arrow(-1,'Hari sebelumnya','m14.5 6-6 6 6 6')+'<div class="tb-days">'+days+'</div>'+arrow(1,'Hari berikutnya','m9.5 6 6 6-6 6')+'</div>'+
     // "Hari ini, 10 Nov" / "Sel, 17 Nov" (+ tahun kalau bukan tahun ini) · jumlah tugas yang tampil di hari itu
     '<div class="tb-sum"><p class="tb-st"><b'+(rel==='Hari ini'?' style="color:var(--accent)"':'')+'>'+(rel||DAYS_S[dt.getDay()])+', '+dt.getDate()+' '+MON_S[dt.getMonth()]+
-    (dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'')+'</b> · '+(on.length?on.length+' tugas, '+done+' selesai':'tidak ada tugas')+'</p>'+
+    (dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'')+'</b> · '+(sum.join(' · ')||'tidak ada tugas')+'</p>'+
     (it.untimed.length?'<button class="tb-up" data-act="tb-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>'+it.untimed.length+' tanpa jam</button>':'')+'</div>';
   let h='';
-  if(it.untimed.length)h+='<div class="ntbox tb-nt" id="tb-nt"><div class="subhead">Tanpa jam</div>'+it.untimed.map(t=>taskRow(t,d)).join('')+'</div>';
-  else if(!it.blocks.length)h+='<p class="tb-empty">Belum ada tugas di tanggal ini. Tekan + untuk menambah.</p>';
+  // tanpa jam: tugas biasa (+ kegiatan tanpa jam sebagai kartu); tugas tanpa jam di dalam kegiatan berjam tampil di sini
+  if(it.untimed.length)h+='<div class="ntbox tb-nt" id="tb-nt"><div class="subhead">Tanpa jam</div>'+L.nest(it.untimed).map(e=>isKeg(e.t)?kegBlock(e,d):taskRow(e.t,d)).join('')+'</div>';
+  else if(!it.blocks.length&&!it.bg.length)h+='<p class="tb-empty">Belum ada tugas di tanggal ini. Tekan + untuk menambah.</p>';
   h+='<div class="tb-grid" id="tb-grid" style="height:'+(TB_TOP+L.DAY_MIN*TB_PX+14)+'px">';
   for(let i=0;i<=24;i++){
     h+='<div class="tb-hr" style="top:'+(TB_TOP+i*60*TB_PX)+'px"><span>'+pad(i)+':00</span></div>';
     if(i<24)h+='<div class="tb-hr half" style="top:'+(TB_TOP+(i*60+30)*TB_PX)+'px;left:52px"></div>';
   }
+  // Tahap 8: kegiatan = blok latar (disusun sesama kegiatan), tugas di lapisan atasnya (.tb-fg, bergeser TB_RAIL px dari kiri
+  // supaya garis kiri kegiatan tetap terlihat). Label kegiatan di celah pertama yang tidak tertutup tugas (L.tbLabelAt).
+  const fg=L.tbLayout(it.blocks,TB_MIN),bg=L.tbLayout(it.bg,TB_MIN),inset=bg.length?TB_RAIL:0;
   // perkiraan lebar area blok (px): blok yang terlalu sempit tidak diberi tombol centang (tetap bisa lewat detail)
-  const aw=Math.max(120,Math.min(innerWidth||360,480)-60);
-  h+='<div class="tb-area">'+L.tbLayout(it.blocks,TB_MIN).map(b=>tbBlock(b,d,aw)).join('')+'</div>';
+  const aw=Math.max(120,Math.min(innerWidth||360,480)-60-inset);
+  h+='<div class="tb-area">'+bg.map(b=>tbBg(b,fg)).join('')+'<div class="tb-fg" style="left:'+inset+'px">'+fg.map(b=>tbBlock(b,d,aw)).join('')+'</div></div>';
   if(d===td){const n=new Date(),m=n.getHours()*60+n.getMinutes();
     h+='<div class="tb-now" style="top:'+(TB_TOP+m*TB_PX)+'px" aria-hidden="true"><span>'+pad(n.getHours())+':'+pad(n.getMinutes())+'</span></div>';}
   $('#tb-body').innerHTML=h+'</div>';
@@ -2022,36 +2247,50 @@ function tbBlock(b,d,aw){
     '<div class="tb-bt"><div class="tb-n">'+esc(t.name)+'</div><div class="tb-m">'+meta+'</div></div>'+
     (chk?'<button class="check tb-chk" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button>':'')+'</div>';
 }
+// blok latar kegiatan (Tahap 8): selebar kolomnya, label "nama · jam · progres" di celah pertama yang tidak tertutup tugas
+function tbBg(b,fg){
+  const t=b.t,c=catOf(t.cat),hpx=Math.max(b.end-b.start,TB_MIN)*TB_PX-2,pr=L.kegProgress(all(),t.id);
+  const end=t.end&&L.toMin(t.end)!=null?t.end:L.endAfter(t.start,L.DEF_DUR);
+  const time=b.prev?'Lanjutan, s/d '+end:b.cont?t.start+' s/d '+end+' besok':t.start+'–'+end;
+  const at=L.tbLabelAt(b,fg,TB_KL),ly=(at==null?b.start:at)-b.start;
+  return '<div class="tb-k'+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc('Kegiatan: '+t.name+' · '+time)+'"'+
+    ' style="--h:'+c.h+';top:'+(TB_TOP+b.start*TB_PX+1)+'px;height:'+hpx+'px;left:calc('+(b.col/b.cols*100).toFixed(3)+'% + 1px);width:calc('+(b.span/b.cols*100).toFixed(3)+'% - 2px)">'+
+    '<div class="tb-kl" style="top:'+(ly*TB_PX)+'px"><b>'+esc(t.name)+'</b><span>'+esc(time)+(pr.total?' · '+pr.done+'/'+pr.total+' selesai':'')+'</span></div></div>';
+}
 
 /* ================= CALENDAR ================= */
 const CAL_LEGEND='<span><i style="background:var(--accent)"></i>jumlah tugas</span><span><i style="background:var(--good)"></i>✓ selesai</span><span><i style="background:var(--danger)"></i>lewat deadline</span>';
+const CAL_LEGEND_K='<span><i class="kd-l"></i>kegiatan</span>';   // Tahap 8: hanya kalau bulan itu punya kegiatan
 function renderCalendar(){
-  renderCalGrid();
-  const ed=!!state.calEdit,sel=state.calSel,l=onDate(sel),rel=relDay(sel);
+  const hasK=renderCalGrid();
+  const ed=!!state.calEdit,sel=state.calSel,all0=onDate(sel),l=onlyT(all0),nk=all0.length-l.length,rel=relDay(sel);
   $('#v-kalender').classList.toggle('editing',ed);
-  $('#cal-legend').innerHTML=ed?'<span class="cal-hint">'+ic('move',2)+'<span>Tekan lama tugas di bawah, lalu tarik ke tanggal tujuan. Tahan di ‹ › untuk pindah bulan.</span></span>':CAL_LEGEND;
-  $('#cal-day-head').innerHTML='<div class="cdh-t"><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>'+
+  $('#cal-legend').innerHTML=ed?'<span class="cal-hint">'+ic('move',2)+'<span>Tekan lama tugas di bawah, lalu tarik ke tanggal tujuan. Tahan di ‹ › untuk pindah bulan.</span></span>':CAL_LEGEND+(hasK?CAL_LEGEND_K:'');
+  $('#cal-day-head').innerHTML='<div class="cdh-t"><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+(nk?' · '+nk+' kegiatan':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>'+
     '<button class="cal-edit'+(ed?' on':'')+'" data-act="cal-edit" aria-pressed="'+ed+'">'+ic(ed?'check':'move',2.2)+'<span>'+(ed?'Selesai':'Mode Edit')+'</span></button>';
   // Selama tugas ditarik daftar TIDAK dibuat ulang (mis. karena sinkron selesai): elemen yang sedang disentuh harus
   // tetap ada, kalau dibuang browser berhenti mengirim gerakan jari. Dibuat ulang setelah tugas dilepas.
   if(drag)drag.stale=true;
-  else $('#cal-day-list').innerHTML=l.length?dayRows(l,sel):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
+  else $('#cal-day-list').innerHTML=all0.length?dayRows(all0,sel):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
   $('#add-here-lbl').textContent='Tambah tugas di '+fmtShort(sel);
 }
-// grid bulan saja (dipakai juga saat pindah bulan sambil menarik tugas, tanpa mengganti daftar di bawahnya)
+// grid bulan saja (dipakai juga saat pindah bulan sambil menarik tugas, tanpa mengganti daftar di bawahnya).
+// → true kalau bulan itu punya kegiatan (Tahap 8: garis kecil di bawah sel, tidak ikut "n tugas")
 function renderCalGrid(){
   const mk=state.calMonth,[y,m]=mk.split('-').map(Number);
   $('#cal-label').textContent=MON_S[m-1]+' '+y;
   const first=new Date(y,m-1,1).getDay(),n=dim(mk),td=today();
   const by=L.byDay(all(),mk);   // jumlah per tanggal ikut tugas multi-hari yang tampil di tanggal itu
-  let h='';for(let i=0;i<first;i++)h+='<div class="cday blank"></div>';
+  let h='',hasK=false;for(let i=0;i<first;i++)h+='<div class="cday blank"></div>';
   for(let d=1;d<=n;d++){
-    const ds=mk+'-'+pad(d),l=by[ds]||[],dn=l.filter(t=>t.done).length,od=l.some(isOver);
-    h+='<button class="cday'+(ds===td?' today':'')+(ds===state.calSel?' sel':'')+'" data-act="cal-day" data-d="'+ds+'" aria-label="'+esc(fmtLong(ds))+', '+l.length+' tugas">'+
-      (od?'<i class="od"></i>':'')+'<b>'+d+'</b>'+(l.length?'<span class="c1">'+l.length+' tugas</span>':'')+(dn?'<span class="c2">✓ '+dn+'</span>':'')+'</button>';
+    const ds=mk+'-'+pad(d),all0=by[ds]||[],l=onlyT(all0),nk=all0.length-l.length,dn=l.filter(t=>t.done).length,od=l.some(isOver);
+    if(nk)hasK=true;
+    h+='<button class="cday'+(ds===td?' today':'')+(ds===state.calSel?' sel':'')+'" data-act="cal-day" data-d="'+ds+'" aria-label="'+esc(fmtLong(ds))+', '+l.length+' tugas'+(nk?', '+nk+' kegiatan':'')+'">'+
+      (od?'<i class="od"></i>':'')+'<b>'+d+'</b>'+(l.length?'<span class="c1">'+l.length+' tugas</span>':'')+(dn?'<span class="c2">✓ '+dn+'</span>':'')+(nk?'<i class="kd"></i>':'')+'</button>';
   }
   $('#cgrid').innerHTML=h;
   if(drag&&drag.on)dragPaint();
+  return hasK;
 }
 
 /* ---- Mode Edit: tarik tugas ke tanggal lain (Tahap 6, Poin 14) ----
@@ -2064,6 +2303,7 @@ function renderCalGrid(){
    Sentuh memakai touch event: touchmove non-pasif di #cal-day-list, jadi sebelum tekan lama tercapai jari tetap bisa
    menggulir seperti biasa (gerak > DRAG_SLOP = batal), sesudahnya gulir dicegah. Mouse/pen memakai pointer event. */
 const DRAG_HOLD=380,DRAG_SLOP=10,MONTH_HOLD=650,EDGE=56;
+const DRAG_ROW='.task[data-id],.keg-h[data-id]';   // Tahap 8: kegiatan juga bisa ditarik (tugas di dalamnya ikut)
 let drag=null,noClickUntil=0;
 function setCalEdit(on){
   on=!!on;if(!!state.calEdit===on)return;
@@ -2137,9 +2377,9 @@ function dragPaint(){
   const t=tasks[d.id],r=t&&d.to?L.shiftDates(t,d.from,d.to):null;
   let lbl='Lepas di tanggal tujuan';
   if(r){
-    const end=L.spanEnd(r);
+    const end=L.spanEnd(r),nk=isKeg(t)?L.kidsOf(all(),t.id).length:0;   // kegiatan: tugas di dalamnya ikut pindah (Tahap 8)
     document.querySelectorAll('#cgrid .cday[data-d]').forEach(c=>{const x=c.getAttribute('data-d');if(x>=r.date&&x<=end)c.classList.add(x===d.to?'drop':'drop-span');});
-    lbl='→ '+moveWhen(r);
+    lbl='→ '+moveWhen(r)+(nk?' (+'+nk+' tugas)':'');
   }else if(d.to)lbl='Tanggal asal';
   else if(d.arrow){d.arrow.classList.add('drop');lbl='Tahan untuk ke '+fmtMonthS(mAdd(state.calMonth,d.arrow.getAttribute('data-act')==='cal-next'?1:-1));}
   const g=d.ghost;if(!g)return;
@@ -2167,7 +2407,7 @@ function dragStop(){
   clearTimeout(d.holdT);clearTimeout(d.monthT);cancelAnimationFrame(d.raf);
   document.documentElement.classList.remove('dragging');
   if(d.ghost)d.ghost.remove();
-  document.querySelectorAll('.task.pressing,.task.drag-src,#cgrid .drop,#cgrid .drop-span,#v-kalender .icon-btn.drop').forEach(x=>x.classList.remove('pressing','drag-src','drop','drop-span'));
+  document.querySelectorAll('.task.pressing,.task.drag-src,.keg-h.pressing,.keg-h.drag-src,#cgrid .drop,#cgrid .drop-span,#v-kalender .icon-btn.drop').forEach(x=>x.classList.remove('pressing','drag-src','drop','drop-span'));
   return d;
 }
 // batal: kembali ke bulan semula (kalau tadi sempat pindah bulan) dan daftar dibuat ulang kalau tertunda
@@ -2182,20 +2422,24 @@ function dragDrop(){
   state.calMonth=d.month0;renderCalendar();   // dilepas di luar tanggal / di tanggal asal → tidak ada yang berubah
 }
 // simpan pindah tanggal + pop-up Urungkan (komponen Tahap 2). Urungkan memakai tasks[id] saat ditekan (pelajaran Tahap 5).
+// Tahap 8 (L.moveItem): kegiatan → tugas di dalamnya ikut bergeser (jawaban user); tugas di dalam kegiatan yang dipindah ke
+// tanggal lain → keluar dari kegiatan itu. Semua perubahan satu kali simpan + satu Urungkan.
 function moveTask(id,from,to){
   const t=tasks[id];
   if(!t){toast('Tugas ini sudah dihapus');return false;}
-  const r=L.shiftDates(t,from,to);if(!r)return false;
-  const old={date:t.date,dlDate:t.dlDate};
-  t.date=r.date;t.dlDate=r.dlDate;t.updatedAt=Date.now();
+  const ch=L.moveItem(tasks,id,from,to);if(!ch.length)return false;
+  const par=kegOf(t),old=ch.map(c=>{const x=tasks[c.id];return {id:c.id,date:x.date,dlDate:x.dlDate,parent:x.parent,hasP:'parent' in c};});
+  const now=Date.now();
+  ch.forEach(c=>{Object.assign(tasks[c.id],c,{updatedAt:now});queueOp(c.id);});
   state.calMonth=mkey(to);state.calSel=to;   // daftar pindah ke tanggal tujuan
-  persist(id);flashRows([id]);flashCell(to);
-  const nm=String(t.name||'').trim(),short=nm.length>22?nm.slice(0,22)+'…':nm;
-  undoToast('"'+short+'" dipindah ke '+moveWhen(r),()=>{
-    const x=tasks[id];if(!x)return;
-    x.date=old.date;x.dlDate=old.dlDate;x.updatedAt=Date.now();
+  render();scheduleFlush(500);flashRows([id]);flashCell(to);
+  const nm=String(t.name||'').trim(),short=nm.length>22?nm.slice(0,22)+'…':nm,nk=ch.length-1,left=par&&ch[0].parent==='';
+  undoToast('"'+short+'"'+(nk?' + '+nk+' tugas':'')+' dipindah ke '+moveWhen(ch[0])+(left?', keluar dari kegiatan':''),()=>{
+    const at=Date.now();let any=false;
+    old.forEach(o=>{const x=tasks[o.id];if(!x)return;x.date=o.date;x.dlDate=o.dlDate;if(o.hasP)x.parent=o.parent;x.updatedAt=at;queueOp(o.id);any=true;});
+    if(!any)return;
     if(state.view==='kalender'){state.calMonth=mkey(from);state.calSel=from;}
-    persist(id);flashRows([id]);if(state.view==='kalender')flashCell(from);
+    render();scheduleFlush(500);flashRows([id]);if(state.view==='kalender')flashCell(from);
   });
   return true;
 }
@@ -2204,7 +2448,7 @@ const calList=$('#cal-day-list');
 const touchOf=(e,id)=>{for(let i=0;i<e.changedTouches.length;i++)if(e.changedTouches[i].identifier===id)return e.changedTouches[i];return null;};
 calList.addEventListener('touchstart',e=>{
   if(e.touches.length!==1){if(drag)dragCancel();return;}   // jari kedua = batal
-  const tg=/** @type {Element} */(e.target),row=state.calEdit&&tg.closest?tg.closest('.task[data-id]'):null;if(!row)return;
+  const tg=/** @type {Element} */(e.target),row=state.calEdit&&tg.closest?tg.closest(DRAG_ROW):null;if(!row)return;
   const p=e.changedTouches[0];pressStart(row,p.clientX,p.clientY,'touch',p.identifier);
 },{passive:true});
 calList.addEventListener('touchmove',e=>{
@@ -2219,7 +2463,7 @@ calList.addEventListener('touchend',e=>{
 calList.addEventListener('touchcancel',()=>{if(drag&&drag.kind==='touch')dragCancel();});
 calList.addEventListener('pointerdown',e=>{
   if(e.pointerType==='touch'||e.button!==0||!state.calEdit)return;
-  const tg=/** @type {Element} */(e.target),row=tg.closest?tg.closest('.task[data-id]'):null;
+  const tg=/** @type {Element} */(e.target),row=tg.closest?tg.closest(DRAG_ROW):null;
   if(row)pressStart(row,e.clientX,e.clientY,'mouse',e.pointerId);
 });
 window.addEventListener('pointermove',e=>{if(drag&&drag.kind==='mouse'&&e.pointerId===drag.pid)pressMove(e.clientX,e.clientY,e);});
@@ -2230,13 +2474,13 @@ window.addEventListener('blur',()=>{if(drag)dragCancel();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&drag)dragCancel();});
 // tekan lama di HP bisa membuka menu/pilih teks bawaan browser
 document.addEventListener('contextmenu',e=>{const tg=/** @type {Element} */(e.target);
-  if(drag||(state.calEdit&&tg&&tg.closest&&tg.closest('#cal-day-list .task')))e.preventDefault();});
+  if(drag||(state.calEdit&&tg&&tg.closest&&tg.closest('#cal-day-list .task,#cal-day-list .keg-h')))e.preventDefault();});
 
 /* ================= STATS ================= */
 const SLOT=['var(--s1)','var(--s2)','var(--s3)','var(--s4)','var(--s5)'];
 const SLOT_HEX=['#3987e5','#d95926','#199e70','#c98500','#d55181'];
 function statList(){
-  let l=inMonth(state.statMonth);
+  let l=onlyT(inMonth(state.statMonth));   // Tahap 8: kegiatan tidak dihitung sebagai tugas di grafik
   if(state.statFilter==='selesai')l=l.filter(t=>t.done);
   if(state.statFilter==='belum')l=l.filter(t=>!t.done);
   return l;
@@ -2252,7 +2496,7 @@ function renderStats(){
   $('#mtabs').innerHTML=tabs.map(a=>'<button data-act="st-month" data-m="'+a[0]+'" class="'+(a[0]===state.statMonth?'on':'')+'">'+a[1]+'</button>').join('');
   document.querySelectorAll('#st-filter button').forEach(b=>b.classList.toggle('on',b.dataset.f===state.statFilter));
   const on=$('#mtabs .on');if(on){const p=on.parentElement;p.scrollLeft=on.offsetLeft-(p.clientWidth-on.offsetWidth)/2;}
-  const mk=state.statMonth,list=statList(),monthAll=inMonth(mk),body=$('#stats-body');
+  const mk=state.statMonth,list=statList(),monthAll=onlyT(inMonth(mk)),body=$('#stats-body');
   if(!list.length){
     body.innerHTML='<div class="empty"><div class="em-ic">'+ic('board',1.8)+'</div><h3>Belum ada data di '+esc(fmtMonth(mk))+'</h3><p>'+
       (monthAll.length?'Tidak ada tugas dengan status ini.':'Grafik akan muncul setelah kamu menambahkan tugas di bulan ini.')+'</p></div>';
@@ -2394,7 +2638,7 @@ function drawCurve(box,mk,per,perDone){
 function renderMe(){
   if(!me){$('#me-body').innerHTML='';return;}
   const canInstall=!!installEvt&&!isStandalone();
-  const l=all(),d=l.filter(t=>t.done).length;
+  const l=onlyT(all()),d=l.filter(t=>t.done).length;   // Tahap 8: kegiatan tidak dihitung sebagai tugas
   const byCat={};l.forEach(t=>{const k=catKey(t.cat);byCat[k]=(byCat[k]||0)+1;});
   const fav=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a])[0];
   const st=syncState();
@@ -2426,7 +2670,8 @@ function renderSearch(){
   if(!q){box.innerHTML='<div class="empty" style="padding-top:40px"><p>Ketik untuk mencari di semua tanggal.</p></div>';return;}
   const r=all().filter(t=>(t.name+' '+t.detail+' '+catOf(t.cat).n).toLowerCase().indexOf(q)>=0).sort((a,b)=>byTime(b,a)).slice(0,80);
   if(!r.length){box.innerHTML='<div class="empty" style="padding-top:40px"><p>Tidak ada tugas yang cocok.</p></div>';return;}
-  let h='',last='';r.forEach(t=>{if(t.date!==last){h+='<div class="s-date">'+esc(fmtLong(t.date))+'</div>';last=t.date;}h+=taskRow(t);});
+  // kegiatan tampil sebagai kartu kegiatan tanpa daftar tugasnya (Tahap 8)
+  let h='',last='';r.forEach(t=>{if(t.date!==last){h+='<div class="s-date">'+esc(fmtLong(t.date))+'</div>';last=t.date;}h+=isKeg(t)?kegBlock({t:t,kids:[]}):taskRow(t);});
   box.innerHTML=h;
 }
 
@@ -2434,32 +2679,54 @@ function renderSearch(){
 function openDetail(id){if(!tasks[id])return;state.detailId=id;renderDetail();$('#detail-wrap .sheet').scrollTop=0;showLayer('detail');}
 // Baris tanggal di detail. Tugas multi-hari: rentang + jumlah hari + posisi hari ini ("hari ke-2").
 function dateRow(t){
-  if(!L.isMulti(t))return '<div class="d-row">'+ic('cal')+'<div><small>Tanggal dikerjakan</small><b>'+esc(fmtLong(t.date))+'</b>'+(relDay(t.date)?'<em>'+relDay(t.date)+'</em>':'')+'</div></div>';
+  const k=isKeg(t);
+  if(!L.isMulti(t))return '<div class="d-row">'+ic('cal')+'<div><small>'+(k?'Tanggal':'Tanggal dikerjakan')+'</small><b>'+esc(fmtLong(t.date))+'</b>'+(relDay(t.date)?'<em>'+relDay(t.date)+'</em>':'')+'</div></div>';
   const td=today(),n=L.spanDays(t),i=L.dayOf(t,td),end=L.spanEnd(t);
   const pos=i?'hari ini hari ke-'+i:td<t.date?(relDay(t.date)?'mulai '+relDay(t.date).toLowerCase():'belum mulai'):'sudah lewat';
   return '<div class="d-row d-span">'+ic('cal')+'<div><small>Tanggal (multi-hari)</small><b>'+esc(fmtRange(t.date,end))+'</b>'+
-    '<em>'+n+' hari · '+esc(pos)+'</em><em class="d-note">Tampil di setiap tanggalnya sebagai satu tugas: centang, edit, dan hapus berlaku untuk semua harinya.</em></div></div>';
+    '<em>'+n+' hari · '+esc(pos)+'</em><em class="d-note">Tampil di setiap tanggalnya sebagai satu '+(k?'kegiatan':'tugas')+': '+(k?'':'centang, ')+'edit dan hapus berlaku untuk semua harinya.</em></div></div>';
 }
-function renderDetail(){
-  const t=tasks[state.detailId];if(!t){hideLayer('detail');return;}
-  const c=catOf(t.cat),dl=dlInfo(t),over=isOver(t);
+function timeRow(t,lbl){
   const time=t.start?(t.start+(t.end?' – '+t.end:'')):(t.end?'Sampai '+t.end:'Tanpa jam');
   const dm=t.start&&t.end?L.durMin(t.start,t.end):null;
   const dur2=dm!=null?L.fmtDur(dm)+(L.crossesMidnight(t.start,t.end)?' · selesai besoknya':''):'';
+  return '<div class="d-row">'+ic('clock')+'<div><small>'+lbl+'</small><b>'+esc(time)+'</b>'+(dur2?'<em>Durasi '+esc(dur2)+'</em>':'')+'</div></div>';
+}
+function renderDetail(){
+  const t=tasks[state.detailId];if(!t){hideLayer('detail');return;}
+  if(isKeg(t))return renderKegDetail(t);
+  $('#detail-top').textContent='Detail tugas';
+  const c=catOf(t.cat),dl=dlInfo(t),over=isOver(t),par=kegOf(t);
+  // tugas di dalam kegiatan: baris "Kegiatan" (tap → detail kegiatan) + peringatan kecil kalau jamnya di luar jam kegiatan (K6)
+  const pr=par?'<button class="d-row" data-act="open-keg" data-id="'+esc(par.id)+'">'+ic('layers')+'<div><small>Masuk ke kegiatan</small><b>'+esc(par.name)+'</b><em>'+esc(kegTime(par))+
+    (L.outsideKeg(t,par)?' · jam tugas ini di luar jam kegiatan':'')+'</em></div><span class="chev">'+ic('chev',2)+'</span></button>':'';
   $('#detail').innerHTML='<div class="d-head">'+catIc(c,true)+'<div><small>'+esc(c.n)+'</small><h3>'+esc(t.name)+'</h3></div></div>'+
     '<span class="d-status '+(t.done?'done':over?'over':'')+'">'+(t.done?ic('check',3)+'Sudah selesai':over?'Lewat deadline':'Belum selesai')+'</span>'+
     (DIFF_N[t.diff]?' <span class="diff '+t.diff+'" style="margin-left:6px;font-size:13px;line-height:24px;padding:0 10px;border-radius:12px">'+DIFF_N[t.diff]+'</span>':'')+
     (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
-    '<div class="d-rows">'+dateRow(t)+
-    '<div class="d-row">'+ic('clock')+'<div><small>Jam pengerjaan</small><b>'+esc(time)+'</b>'+(dur2?'<em>Durasi '+esc(dur2)+'</em>':'')+'</div></div>'+
+    '<div class="d-rows">'+dateRow(t)+timeRow(t,'Jam pengerjaan')+pr+
     (dl?'<div class="d-row '+dl.cls+'">'+ic('alarm')+'<div><small>Deadline</small><b>'+esc(fmtLong(t.dlDate))+' · '+esc(t.dlTime||'23:59')+'</b><em>'+esc(dl.rel)+'</em></div></div>':'<div class="d-row">'+ic('alarm')+'<div><small>Deadline</small><b>Tanpa deadline</b></div></div>')+
     '</div><button class="btn-primary" data-act="detail-toggle">'+(t.done?'Tandai belum selesai':'✓ Tandai selesai')+'</button>'+
+    '<div class="d-actions"><button class="btn-sec" data-act="detail-edit">Edit</button><button class="btn-sec danger" data-act="detail-delete">Hapus</button></div>';
+}
+// Detail kegiatan (Tahap 8): tanpa centang & deadline; progres + daftar tugas di dalamnya (bisa dicentang/dibuka dari sini)
+// + tombol "Tambah tugas di kegiatan ini".
+function renderKegDetail(t){
+  $('#detail-top').textContent='Detail kegiatan';
+  const c=catOf(t.cat),kids=L.kidsOf(all(),t.id),dn=kids.filter(x=>x.done).length;
+  $('#detail').innerHTML='<div class="d-head">'+catIc(c,true)+'<div><small>Kegiatan · '+esc(c.n)+'</small><h3>'+esc(t.name)+'</h3></div></div>'+
+    '<span class="d-status is-keg" style="--h:'+c.h+'">'+ic('layers',2)+'Kegiatan</span><span class="d-prog">'+(kids.length?dn+'/'+kids.length+' tugas selesai':'Belum ada tugas di dalamnya')+'</span>'+
+    (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
+    '<div class="d-rows">'+dateRow(t)+timeRow(t,'Jam kegiatan')+'</div>'+
+    '<div class="d-kids"><div class="d-kids-h"><b>Tugas di dalamnya</b>'+(kids.length?'<span>'+dn+'/'+kids.length+' selesai</span>':'')+'</div>'+
+    (kids.length?kids.map(k=>taskRow(k,L.onDay(k,t.date)?t.date:undefined)).join(''):'<p class="d-kids-empty">Tugas yang dimasukkan ke kegiatan ini tampil di sini. Kegiatan sendiri tidak bisa dicentang dan tidak dihitung di grafik.</p>')+'</div>'+
+    '<button class="btn-primary" data-act="keg-add">+ Tambah tugas di kegiatan ini</button>'+
     '<div class="d-actions"><button class="btn-sec" data-act="detail-edit">Edit</button><button class="btn-sec danger" data-act="detail-delete">Hapus</button></div>';
 }
 
 /* ================= actions ================= */
 function toggleDone(id,btn){
-  const t=tasks[id];if(!t)return;
+  const t=tasks[id];if(!t||isKeg(t))return;   // kegiatan tidak bisa dicentang (Poin 17)
   t.done=!t.done;t.doneAt=t.done?Date.now():null;t.doneBy=t.done?curProfile():'';t.updatedAt=Date.now();
   persist(id);
   // tugas multi-hari: semua salinannya di layar ikut tercentang (satu data yang sama)
@@ -2477,6 +2744,22 @@ function delTask(id){
   delete tasks[id];persist(id);
   undoToast('Tugas dihapus',()=>{tasks[id]=bak;bak.updatedAt=Date.now();persist(id);});
 }
+// Hapus kegiatan (Poin 17, setelah ditanya): mode 'all' = tugas di dalamnya ikut dihapus, selain itu tugasnya dikeluarkan
+// dari kegiatan (tetap di tanggalnya). Satu kali simpan + pop-up Urungkan yang mengembalikan semuanya.
+function delKeg(id,mode){
+  const k=tasks[id];if(!k)return;
+  const r=L.kegDelete(all(),id,mode,Date.now()),bak={};
+  r.del.forEach(x=>{bak[x]=tasks[x];delete tasks[x];queueOp(x);});
+  r.out.forEach(x=>queueOp(x));
+  render();scheduleFlush(500);
+  const n=r.del.length-1;
+  undoToast(n?'Kegiatan + '+n+' tugas dihapus':r.out.length?'Kegiatan dihapus, '+r.out.length+' tugas dikeluarkan':'Kegiatan dihapus',()=>{
+    const at=Date.now();
+    r.del.forEach(x=>{if(bak[x]&&!tasks[x]){tasks[x]=bak[x];bak[x].updatedAt=at;queueOp(x);}});
+    r.out.forEach(x=>{const t=tasks[x];if(t&&!t.parent&&tasks[id]){t.parent=id;t.updatedAt=at;queueOp(x);}});
+    render();scheduleFlush(500);flashRows([id]);
+  });
+}
 
 /* ---- add / edit ---- */
 function openAdd(opts){
@@ -2486,16 +2769,19 @@ function openAdd(opts){
   // noTime: "Tanpa jam" (Poin 3). Tugas lama yang hanya punya jam selesai ("s/d 17:00") tetap dianggap berjam di form.
   // Field per form (cat, diff, noTime, dlTouched, startPrev, multi, dates, mcal, dlOff) = milik form yang sedang terbuka.
   // items = isi semua form (Tahap 4, Poin 13); items[cur] diperbarui dari layar lewat syncCur() sebelum dibaca.
-  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,group:ed&&catOf(ed.cat).g||'tugas',dlTouched:!!ed,
-    diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end):false,
+  // Tahap 8: kind = jenis yang dibuat ('tugas'|'kegiatan', per form), parent = kegiatan induk (opsional, tugas satu tanggal).
+  // opts.kind/opts.parent/opts.start dipakai tombol "Tambah tugas di kegiatan ini" (detail kegiatan).
+  const kind=ed?(isKeg(ed)?'kegiatan':'tugas'):(opts.kind==='kegiatan'?'kegiatan':'tugas');
+  state.form={editId:ed?ed.id:null,cat:ed?ed.cat:null,kind:kind,parent:ed?(kegOf(ed)?ed.parent:''):(opts.parent||''),dlTouched:!!ed,
+    diff:ed&&DIFF_N[ed.diff]?ed.diff:'',noTime:ed?(!ed.start&&!ed.end&&!isKeg(ed)):false,
     multi:false,dates:[],mcal:mkey(date),dlOff:0,items:[],cur:0};
   state.returnTo=opts.returnTo||state.view;
-  $('#add-title').textContent=ed?'Edit Tugas':'Tambahkan';
-  $('#form-top-title').textContent=ed?'Edit tugas':'Detail tugas';
+  $('#add-title').textContent=ed?(kind==='kegiatan'?'Edit Kegiatan':'Edit Tugas'):'Tambahkan';
   $('#f-name').value=ed?ed.name:'';$('#f-detail').value=ed?ed.detail:'';
   $('#f-date').value=date;
   let st='08:00',en='09:00';
   if(!ed&&date===today()){const d=new Date();let h=d.getHours()+1;if(h>22)h=22;st=pad(h)+':00';en=pad(h+1)+':00';}
+  if(!ed&&opts.start&&L.toMin(opts.start)!=null){st=opts.start;en=L.endAfter(st,L.DEF_DUR);}   // tugas baru di kegiatan: mulai di jam kegiatan
   // durasi bawaan 1 jam: tugas lama yang punya jam mulai tapi jam selesainya kosong diisi mulai + 1 jam
   if(ed&&(ed.start||ed.end)){st=ed.start;en=ed.end||L.endAfter(ed.start,L.DEF_DUR);}
   $('#f-start').value=st;$('#f-end').value=en;state.form.startPrev=st;
@@ -2503,19 +2789,26 @@ function openAdd(opts){
   $('#f-dl-date').value=ed&&ed.dlDate?ed.dlDate:date;$('#f-dl-time').value=ed&&ed.dlTime?ed.dlTime:'23:59';
   $('#f-dl-off').value='0';
   clearErrs();
-  hideSug();syncDl();syncQuick();syncDiff();syncTime();syncMulti();
+  hideSug();syncDl();syncQuick();syncDiff();syncTime();syncMulti();syncKind();
   state.form.items=[snapItem()];renderItems();
   $('#add-screen').scrollTop=0;showLayer('add');
   if(ed)setTimeout(()=>openForm(),120);
 }
-// Grid kategori: kategori bawaan sesuai tab Tugas | Kegiatan, lalu bagian "Kategori saya" (custom, tampil di kedua tab)
-// dengan tombol "Kelola" dan "Baru".
+const KIND_N={tugas:'Tugas',kegiatan:'Kegiatan'};
+// Grid kategori (Tahap 8: tidak lagi disaring per kelompok, Q2): kategori bawaan yang cocok dengan jenis yang dibuat dulu,
+// lalu "Kategori lain" (kelompok satunya), satu "Lainnya" saja (lain_k lama tetap tampil terpilih sebagai "Lainnya"),
+// lalu bagian "Kategori saya" (custom) dengan tombol "Kelola" dan "Baru".
 function renderCatGrid(){
   const f=state.form;if(!f)return;
-  $('#add-hint').textContent=f.editId?'Ketuk kategori untuk mengganti':f.items.length>1?'Pilih kategori untuk Tugas '+(f.cur+1):'Pilih kategori untuk tugas baru';
-  document.querySelectorAll('#add-seg button').forEach(b=>b.classList.toggle('on',b.dataset.g===f.group));
-  const btn=c=>'<button class="cat-btn'+(f.cat===c.k?' on':'')+(c.custom?' cu':'')+'" data-act="pick-cat" data-k="'+esc(c.k)+'" style="--h:'+c.h+'"><div class="ring">'+catGlyph(c,1.5)+'</div><span>'+esc(c.n)+'</span></button>';
-  $('#cat-grid').innerHTML=CATS.filter(c=>c.g===f.group).map(btn).join('')+
+  const kn=KIND_N[f.kind]||'Tugas';
+  $('#add-hint').textContent=f.editId?'Ketuk kategori untuk mengganti':f.items.length>1?'Pilih kategori untuk '+kn+' '+(f.cur+1):'Pilih kategori untuk '+kn.toLowerCase()+' baru';
+  document.querySelectorAll('[data-act="set-kind"]').forEach(b=>{const on=b.getAttribute('data-k')===f.kind;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+  const sel=f.cat==='lain_k'?'lain_t':f.cat;
+  const btn=c=>'<button class="cat-btn'+(sel===c.k?' on':'')+(c.custom?' cu':'')+'" data-act="pick-cat" data-k="'+esc(c.k)+'" style="--h:'+c.h+'"><div class="ring">'+catGlyph(c,1.5)+'</div><span>'+esc(c.n)+'</span></button>';
+  const lain=k=>k==='lain_t'||k==='lain_k';
+  $('#cat-grid').innerHTML=CATS.filter(c=>c.g===f.kind&&!lain(c.k)).map(btn).join('')+
+    '<div class="cat-sec"><span>Kategori lain</span></div>'+
+    CATS.filter(c=>c.g!==f.kind&&!lain(c.k)).map(btn).join('')+btn(CAT.lain_t)+
     '<div class="cat-sec"><span>Kategori saya</span>'+(cats.length?'<button type="button" class="link" data-act="cats-manage">Kelola</button>':'')+'</div>'+
     cats.map(c=>btn(catOf(c.id))).join('')+
     (cats.length<L.MAX_CATS?'<button class="cat-btn new" data-act="cat-new" data-from="add"><div class="ring">'+ic('plus',2)+'</div><span>Baru</span></button>':'');
@@ -2523,10 +2816,66 @@ function renderCatGrid(){
 function pickCat(k){
   const f=state.form;if(!f||(!isBuiltinCat(k)&&!customCat(k)))return;
   f.cat=k;
-  // deadline bawaan: ON untuk kelompok Tugas, OFF untuk Kegiatan. Kategori custom mengikuti tab yang sedang dipilih.
-  if(!f.dlTouched&&!f.editId){$('#f-dl-on').checked=(isBuiltinCat(k)?CAT[k].g:f.group)==='tugas';syncDl();}
+  // deadline bawaan ikut JENIS (Q2, Tahap 8): Tugas = ON. Kegiatan tidak punya deadline (isiannya disembunyikan).
+  if(!f.dlTouched&&!f.editId){$('#f-dl-on').checked=f.kind==='tugas';syncDl();}
   renderCatGrid();openForm();
   if(!f.editId&&!$('#f-name').value)setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}} ,320);
+}
+/* ---- Tugas | Kegiatan (Tahap 8, Poin 17) ----
+   Pilihan di layar + dan di atas form = jenis form yang sedang dibuka. Kegiatan: Nama, Detail, Kategori, Tanggal (boleh
+   "Beberapa tanggal", jawaban user), Jam mulai–selesai (wajib). Isian khusus tugas (.only-t: kesulitan, tanpa jam, deadline,
+   masuk ke kegiatan) disembunyikan. Saat Edit jenis boleh diubah (jawaban user) + keterangan akibatnya. */
+function setKind(k){
+  const f=state.form;if(!f)return;
+  k=k==='kegiatan'?'kegiatan':'tugas';if(f.kind===k)return;
+  f.kind=k;
+  if(k==='kegiatan'&&(f.noTime||!$('#f-start').value)){   // kegiatan selalu berjam
+    f.noTime=false;
+    if(!$('#f-start').value){$('#f-start').value='08:00';$('#f-end').value='09:00';f.startPrev='08:00';}
+  }
+  if(k==='tugas'&&!f.dlTouched&&!f.editId)$('#f-dl-on').checked=true;
+  $('#f-time-err').classList.add('hidden');
+  syncTime();syncDl();syncKind();syncSaveLbl();renderItems();
+}
+function syncKind(){
+  const f=state.form;if(!f)return;
+  const keg=f.kind==='kegiatan',ed=f.editId?tasks[f.editId]:null;
+  $('#task-form').classList.toggle('is-keg',keg);
+  $('#form-top-title').textContent=(ed?'Edit ':'Detail ')+(keg?'kegiatan':'tugas');
+  if(ed)$('#add-title').textContent='Edit '+KIND_N[f.kind];
+  $('#f-date-lbl').textContent=keg?'Tanggal':'Tanggal dikerjakan';
+  $('#f-time-lbl').textContent=keg?'Jam kegiatan':'Jam pengerjaan';
+  $('#f-name').placeholder=keg?'Contoh: Jam kerja, Kuliah Basis Data':'Contoh: Laporan praktikum Basis Data';
+  document.querySelectorAll('[data-act="set-kind"]').forEach(b=>{const on=b.getAttribute('data-k')===f.kind;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+  // keterangan: apa itu kegiatan, atau akibat mengubah jenis saat Edit
+  let hint='';
+  if(ed&&isKeg(ed)&&!keg){const n=L.kidsOf(all(),ed.id).length;hint=n?n+' tugas di dalamnya akan dikeluarkan dari kegiatan ini (tetap ada di tanggalnya).':'';}
+  else if(ed&&!isKeg(ed)&&keg){const p=[];if(ed.done)p.push('Status selesainya dihapus karena kegiatan tidak bisa dicentang.');
+    p.push('Tidak dihitung lagi sebagai tugas di grafik.');if(kegOf(ed))p.push('Keluar dari kegiatan "'+kegOf(ed).name+'".');
+    if(ed.dlDate||DIFF_N[ed.diff])p.push('Deadline dan kesulitannya dihapus.');hint=p.join(' ');}
+  else if(keg)hint='Kegiatan = rentang waktu, mis. jam kerja atau kuliah. Tidak dicentang dan tidak dihitung di grafik; tugas bisa dimasukkan ke dalamnya.';
+  const h=$('#f-kind-hint');h.textContent=hint;h.classList.toggle('hidden',!hint);h.classList.toggle('warn',!!ed&&!!hint&&isKeg(ed)!==keg);
+  renderPar();
+}
+// "Masuk ke kegiatan" (tugas satu tanggal): kegiatan yang tampil di tanggal form. Disembunyikan kalau tidak ada kegiatan di
+// tanggal itu (dan belum dipilih), saat "Beberapa tanggal", atau untuk kegiatan. Pilihan yang tidak ada lagi di tanggal baru
+// dilepas + keterangan. K6: boleh memilih kegiatan yang jamnya tidak mencakup jam tugas, tapi muncul peringatan kecil.
+function renderPar(note){
+  const f=state.form;if(!f)return;
+  const fld=$('#f-par-fld'),hint=$('#f-par-hint'),date=$('#f-date').value;
+  const on=f.kind==='tugas'&&!f.multi,list=on&&date?L.kegOn(all(),date).filter(k=>k.id!==f.editId):[];
+  // pilihan hanya dilepas karena TANGGAL berubah; saat "Beberapa tanggal"/kegiatan pilihan disimpan (tidak dipakai saat simpan)
+  if(on&&f.parent&&!list.some(k=>k.id===f.parent)){if(tasks[f.parent])note='Pilihan kegiatan dilepas karena tidak ada di tanggal ini.';f.parent='';}
+  fld.classList.toggle('hidden',!list.length);
+  if(!list.length){hint.classList.add('hidden');return;}
+  const nm=n=>{n=String(n||'').trim();return n.length>22?n.slice(0,22)+'…':n;};
+  $('#f-par').innerHTML='<button type="button" data-act="pick-par" data-id=""'+(f.parent?'':' class="on"')+' aria-pressed="'+!f.parent+'">Tidak ada</button>'+
+    list.map(k=>{const on=f.parent===k.id;return '<button type="button" data-act="pick-par" data-id="'+esc(k.id)+'"'+(on?' class="on"':'')+' aria-pressed="'+on+'" title="'+esc(k.name+' · '+kegTime(k))+'">'+
+      esc(nm(k.name))+'<small>'+esc(k.start?kegTime(k):'')+'</small></button>';}).join('');
+  const k=f.parent?tasks[f.parent]:null;
+  const warn=!!k&&!f.noTime&&L.outsideKeg({start:$('#f-start').value,end:$('#f-end').value},k);
+  const txt=warn?'Jam tugas ini di luar jam kegiatan ('+kegTime(k)+'). Tetap boleh disimpan.':(note||'');
+  hint.textContent=txt;hint.classList.toggle('hidden',!txt);hint.classList.toggle('warn',warn);
 }
 function openForm(){
   fillCat();showLayer('form');
@@ -2602,7 +2951,7 @@ const dayDiff=(a,b)=>Math.round((parseYmd(b).getTime()-parseYmd(a).getTime())/86
 // isi form yang sedang terbuka → draft
 function snapItem(){
   const f=state.form;
-  return {cat:f.cat,name:$('#f-name').value,detail:$('#f-detail').value,diff:f.diff||'',date:$('#f-date').value,
+  return {kind:f.kind==='kegiatan'?'kegiatan':'tugas',parent:f.parent||'',cat:f.cat,name:$('#f-name').value,detail:$('#f-detail').value,diff:f.diff||'',date:$('#f-date').value,
     multi:!!f.multi,dates:(f.dates||[]).slice(),mcal:f.mcal,noTime:!!f.noTime,start:$('#f-start').value,end:$('#f-end').value,startPrev:f.startPrev,
     dlOn:$('#f-dl-on').checked,dlDate:$('#f-dl-date').value,dlTime:$('#f-dl-time').value,dlOff:L.dlOffOf(f.dlOff),dlTouched:!!f.dlTouched,err:null};
 }
@@ -2610,21 +2959,22 @@ function syncCur(){const f=state.form;if(f&&f.items.length){const e=f.items[f.cu
 // draft → layar
 function putItem(d){
   const f=state.form;
-  Object.assign(f,{cat:d.cat,diff:d.diff,multi:!!d.multi,dates:d.dates.slice(),mcal:d.mcal,noTime:!!d.noTime,startPrev:d.startPrev,dlOff:d.dlOff,dlTouched:!!d.dlTouched});
+  Object.assign(f,{kind:d.kind==='kegiatan'?'kegiatan':'tugas',parent:d.parent||'',cat:d.cat,diff:d.diff,multi:!!d.multi,dates:d.dates.slice(),mcal:d.mcal,noTime:!!d.noTime,startPrev:d.startPrev,dlOff:d.dlOff,dlTouched:!!d.dlTouched});
   $('#f-name').value=d.name;$('#f-detail').value=d.detail;$('#f-date').value=d.date;
   $('#f-start').value=d.start;$('#f-end').value=d.end;
   $('#f-dl-on').checked=d.dlOn;$('#f-dl-date').value=d.dlDate;$('#f-dl-time').value=d.dlTime;$('#f-dl-off').value=String(d.dlOff||0);
-  hideSug();clearErrs();fillCat();syncDl();syncQuick();syncDiff();syncTime();syncMulti();
+  hideSug();clearErrs();fillCat();syncDl();syncQuick();syncDiff();syncTime();syncMulti();syncKind();
   if(d.err)showErrs(d.err);
 }
 function clearErrs(){
-  ['#f-name-err','#f-date-err','#f-batch-err'].forEach(s=>$(s).classList.add('hidden'));
-  $('#f-name').classList.remove('bad');$('#f-date').classList.remove('bad');$('#f-mcal').classList.remove('bad');
+  ['#f-name-err','#f-date-err','#f-time-err','#f-batch-err'].forEach(s=>$(s).classList.add('hidden'));
+  $('#f-name').classList.remove('bad');$('#f-date').classList.remove('bad');$('#f-mcal').classList.remove('bad');$('#f-start').classList.remove('bad');
 }
 function showErrs(e){
   if(e.name){$('#f-name-err').textContent=e.name;$('#f-name-err').classList.remove('hidden');$('#f-name').classList.add('bad');}
   const de=e.dates||e.date;
   if(de){const el=$('#f-date-err');el.textContent=de;el.classList.remove('hidden');$(e.dates?'#f-mcal':'#f-date').classList.add('bad');}
+  if(e.time){const el=$('#f-time-err');el.textContent=e.time;el.classList.remove('hidden');$('#f-start').classList.add('bad');}   // kegiatan tanpa jam (Tahap 8)
 }
 const shortName=n=>{n=String(n||'').trim();return n.length>28?n.slice(0,28)+'…':n;};
 // ringkasan satu form: "Besok · 08:00–09:00" / "5 tanggal · 3–28 Des · Tanpa jam"
@@ -2639,31 +2989,35 @@ function itemMeta(d){
 function renderItems(){
   const f=state.form;if(!f)return;
   const it=f.items,n=it.length,many=n>1;
+  // label form ikut jenisnya (Tahap 8): "Tugas 1", "Kegiatan 2" (nomor = urutan form)
+  const kn=d=>KIND_N[d.kind]||'Tugas';
   const card=(d,i)=>{
     if(d.err)d.err=L.draftErrors(d,isCatOk);            // sudah diperbaiki → tanda merah hilang
     const er=d.err&&Object.keys(d.err).length?d.err:null,c=catOf(d.cat),nm=d.name.trim();
     return '<div class="f-card'+(er?' bad':'')+'"><button type="button" class="f-card-b" data-act="item-open" data-i="'+i+'">'+catIc(c)+
-      '<span class="grow"><b'+(nm?'':' class="empty-n"')+'>'+esc(nm||'Belum ada nama')+'</b><small>Tugas '+(i+1)+' · '+esc(er?(er.name||er.cat||er.dates||er.date):itemMeta(d))+'</small></span></button>'+
-      '<button type="button" class="f-x" data-act="item-del" data-i="'+i+'" aria-label="Hapus form Tugas '+(i+1)+'">'+ic('x',2.2)+'</button></div>';
+      '<span class="grow"><b'+(nm?'':' class="empty-n"')+'>'+esc(nm||'Belum ada nama')+'</b><small>'+kn(d)+' '+(i+1)+' · '+esc(er?(er.name||er.cat||er.dates||er.date||er.time):itemMeta(d))+'</small></span></button>'+
+      '<button type="button" class="f-x" data-act="item-del" data-i="'+i+'" aria-label="Hapus form '+kn(d)+' '+(i+1)+'">'+ic('x',2.2)+'</button></div>';
   };
   $('#f-pre').innerHTML=it.slice(0,f.cur).map((d,i)=>card(d,i)).join('');
   $('#f-post').innerHTML=it.slice(f.cur+1).map((d,j)=>card(d,f.cur+1+j)).join('');
   $('#f-ed').classList.toggle('many',many);
   $('#f-ed-head').classList.toggle('hidden',!many);
-  $('#f-ed-n').textContent='Tugas '+(f.cur+1)+' dari '+n;
+  $('#f-ed-n').textContent=(KIND_N[f.kind]||'Tugas')+' '+(f.cur+1)+' dari '+n;
   const full=n>=L.MAX_FORMS;
   $('#f-more').classList.toggle('hidden',!!f.editId||full);
   $('#f-more-max').classList.toggle('hidden',!!f.editId||!full);
   $('#f-more-max').textContent='Maksimal '+L.MAX_FORMS+' form sekali simpan.';
   syncSaveLbl();renderCatGrid();
 }
+// jumlah yang akan dibuat per jenis (semua form × tanggal) → "3 tugas", "2 kegiatan", "3 tugas & 2 kegiatan" (Tahap 8)
+function countLbl(nt,nk){return [nt?nt+' tugas':'',nk?nk+' kegiatan':''].filter(Boolean).join(' & ');}
 // tombol Simpan menyebut jumlah tugas yang akan dibuat (semua form × tanggal)
 function syncSaveLbl(){
   const f=state.form;if(!f)return;
   if(f.editId){$('#f-save').textContent='Simpan perubahan';return;}
-  const cur=snapItem();
-  const total=f.items.reduce((s,d,i)=>s+L.draftDates(i===f.cur?cur:d).length,0);
-  $('#f-save').textContent=total>1?'Simpan '+total+' tugas':'Simpan';
+  const cur=snapItem();let nt=0,nk=0;
+  f.items.forEach((d,i)=>{const x=i===f.cur?cur:d,n=L.draftDates(x).length;if(x.kind==='kegiatan')nk+=n;else nt+=n;});
+  $('#f-save').textContent=nt+nk>1?'Simpan '+countLbl(nt,nk):'Simpan';
 }
 function scrollEd(){requestAnimationFrame(()=>{const sh=$('#form-wrap .sheet');sh.scrollTo({top:Math.max(0,$('#f-ed').offsetTop-56),behavior:'smooth'});});}
 // tombol "+": form baru di paling bawah, isinya salinan form terakhir (kategori, tanggal, deadline), jam berurutan,
@@ -2731,15 +3085,17 @@ function setMulti(on){
   }
   f.multi=on;
   $('#f-date-err').classList.add('hidden');$('#f-date').classList.remove('bad');$('#f-mcal').classList.remove('bad');
-  syncMulti();syncSaveLbl();
+  syncMulti();syncSaveLbl();renderPar();
 }
 
+// kegiatan induk masih ada & tampil di tanggal tugas itu? (dicek lagi saat simpan; data bisa berubah karena sinkron)
+const parentOk=(pid,date)=>{const k=tasks[pid];return isKeg(k)&&L.onDay(k,date);};
 function saveForm(e){
   if(e)e.preventDefault();
   const f=state.form;if(!f)return;
   hideSug();syncCur();clearErrs();
   if(f.editId)return saveEdit(f);
-  const r=L.buildBatch(f.items,{now:Date.now(),by:curProfile(),newId:newId,isCat:isCatOk,existing:Object.keys(tasks).length,taken:id=>!!tasks[id]});
+  const r=L.buildBatch(f.items,{now:Date.now(),by:curProfile(),newId:newId,isCat:isCatOk,existing:Object.keys(tasks).length,taken:id=>!!tasks[id],parentOk:parentOk});
   if(!r.ok){
     // tandai form yang belum lengkap, buka yang pertama; tidak ada yang disimpan
     r.errors.forEach(x=>{const d=f.items[x.i];if(d){d.err=Object.assign({},x);delete d.err.i;}});
@@ -2749,8 +3105,9 @@ function saveForm(e){
       renderItems();
       if(r.msg){$('#f-batch-err').textContent=r.msg+' Form yang ditandai merah perlu dilengkapi.';$('#f-batch-err').classList.remove('hidden');toast(r.msg+' Belum ada yang disimpan.');}
       const er=f.items[first].err;
-      if(er.cat){hideLayer('form');toast('Pilih kategori untuk Tugas '+(first+1));return;}
+      if(er.cat){hideLayer('form');toast('Pilih kategori untuk '+(KIND_N[f.items[first].kind]||'Tugas')+' '+(first+1));return;}
       if(er.name){scrollEd();setTimeout(()=>{try{$('#f-name').focus({preventScroll:true});}catch(_){}},60);}
+      else if(er.time&&!er.date&&!er.dates)requestAnimationFrame(()=>$('#f-start').scrollIntoView({block:'center',behavior:'smooth'}));
       else scrollEd();
     }else{const be=$('#f-batch-err');be.textContent=r.msg;be.classList.remove('hidden');be.scrollIntoView({block:'nearest'});}
     return;
@@ -2764,25 +3121,35 @@ function saveForm(e){
   goToDate(ret,date);
   render();scheduleFlush(500);
   flashRows(ids);
-  if(list.length===1){toast('Tugas ditambahkan ke '+fmtShort(date));return;}
-  undoToast(list.length+' tugas ditambahkan',()=>{
+  const nk=list.filter(isKeg).length,nt=list.length-nk;
+  if(list.length===1){toast((nk?'Kegiatan':'Tugas')+' ditambahkan ke '+fmtShort(date));return;}
+  undoToast(countLbl(nt,nk)+' ditambahkan',()=>{
     ids.forEach(id=>{if(tasks[id]){delete tasks[id];ops=L.enqueue(ops,{op:'delete',id:id});}});
     saveLocal();render();scheduleFlush(500);
   });
 }
+// Simpan edit satu item. Tahap 8: jenis boleh diubah (jawaban user). Tugas → kegiatan: status selesai, induk, deadline,
+// kesulitan dihapus (aturan sama dengan server). Kegiatan → tugas: tugas di dalamnya dikeluarkan. Tanggal kegiatan berubah:
+// tugas di dalamnya ikut bergeser selisih hari yang sama (jawaban user, sama dengan drag di kalender).
 function saveEdit(f){
   const d=f.items[0],er=L.draftErrors(d,isCatOk),id=f.editId;
   if(er.cat){hideLayer('form');toast('Pilih kategori');return;}
-  if(er.name||er.date){showErrs(er);if(er.name)$('#f-name').focus();return;}
-  if(!tasks[id]){closeAdd();toast('Tugas sudah tidak ada');return;}
-  const data=L.draftFields(d,d.date);
-  Object.assign(tasks[id],data,{updatedAt:Date.now()});
+  if(er.name||er.date||er.time){showErrs(er);if(er.name)$('#f-name').focus();else if(er.time)$('#f-start').scrollIntoView({block:'center'});return;}
+  const t=tasks[id];
+  if(!t){closeAdd();toast((d.kind==='kegiatan'?'Kegiatan':'Tugas')+' sudah tidak ada');return;}
+  const data=L.draftFields(d,d.date),now=Date.now(),wasK=isKeg(t),old=t.date;
+  if(data.parent&&!parentOk(data.parent,data.date))data.parent='';
+  const touched=[id];let moved=0,released=0;
+  if(wasK&&data.kind==='kegiatan'&&old!==data.date)L.shiftKids(all(),id,old,data.date).forEach(c=>{Object.assign(tasks[c.id],c,{updatedAt:now});touched.push(c.id);moved++;});
+  if(wasK&&data.kind!=='kegiatan')L.kidsOf(all(),id).forEach(k=>{k.parent='';k.updatedAt=now;touched.push(k.id);released++;});
+  Object.assign(t,data,{updatedAt:now});
+  if(data.kind==='kegiatan'){t.done=false;t.doneAt=null;t.doneBy='';}
   const ret=state.returnTo;
   closeAdd();goToDate(ret,data.date);
-  persist(id);
+  touched.forEach(x=>queueOp(x));render();scheduleFlush(500);
   if(state.detailId===id&&isOpen('detail'))renderDetail();
   flashRows([id]);
-  toast('Perubahan disimpan');
+  toast('Perubahan disimpan'+(moved?' · '+moved+' tugas di dalamnya ikut pindah':released?' · '+released+' tugas dikeluarkan dari kegiatan':''));
 }
 // setelah simpan: tampilan asal pindah ke bulan/tanggal tugas
 function goToDate(ret,date){
@@ -2792,7 +3159,7 @@ function goToDate(ret,date){
 }
 function flashRows(ids){
   requestAnimationFrame(()=>{
-    const rows=[];ids.forEach(id=>document.querySelectorAll('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"],.view:not(.hidden) .tb-b[data-id="'+CSS.escape(id)+'"]').forEach(x=>rows.push(x)));
+    const rows=[];ids.forEach(id=>document.querySelectorAll('.view:not(.hidden) :is(.task,.tb-b,.keg-h,.tb-k)[data-id="'+CSS.escape(id)+'"]').forEach(x=>rows.push(x)));
     if(!rows.length)return;
     updateHdr();const r=rows[0].getBoundingClientRect(),bar=tbOn()&&$('#tb-bar');
     if(r.top<(bar?bar.getBoundingClientRect().bottom+8:120)||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});
@@ -2922,7 +3289,7 @@ function hideLayer(id){
   const el=$(LAYER_EL[id]);el.classList.remove('open');el.setAttribute('aria-hidden','true');
   if(id==='add')state.form=null;
   if(id==='detail')state.detailId=null;
-  if(id==='confirm')cfCb=null;
+  if(id==='confirm'){cfCb=null;cfAlt=null;}
   if(id==='import')state.catEd=null;
   if(id==='cathist')state.histKey=null;
   syncHist();return true;
@@ -2954,8 +3321,13 @@ function onBack(){
 }
 if(GH){try{GH.setChangeHandler(onBack);}catch(e){}}
 window.addEventListener('popstate',onBack);
-let cfCb=null;
-function confirmBox(title,msg,yes,cb){$('#cf-title').textContent=title;$('#cf-msg').textContent=msg;$('#cf-yes').textContent=yes;cfCb=cb;showLayer('confirm');}
+let cfCb=null,cfAlt=null;
+// alt = [label, fungsi] → pilihan ketiga (Tahap 8: hapus kegiatan → "Keluarkan tugas"); tombol tersusun ke bawah
+function confirmBox(title,msg,yes,cb,alt){
+  $('#cf-title').textContent=title;$('#cf-msg').textContent=msg;$('#cf-yes').textContent=yes;cfCb=cb;cfAlt=alt?alt[1]:null;
+  const a=$('#cf-alt');a.textContent=alt?alt[0]:'';a.classList.toggle('hidden',!alt);$('#confirm-wrap .dialog').classList.toggle('three',!!alt);
+  showLayer('confirm');
+}
 /* ---- pop-up bawah ----
    toast(pesan)                    : info singkat, hilang sendiri setelah 2,4 dtk
    toast(pesan, [label, fungsi])   : + tombol aksi dan tombol × (4,5 dtk)
@@ -2976,7 +3348,7 @@ $('#toast-x').addEventListener('click',hideToast);
 
 function renderMonthPicker(){
   const y=state.pickYear,cur=mkey(today());
-  const cnt={},list=all();for(let i=1;i<=12;i++){const k=y+'-'+pad(i);cnt[k]=L.inMonth(list,k).length;}   // multi-hari: tiap bulan yang dilewati
+  const cnt={},list=onlyT(all());for(let i=1;i<=12;i++){const k=y+'-'+pad(i);cnt[k]=L.inMonth(list,k).length;}   // multi-hari: tiap bulan yang dilewati; tanpa kegiatan
   $('#month-body').innerHTML='<div class="yr"><button class="icon-btn" data-act="yr" data-d="-1" aria-label="Tahun sebelumnya">'+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg></button><b>'+y+'</b><button class="icon-btn" data-act="yr" data-d="1" aria-label="Tahun berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button></div>'+
     '<div class="mgrid">'+MON_S.map((m,i)=>{const k=y+'-'+pad(i+1);return '<button data-act="pick-month" data-m="'+k+'" class="'+(k===state.homeMonth?'on ':'')+(k===cur?'now':'')+'">'+m+'<small>'+(cnt[k]?cnt[k]+' tugas':'&nbsp;')+'</small></button>';}).join('')+'</div>'+
     '<button class="btn-primary" data-act="pick-month" data-m="'+cur+'" style="margin-top:16px">Ke bulan ini</button>';
@@ -3045,7 +3417,7 @@ document.addEventListener('click',e=>{
   if(chk){e.preventDefault();toggleDone(chk.dataset.check,chk);return;}
   const act=tg.closest('[data-act]');
   if(act){handle(act.dataset.act,act,e);return;}
-  const row=tg.closest('.task[data-id],.tb-b[data-id]');   // baris tugas / blok Time Blocking (Tahap 7)
+  const row=tg.closest('.task[data-id],.tb-b[data-id],.keg-h[data-id],.tb-k[data-id]');   // baris tugas / blok Time Blocking (Tahap 7) / kegiatan (Tahap 8)
   if(row){openDetail(row.getAttribute('data-id'));return;}
   if(!tg.closest('#curve')){const c=$('#curve');if(c&&c._hide)c._hide();}
 });
@@ -3056,7 +3428,16 @@ function handle(a,el,e){
     case 'add-on-date':openAdd({date:state.calSel,returnTo:'kalender'});break;
     case 'add-cancel':closeAddAsk();break;
     case 'back':goBack();break;
-    case 'add-group':state.form.group=el.dataset.g;renderCatGrid();break;
+    // ---- Tugas | Kegiatan (Tahap 8, Poin 17) ----
+    case 'set-kind':setKind(el.dataset.k);break;
+    case 'pick-par':{const f=state.form;if(!f)break;f.parent=el.dataset.id||'';renderPar();break;}
+    case 'keg-fold':{const id=el.dataset.id,on=!state.fold.has(id);if(on)state.fold.add(id);else state.fold.delete(id);saveFold();
+      // tanpa render ulang (posisi gulir tetap): semua kartu kegiatan itu di layar (kegiatan multi-hari bisa tampil beberapa kali)
+      document.querySelectorAll('.keg[data-kid="'+CSS.escape(id)+'"]').forEach(k=>{k.classList.toggle('fold',on);const b=k.querySelector('.keg-fold');
+        if(b){const nm=k.querySelector('.task-name').textContent;b.setAttribute('aria-expanded',String(!on));b.setAttribute('aria-label',(on?'Buka':'Tutup')+' daftar tugas '+nm);}});break;}
+    case 'keg-add':{const k=tasks[state.detailId];if(!isKeg(k))break;hideLayer('detail');
+      openAdd({date:k.date,kind:'tugas',parent:k.id,start:k.start,returnTo:state.view});break;}
+    case 'open-keg':if(tasks[el.dataset.id])openDetail(el.dataset.id);break;
     case 'pick-cat':pickCat(el.dataset.k);break;
     // ---- kategori custom (Poin 10) ----
     case 'cat-new':openCatEditor(null,el.dataset.from||'list');break;
@@ -3084,7 +3465,7 @@ function handle(a,el,e){
     case 'pick-diff':{const v=el.dataset.v;state.form.diff=state.form.diff===v?'':v;syncDiff();break;}
     case 'pick-dur':{const s=$('#f-start').value;
       if(!s){try{$('#f-start').focus();}catch(_){}break;}
-      $('#f-end').value=L.endAfter(s,+el.dataset.m);syncTime();break;}
+      $('#f-end').value=L.endAfter(s,+el.dataset.m);syncTime();renderPar();break;}
     case 'pick-sug':{const n=sugList[+el.dataset.i];if(n==null)break;
       const inp=$('#f-name');inp.value=n;hideSug();$('#f-name-err').classList.add('hidden');inp.classList.remove('bad');
       try{if(document.activeElement!==inp)inp.focus({preventScroll:true});inp.setSelectionRange(n.length,n.length);}catch(_){}break;}
@@ -3113,9 +3494,17 @@ function handle(a,el,e){
     case 'detail-toggle':{const id=state.detailId;toggleDone(id);break;}
     case 'detail-edit':{const id=state.detailId;hideLayer('detail');openAdd({editId:id,returnTo:state.view});break;}
     case 'detail-delete':{const id=state.detailId,t=tasks[id];if(!t)break;
+      if(isKeg(t)){   // Poin 17: tanya dulu, tugas di dalamnya ikut dihapus atau dikeluarkan dari kegiatan
+        const n=L.kidsOf(all(),id).length;
+        if(!n){confirmBox('Hapus kegiatan?','"'+t.name+'" akan dihapus.','Hapus',()=>{hideLayer('detail');delKeg(id,'all');});break;}
+        confirmBox('Hapus kegiatan?','"'+t.name+'" berisi '+n+' tugas. Tugasnya ikut dihapus, atau dikeluarkan dari kegiatan dan tetap ada di tanggalnya?',
+          'Hapus kegiatan + '+n+' tugas',()=>{hideLayer('detail');delKeg(id,'all');},['Keluarkan tugas, hapus kegiatan saja',()=>{hideLayer('detail');delKeg(id,'release');}]);
+        break;
+      }
       confirmBox('Hapus tugas?','"'+t.name+'" akan dihapus.','Hapus',()=>{hideLayer('detail');delTask(id);});break;}
     case 'confirm-no':hideLayer('confirm');break;
     case 'confirm-yes':{const cb=cfCb;hideLayer('confirm');if(cb)cb();break;}
+    case 'confirm-alt':{const cb=cfAlt;hideLayer('confirm');if(cb)cb();break;}
     case 'backup':{const txt=backupJson();
       const fallback=()=>showImport(txt,'copy');
       try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>toast('Cadangan '+all().length+' tugas disalin ke clipboard'),fallback);}else fallback();}catch(_){fallback();}
@@ -3158,16 +3547,17 @@ function handle(a,el,e){
     case 'clear-done':{const ids=all().filter(t=>t.done).map(t=>t.id);if(!ids.length){toast('Belum ada tugas yang selesai');break;}
       confirmBox('Hapus tugas selesai?',ids.length+' tugas yang sudah selesai akan dihapus permanen.','Hapus',()=>bulkDelete(ids,ids.length+' tugas selesai dihapus'));break;}
     case 'clear-all':{const ids=Object.keys(tasks);if(!ids.length){toast('Belum ada data');break;}
-      confirmBox('Hapus semua data?','Semua '+ids.length+' tugas akan dihapus permanen. Salin cadangan dulu jika perlu.','Hapus semua',()=>bulkDelete(ids,'Semua data dihapus'));break;}
+      const nk=all().filter(isKeg).length;
+      confirmBox('Hapus semua data?','Semua '+countLbl(ids.length-nk,nk)+' akan dihapus permanen. Salin cadangan dulu jika perlu.','Hapus semua',()=>bulkDelete(ids,'Semua data dihapus'));break;}
   }
 }
 function setFormDate(d){
   const old=$('#f-date').value;$('#f-date').value=d;
   if(!state.form.dlTouched||$('#f-dl-date').value===old)$('#f-dl-date').value=d;
-  syncQuick();syncDl();
+  syncQuick();syncDl();renderPar();
 }
 $('#f-date').addEventListener('change',()=>{const v=$('#f-date').value;if(!v)return;
-  if(!state.form.dlTouched)$('#f-dl-date').value=v;syncQuick();syncDl();});
+  if(!state.form.dlTouched)$('#f-dl-date').value=v;syncQuick();syncDl();renderPar();});
 $('#f-dl-on').addEventListener('change',()=>{state.form.dlTouched=true;syncDl();});
 $('#f-dl-off').addEventListener('change',()=>{const f=state.form;if(!f)return;f.dlOff=L.dlOffOf($('#f-dl-off').value);f.dlTouched=true;syncDl();});
 $('#f-multi').addEventListener('change',()=>setMulti($('#f-multi').checked));
@@ -3193,9 +3583,9 @@ if(window.visualViewport){let vvh=visualViewport.height;visualViewport.addEventL
 // ganti jam mulai → jam selesai ikut bergeser, durasi tetap (bawaan 1 jam)
 $('#f-start').addEventListener('change',()=>{const f=state.form,s=$('#f-start').value;if(!f)return;
   if(s){const d=L.durMin(f.startPrev,$('#f-end').value);$('#f-end').value=L.endAfter(s,d?d:L.DEF_DUR);}
-  f.startPrev=s;syncTime();});
-$('#f-end').addEventListener('change',syncTime);
-$('#f-notime').addEventListener('change',()=>{if(state.form){state.form.noTime=$('#f-notime').checked;syncTime();}});
+  f.startPrev=s;syncTime();renderPar();if(s){$('#f-time-err').classList.add('hidden');$('#f-start').classList.remove('bad');}});
+$('#f-end').addEventListener('change',()=>{syncTime();renderPar();});
+$('#f-notime').addEventListener('change',()=>{if(state.form){state.form.noTime=$('#f-notime').checked;syncTime();renderPar();}});
 $('#task-form').addEventListener('submit',saveForm);
 $('#f-dl-off').innerHTML=Array.from({length:L.DL_OFF_MAX+1},(_,n)=>'<option value="'+n+'">'+(n?n+' hari setelahnya':'Hari yang sama')+'</option>').join('');
 // editor kategori custom (isinya dibuat ulang setiap dibuka, jadi listener dipasang di document)

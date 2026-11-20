@@ -552,9 +552,9 @@ test('E2E Tahap 3: kategori custom (tambah, pakai, ubah, hapus + urungkan) dan r
     await p.click('#nav [data-view="tugas"]'); await wait(300);
     await p.tap('.nav .fab'); await wait(400);
     assert.deepEqual(await catTiles(), ['Freelance']);
-    await p.tap('#add-seg [data-g="kegiatan"]'); await wait(150);
+    await p.tap('#add-seg [data-k="kegiatan"]'); await wait(150);   // Tahap 8: pilihan jenis (dulu tab kelompok kategori)
     assert.deepEqual(await catTiles(), ['Freelance'], 'tampil juga di tab Kegiatan');
-    await p.tap('#add-seg [data-g="tugas"]'); await wait(150);
+    await p.tap('#add-seg [data-k="tugas"]'); await wait(150);
     await shot('t3-02-layar-plus');
     await p.tap('#cat-grid [data-act="cat-new"]'); await wait(400);
     await p.fill('#kc-name', 'Les Privat'); await p.tap('[data-act="kc-save"]'); await wait(600);
@@ -1600,6 +1600,321 @@ test('E2E Tahap 7: tampilan Time Blocking di menu Tugas (Poin 16)', { skip: !pw 
     assert.equal(await hidden('#tb'), false);
     assert.ok(await p.locator('#tb-body .tb-b').count() >= 2, 'contoh tugas hari ini tampil sebagai blok');
     assert.equal(await p.evaluate(() => JSON.stringify(Object.keys(localStorage).sort().map(k => [k, localStorage.getItem(k)]))), before);
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});
+
+test('E2E Tahap 8: Tugas vs Kegiatan (Poin 17) — form, masuk ke kegiatan, tampilan, Time Blocking, drag, hapus', { skip: !pw && 'Playwright tidak terpasang', timeout: 300000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, date, start, end, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date, start, end, dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '',
+    createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  const DONE = { done: true, doneAt: 1762740000000, doneBy: 'p1' };
+  S.post('apiSync', reg.token, [
+    T('kul', 'Kuliah Basis Data', '2026-11-10', '18:00', '20:30', { cat: 'kuliah', kind: 'kegiatan' }),
+    T('pres', 'Presentasi kelompok', '2026-11-10', '18:00', '18:30', { parent: 'kul' }),
+    T('nt', 'Bayar internet', '2026-11-10', '', '', { cat: 'tagihan' }),
+    T('lk', 'Urusan lain', '2026-11-10', '10:00', '10:30', { cat: 'lain_k' }),     // "Lainnya" kelompok Kegiatan (data lama)
+    T('lt', 'Urusan lain juga', '2026-11-10', '11:00', '11:30', { cat: 'lain_t' }),
+    T('kis', 'Kuis', '2026-11-11', '08:00', '09:00', { cat: 'ujian' }),
+    T('old', 'Kirim laporan mingguan', '2026-11-03', '09:00', '10:00', Object.assign({ cat: 'tkerja' }, DONE)),
+    T('lama', 'Jam Kerja lama', '2026-11-12', '08:00', '17:00', Object.assign({ cat: 'jamkerja', diff: 'sedang', dlDate: '2026-11-12', dlTime: '17:00' }, DONE))  // tugas lama berkategori kegiatan
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const rows = () => S.sheet('@adit').objects();
+  const row = id => rows().find(o => o.ID === id);
+  const byName = n => rows().find(o => o['Nama tugas'] === n);
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();
+  const vis = sel => p.isVisible(sel);
+  const isOpen = sel => p.evaluate(s => document.querySelector(s).classList.contains('open'), sel);
+  const back = async () => { await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(350); };
+  const setTime = async (sel, v) => { await p.fill(sel, v); await p.dispatchEvent(sel, 'change'); await wait(60); };
+  const kids = kid => p.evaluate(k => [...document.querySelectorAll('#home-list .keg[data-kid="' + k + '"] .keg-kids .task')].map(r => r.dataset.id), kid);
+  const kegMeta = kid => txt('#home-list .keg-h[data-id="' + kid + '"] .task-meta');
+  const parChips = () => p.evaluate(() => [...document.querySelectorAll('#f-par button')].map(b => (b.dataset.id || '-') + (b.classList.contains('on') ? '*' : '')));
+  const cdp = await p.context().newCDPSession(p);
+  const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+  const center = sel => p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+  async function tdrag(fromSel, toSel, mid) {
+    const a = await p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + 120, y: r.y + r.height / 2 }; }, fromSel), b = await center(toSel);
+    await touch('touchStart', a.x, a.y); await wait(520);
+    for (let i = 1; i <= 10; i++) { await touch('touchMove', a.x + (b.x - a.x) * i / 10, a.y + (b.y - a.y) * i / 10); await wait(25); }
+    await wait(120); if (mid) await mid();
+    await touch('touchEnd'); await wait(450);
+  }
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ---- data awal: kegiatan tampil beda bentuk, tidak dihitung, tidak bisa dicentang ----
+    assert.equal(await txt('#h-total'), '7', '7 tugas (kegiatan "Kuliah Basis Data" tidak dihitung)');
+    assert.equal(await p.locator('#home-list .keg-h[data-id="kul"]').count(), 1);
+    assert.equal(await p.locator('#home-list .keg-h[data-id="kul"] .check').count(), 0, 'kegiatan tanpa tombol centang');
+    assert.match(await kegMeta('kul'), /^Kegiatan.*18:00–20:30·0\/1 selesai·Kuliah$/);
+    assert.deepEqual(await kids('kul'), ['pres'], 'tugas di dalamnya tampil di bawah kegiatan');
+    assert.equal(await p.locator('#home-list > .task[data-id="pres"], #home-list .ntbox .task[data-id="pres"]').count(), 0, 'tidak tampil dobel');
+    assert.equal(await txt('#home-list .dhead#g-2026-11-10 > span'), '0/4 selesai');
+
+    // ================= buat Kegiatan dari tombol + =================
+    await p.tap('.nav .fab'); await wait(350);
+    assert.deepEqual([await txt('#add-hint'), await p.getAttribute('#add-seg [data-k="tugas"]', 'aria-pressed')], ['Pilih kategori untuk tugas baru', 'true']);
+    const tiles = () => p.evaluate(() => [...document.querySelectorAll('#cat-grid .cat-btn[data-k]')].map(b => b.dataset.k));
+    let tl = await tiles();
+    assert.equal(tl[0], 'tkuliah', 'jenis Tugas: kategori tugas dulu');
+    assert.ok(tl.includes('kuliah') && tl.includes('jamkerja'), 'kategori tidak lagi disaring per kelompok (Q2)');
+    assert.equal(tl.filter(k => k === 'lain_t' || k === 'lain_k').length, 1, 'satu "Lainnya" saja');
+    await p.tap('#add-seg [data-k="kegiatan"]'); await wait(150);
+    tl = await tiles();
+    assert.deepEqual([await txt('#add-hint'), await p.getAttribute('#add-seg [data-k="kegiatan"]', 'aria-pressed'), tl[0]], ['Pilih kategori untuk kegiatan baru', 'true', 'kuliah']);
+    assert.equal(await txt('#cat-grid .cat-sec span'), 'Kategori lain');
+    await shot('t8-01-layar-plus-kegiatan');
+    await p.tap('[data-act="pick-cat"][data-k="jamkerja"]'); await wait(450);
+    assert.deepEqual([await txt('#form-top-title'), await p.getAttribute('#f-kind [data-k="kegiatan"]', 'aria-pressed'), await txt('#f-date-lbl'), await txt('#f-time-lbl')],
+      ['Detail kegiatan', 'true', 'Tanggal', 'Jam kegiatan'], 'pilihan Tugas | Kegiatan juga di atas form');
+    // form Kegiatan: Nama, Detail, Kategori, tanggal (+ Beberapa tanggal), jam mulai–selesai; tanpa kesulitan/tanpa jam/deadline
+    assert.deepEqual(await Promise.all(['#f-name', '#f-detail', '#f-date', '#f-multi-row', '#f-start', '#f-end'].map(vis)), [true, true, true, true, true, true]);
+    assert.deepEqual(await Promise.all(['#f-diff', '.opt-switch:has(#f-notime)', '#f-dl-on', '#f-dl-box', '#f-par-fld'].map(vis)), [false, false, false, false, false]);
+    assert.match(await txt('#f-kind-hint'), /^Kegiatan = rentang waktu/);
+    await p.fill('#f-name', 'Jam kerja');
+    await setTime('#f-start', '');
+    await p.tap('#f-save'); await wait(300);
+    assert.deepEqual([await isOpen('#form-wrap'), await txt('#f-time-err')], [true, 'Isi jam mulai kegiatan.'], 'jam wajib untuk kegiatan');
+    await setTime('#f-start', '08:00'); await setTime('#f-end', '17:00');
+    assert.equal(await vis('#f-time-err'), false);
+    await shot('t8-02-form-kegiatan');
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Kegiatan ditambahkan ke 10 Nov');
+    const K = byName('Jam kerja').ID;
+    assert.deepEqual(['Jenis', 'Jam mulai', 'Jam selesai', 'Status', 'Deadline (tanggal)', 'Kesulitan', 'Kode kategori'].map(k => row(K)[k]), ['Kegiatan', '08:00', '17:00', 'Belum', '', '', 'jamkerja']);
+    assert.equal(await txt('#h-total'), '7', 'kegiatan baru tidak menambah jumlah tugas');
+    assert.match(await kegMeta(K), /08:00–17:00·belum ada tugas/);
+
+    // ================= tugas → "Masuk ke kegiatan" (tanggal yang sama, K6) =================
+    await p.tap('.nav .fab'); await wait(350);
+    assert.equal(await p.getAttribute('#add-seg [data-k="tugas"]', 'aria-pressed'), 'true', 'bawaan kembali ke Tugas');
+    await p.tap('[data-act="pick-cat"][data-k="tkerja"]'); await wait(450);
+    assert.deepEqual([await txt('#form-top-title'), await vis('#f-diff'), await p.isChecked('#f-dl-on')], ['Detail tugas', true, true], 'form tugas lengkap, deadline bawaan ON');
+    assert.deepEqual([await vis('#f-par-fld'), await parChips()], [true, ['-*', K, 'kul']], 'kegiatan di tanggal ini, urut jam');
+    // autocomplete (Tahap 2) tetap jalan di mode Tugas
+    await p.fill('#f-name', 'Kir'); await wait(150);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#f-sug .sug-i span')].map(s => s.textContent)), ['Kirim laporan mingguan']);
+    await p.fill('#f-name', 'Kirim laporan');
+    await p.tap('#f-par [data-id="' + K + '"]'); await wait(80);
+    assert.deepEqual(await parChips(), ['-', K + '*', 'kul']);
+    await setTime('#f-start', '18:00');
+    assert.deepEqual([await vis('#f-par-hint'), await txt('#f-par-hint')], [true, 'Jam tugas ini di luar jam kegiatan (08:00–17:00). Tetap boleh disimpan.'], 'K6: peringatan kecil');
+    await shot('t8-03-masuk-kegiatan');
+    await setTime('#f-start', '09:00');
+    assert.equal(await vis('#f-par-hint'), false);
+    // "Beberapa tanggal" → pilihan disembunyikan (tugas terpisah di tanggal lain), dimatikan → pilihan kembali
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    assert.equal(await vis('#f-par-fld'), false);
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    assert.deepEqual(await parChips(), ['-', K + '*', 'kul']);
+    // ganti tanggal ke Besok (tidak ada kegiatan) → disembunyikan & dilepas; kembali ke Hari ini → "Tidak ada"
+    await p.tap('[data-act="quick-date"][data-d="1"]'); await wait(100);
+    assert.equal(await vis('#f-par-fld'), false);
+    await p.tap('[data-act="quick-date"][data-d="0"]'); await wait(100);
+    assert.deepEqual(await parChips(), ['-*', K, 'kul']);
+    await p.tap('#f-par [data-id="' + K + '"]');
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Tugas ditambahkan ke 10 Nov');
+    const KL = byName('Kirim laporan').ID;
+    assert.deepEqual([row(KL)['Jenis'], row(KL)['Kegiatan induk']], ['Tugas', K]);
+    assert.deepEqual(await kids(K), [KL], 'tampil di bawah kegiatannya');
+
+    // ================= detail kegiatan → "Tambah tugas di kegiatan ini" + banyak form (Tahap 4) =================
+    await p.tap('#home-list .keg-h[data-id="' + K + '"]'); await wait(400);
+    assert.deepEqual([await txt('#detail-top'), await txt('#detail .d-status'), await txt('#detail .d-prog')], ['Detail kegiatan', 'Kegiatan', '0/1 tugas selesai']);
+    assert.equal(await p.locator('#detail [data-act="detail-toggle"]').count(), 0, 'kegiatan tidak bisa dicentang');
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#detail .d-kids .task')].map(r => r.dataset.id)), [KL]);
+    await shot('t8-04-detail-kegiatan');
+    await p.tap('[data-act="keg-add"]'); await wait(400);
+    assert.deepEqual([await isOpen('#add-screen'), await txt('#add-hint')], [true, 'Pilih kategori untuk tugas baru']);
+    await p.tap('[data-act="pick-cat"][data-k="meeting"]'); await wait(450);
+    assert.deepEqual([await parChips(), await p.inputValue('#f-start'), await p.inputValue('#f-date')], [['-', K + '*', 'kul'], '08:00', '2026-11-10'], 'kegiatan sudah terpilih, mulai di jam kegiatan');
+    await p.fill('#f-name', 'Rapat tim'); await setTime('#f-start', '13:00');
+    await p.tap('#f-more'); await wait(350);
+    assert.deepEqual([await txt('#f-ed-n'), await parChips(), await p.inputValue('#f-start')], ['Tugas 2 dari 2', ['-', K + '*', 'kul'], '14:00'], 'form tambahan menyalin kegiatannya');
+    await p.fill('#f-name', 'Catat notulen');
+    assert.equal(await txt('#f-save'), 'Simpan 2 tugas');
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), '2 tugas ditambahkan');
+    const R = byName('Rapat tim').ID, N = byName('Catat notulen').ID;
+    assert.deepEqual([row(R)['Kegiatan induk'], row(N)['Kegiatan induk']], [K, K]);
+    assert.deepEqual(await kids(K), [KL, R, N]);
+    assert.match(await kegMeta(K), /0\/3 selesai/);
+    assert.equal(await txt('#h-total'), '10');
+
+    // ---- progres: centang tugas di dalamnya → "1/3 selesai"; kegiatan tetap tidak dihitung ----
+    await p.tap('#home-list .keg[data-kid="' + K + '"] .task[data-id="' + KL + '"] .check'); await wait(1500);
+    assert.match(await kegMeta(K), /1\/3 selesai/);
+    assert.deepEqual([await txt('#h-total'), await txt('#h-done')], ['10', '3']);
+    assert.equal(row(KL)['Status'], 'Selesai');
+    assert.equal(await txt('#home-list .dhead#g-2026-11-10 > span'), '1/7 selesai');
+    await shot('t8-05-daftar');
+
+    // ---- buka-tutup (diingat di HP) ----
+    await p.tap('#home-list .keg[data-kid="' + K + '"] .keg-fold'); await wait(200);
+    assert.deepEqual([await p.locator('#home-list .keg.fold[data-kid="' + K + '"]').count(), await vis('#home-list .task[data-id="' + R + '"]'),
+      await p.getAttribute('#home-list .keg[data-kid="' + K + '"] .keg-fold', 'aria-expanded')], [1, false, 'false']);
+    assert.ok(JSON.parse(await p.evaluate(() => localStorage.getItem('pt.fold'))).includes(K));
+    await p.reload(); await wait(1500);
+    assert.equal(await p.locator('#home-list .keg.fold[data-kid="' + K + '"]').count(), 1, 'tetap tertutup setelah muat ulang');
+    await p.tap('#home-list .keg[data-kid="' + K + '"] .keg-fold'); await wait(200);
+    assert.equal(await vis('#home-list .task[data-id="' + R + '"]'), true);
+
+    // ---- filter Belum / Selesai: kegiatan hanya tampil kalau berisi tugas yang cocok ----
+    await p.tap('[data-act="home-filter"][data-f="belum"]'); await wait(200);
+    assert.deepEqual([await kids(K), await kids('kul')], [[R, N], ['pres']]);
+    await p.tap('[data-act="home-filter"][data-f="selesai"]'); await wait(200);
+    assert.deepEqual([await kids(K), await p.locator('#home-list .keg-h[data-id="kul"]').count()], [[KL], 0]);
+    await p.tap('[data-act="home-filter"][data-f="semua"]'); await wait(200);
+
+    // ================= Time Blocking: kegiatan = blok latar, tugas di atasnya =================
+    await p.click('#home-view'); await wait(500);
+    assert.equal(await txt('#tb-bar .tb-st'), 'Hari ini, 10 Nov · 7 tugas, 1 selesai · 2 kegiatan');
+    const tb = await p.evaluate(() => {
+      const g = document.getElementById('tb-grid').getBoundingClientRect(), area = document.querySelector('#tb-grid .tb-area').getBoundingClientRect(), o = { bg: {}, fg: {} };
+      document.querySelectorAll('#tb-body .tb-k').forEach(b => { const r = b.getBoundingClientRect(), l = b.querySelector('.tb-kl');
+        o.bg[b.dataset.id] = { top: Math.round(r.top - g.top - 11), h: Math.round(r.height), w: Math.round(r.width), lab: Math.round(l.getBoundingClientRect().top - r.top), text: l.textContent }; });
+      document.querySelectorAll('#tb-body .tb-b').forEach(b => { const r = b.getBoundingClientRect(); o.fg[b.dataset.id] = { top: Math.round(r.top - g.top - 11), l: Math.round(r.left - area.left) }; });
+      o.aw = Math.round(area.width); o.bgFirst = !!document.querySelector('#tb-grid .tb-area > .tb-k:first-child');
+      o.over = getComputedStyle(document.querySelector('.tb-fg')).pointerEvents; return o;
+    });
+    assert.deepEqual(Object.keys(tb.bg).sort(), [K, 'kul'].sort(), 'kegiatan hanya sebagai blok latar');
+    assert.deepEqual(Object.keys(tb.fg).sort(), [KL, R, N, 'lk', 'lt', 'pres'].sort(), 'tugas (termasuk tugas di dalam kegiatan) di lapisan atas');
+    assert.deepEqual([tb.bg[K].top, tb.bg[K].h, tb.bg['kul'].top, tb.bg['kul'].h], [480, 538, 1080, 148]);
+    assert.ok(tb.bg[K].w >= tb.aw - 3, 'latar selebar area');
+    assert.deepEqual([tb.fg[KL].top, tb.fg[R].top, tb.fg[N].top, tb.fg[KL].l], [540, 780, 840, 13], 'tugas di jamnya, bergeser 12px supaya garis kegiatan terlihat');
+    assert.deepEqual([tb.bgFirst, tb.over], [true, 'none'], 'latar di bawah, lapisan tugas tidak menghalangi tap latar');
+    assert.match(tb.bg[K].text, /^Jam kerja08:00–17:00 · 1\/3 selesai$/);
+    assert.deepEqual([tb.bg[K].lab, tb.bg['kul'].lab], [1, 31], 'label kegiatan di celah pertama (Presentasi 18:00–18:30 menutupi awal Kuliah); +1 = garis tepi');
+    await shot('t8-06-time-blocking');
+    // tap latar kegiatan di jam kosong (12:00) → detail kegiatan
+    await p.click('#tb-body .tb-k[data-id="' + K + '"]', { position: { x: 60, y: 240 } }); await wait(400);
+    assert.equal(await txt('#detail-top'), 'Detail kegiatan');
+    await back();
+    await p.click('#home-view'); await wait(400);
+
+    // ================= Kalender: jumlah tanpa kegiatan; drag kegiatan → tugasnya ikut (jawaban user) =================
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+    assert.deepEqual([await txt('#cgrid [data-d="2026-11-10"] .c1'), await p.locator('#cgrid [data-d="2026-11-10"] .kd').count(), await p.locator('#cgrid [data-d="2026-11-11"] .kd').count()], ['7 tugas', 1, 0]);
+    assert.match(await txt('#cal-legend'), /kegiatan$/);
+    assert.equal(await txt('#cal-day-head small'), 'Hari ini · 7 tugas, 1 selesai · 2 kegiatan');
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+    assert.equal(await vis('#cal-day-list .keg[data-kid="' + K + '"] .keg-fold'), false, 'Mode Edit: pegangan, bukan tombol buka-tutup');
+    await p.waitForFunction(() => !document.getElementById('toast').classList.contains('on'));   // pop-up "Tampilan: …" menutupi kartu kegiatan
+    await tdrag('#cal-day-list .keg-h[data-id="' + K + '"]', '#cgrid [data-d="2026-11-12"]', async () => {
+      assert.equal(await p.evaluate(() => document.querySelector('.drag-ghost .dg-to').textContent), '→ Kam, 12 Nov (+3 tugas)');
+      await shot('t8-07-drag-kegiatan');
+    });
+    assert.equal(await txt('#toast-msg'), '"Jam kerja" + 3 tugas dipindah ke Kam, 12 Nov');
+    assert.equal(await txt('#cal-day-head b'), 'Kamis, 12 November 2026');
+    await wait(1200);
+    assert.deepEqual([K, KL, R, N].map(id => row(id)['Tanggal'] + ' ' + row(id)['Kegiatan induk']), ['2026-11-12 ', '2026-11-12 ' + K, '2026-11-12 ' + K, '2026-11-12 ' + K]);
+    assert.equal(row(R)['Jam mulai'], '13:00', 'jam tetap');
+    await p.click('#toast-btn'); await wait(1500);   // urungkan setelah sinkron
+    assert.deepEqual([K, KL, R, N].map(id => row(id)['Tanggal']), ['2026-11-10', '2026-11-10', '2026-11-10', '2026-11-10']);
+    // tugas di dalam kegiatan ditarik sendiri ke tanggal lain → keluar dari kegiatan; urungkan → masuk lagi
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 100)); await wait(150);   // baris tugas di atas menu bawah, sel 11 Nov tetap terlihat
+    await tdrag('#cal-day-list .task[data-id="' + R + '"]', '#cgrid [data-d="2026-11-11"]');
+    assert.equal(await txt('#toast-msg'), '"Rapat tim" dipindah ke Rab, 11 Nov, keluar dari kegiatan');
+    await wait(1200);
+    assert.deepEqual([row(R)['Tanggal'], row(R)['Kegiatan induk']], ['2026-11-11', '']);
+    await p.click('#toast-btn'); await wait(1500);
+    assert.deepEqual([row(R)['Tanggal'], row(R)['Kegiatan induk']], ['2026-11-10', K]);
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+
+    // ================= Grafik: kegiatan tidak dihitung; dua "Lainnya" digabung =================
+    await p.click('#nav [data-view="grafik"]'); await wait(400);
+    assert.equal(await txt('#donut-c b'), '10');
+    const crows = await p.evaluate(() => [...document.querySelectorAll('#stats-body .crow')].map(r => r.querySelector('.l1 span').textContent + ':' + r.querySelector('.l1 b').textContent));
+    assert.deepEqual(crows.filter(x => x.startsWith('Lainnya')), ['Lainnya:2 tugas'], 'lain_t + lain_k = satu baris');
+    assert.equal(crows.some(x => x.startsWith('Kuliah:')), false, 'kegiatan "Kuliah" tidak masuk grafik');
+    await p.tap('#stats-body .crow[data-k="lain_t"]'); await wait(400);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#ch-list .hrow b')].map(b => b.textContent).sort()), ['Urusan lain', 'Urusan lain juga']);
+    await back();
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+
+    // ================= Edit: ubah jenis (jawaban user) =================
+    // tugas lama "Jam Kerja lama" (selesai, ada deadline & kesulitan) → Kegiatan
+    await p.tap('#home-list .task[data-id="lama"]'); await wait(400);
+    await p.tap('[data-act="detail-edit"]'); await wait(700);
+    assert.deepEqual([await txt('#form-top-title'), await vis('#f-kind'), await vis('#f-kind-hint')], ['Edit tugas', true, false]);
+    await p.tap('#f-kind [data-k="kegiatan"]'); await wait(150);
+    assert.deepEqual([await txt('#form-top-title'), await txt('#add-title')], ['Edit kegiatan', 'Edit Kegiatan']);
+    assert.equal(await txt('#f-kind-hint'), 'Status selesainya dihapus karena kegiatan tidak bisa dicentang. Tidak dihitung lagi sebagai tugas di grafik. Deadline dan kesulitannya dihapus.');
+    assert.equal(await p.evaluate(() => document.getElementById('f-kind-hint').classList.contains('warn')), true);
+    await shot('t8-08-ubah-jenis');
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Perubahan disimpan');
+    assert.deepEqual(['Jenis', 'Status', 'Deadline (tanggal)', 'Kesulitan', 'Diselesaikan oleh'].map(k => row('lama')[k]), ['Kegiatan', 'Belum', '', '', '']);
+    assert.deepEqual([await txt('#h-total'), await p.locator('#home-list .keg-h[data-id="lama"]').count()], ['9', 1]);
+    // kegiatan berisi tugas → Tugas: keterangan "dikeluarkan" (tidak disimpan)
+    await p.tap('#home-list .keg-h[data-id="' + K + '"]'); await wait(400);
+    await p.tap('[data-act="detail-edit"]'); await wait(700);
+    await p.tap('#f-kind [data-k="tugas"]'); await wait(150);
+    assert.equal(await txt('#f-kind-hint'), '3 tugas di dalamnya akan dikeluarkan dari kegiatan ini (tetap ada di tanggalnya).');
+    await p.tap('#f-kind [data-k="kegiatan"]'); await wait(150);
+    // ganti tanggal kegiatan lewat Edit → tugas di dalamnya ikut pindah (jawaban user)
+    await p.tap('[data-act="quick-date"][data-d="1"]'); await wait(100);
+    await p.tap('#f-save'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Perubahan disimpan · 3 tugas di dalamnya ikut pindah');
+    assert.deepEqual([K, KL, R, N].map(id => row(id)['Tanggal'] + ' ' + row(id)['Kegiatan induk']), ['2026-11-11 ', '2026-11-11 ' + K, '2026-11-11 ' + K, '2026-11-11 ' + K]);
+
+    // ================= Hapus kegiatan: tanya (keluarkan / ikut dihapus) + urungkan =================
+    const cfOpen = () => isOpen('#confirm-wrap');
+    await p.tap('#home-list .keg-h[data-id="lama"]'); await wait(400);
+    await p.tap('[data-act="detail-delete"]'); await wait(300);
+    assert.deepEqual([await txt('#cf-title'), await vis('#cf-alt'), await txt('#cf-yes')], ['Hapus kegiatan?', false, 'Hapus'], 'kegiatan tanpa tugas: konfirmasi biasa');
+    await p.tap('.dialog [data-act="confirm-no"]'); await wait(250);
+    await back();
+    await p.tap('#home-list .keg-h[data-id="' + K + '"]'); await wait(400);
+    await p.tap('[data-act="detail-delete"]'); await wait(300);
+    assert.equal(await cfOpen(), true);
+    assert.deepEqual([await txt('#cf-alt'), await txt('#cf-yes'), await p.locator('#confirm-wrap .dialog.three').count()],
+      ['Keluarkan tugas, hapus kegiatan saja', 'Hapus kegiatan + 3 tugas', 1]);
+    assert.match(await txt('#cf-msg'), /berisi 3 tugas/);
+    await shot('t8-09-hapus-kegiatan');
+    await p.tap('#cf-alt'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Kegiatan dihapus, 3 tugas dikeluarkan');
+    assert.deepEqual([row(K), [KL, R, N].map(id => row(id)['Kegiatan induk'])], [undefined, ['', '', '']]);
+    assert.deepEqual([await p.locator('#home-list .keg-h[data-id="' + K + '"]').count(), await p.locator('#home-list > .task[data-id="' + R + '"]').count()], [0, 1], 'tugasnya tetap ada, tampil biasa');
+    await p.click('#toast-btn'); await wait(1500);
+    assert.deepEqual([row(K)['Jenis'], [KL, R, N].map(id => row(id)['Kegiatan induk'])], ['Kegiatan', [K, K, K]], 'urungkan: kegiatan + isinya kembali');
+    await p.tap('#home-list .keg-h[data-id="' + K + '"]'); await wait(400);
+    await p.tap('[data-act="detail-delete"]'); await wait(300);
+    await p.tap('#cf-yes'); await wait(1500);
+    assert.equal(await txt('#toast-msg'), 'Kegiatan + 3 tugas dihapus');
+    assert.deepEqual([K, KL, R, N].map(row), [undefined, undefined, undefined, undefined]);
+    assert.equal(await isOpen('#detail-wrap'), false);
+    await p.click('#toast-btn'); await wait(1500);
+    assert.deepEqual([K, KL, R, N].map(id => (row(id) || {})['Kegiatan induk']), ['', K, K, K]);
+    assert.equal(await txt('#h-total'), '9');
+
+    // ---- layar 360px: tanpa geser samping (daftar, layar +, form kegiatan, kalender) ----
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    const noX = () => p.evaluate(() => document.getElementById('sc').scrollWidth <= innerWidth);
+    assert.equal(await noX(), true);
+    await p.tap('.nav .fab'); await wait(350);
+    await p.tap('#add-seg [data-k="kegiatan"]'); await p.tap('[data-act="pick-cat"][data-k="kuliah"]'); await wait(450);
+    assert.equal(await p.evaluate(() => { const s = document.querySelector('#form-wrap .sheet'); return s.scrollWidth <= s.clientWidth; }), true);
+    await shot('t8-10-form-360');
+    await back(); await back();
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+    assert.equal(await p.evaluate(() => { const l = document.getElementById('cal-legend'); return l.scrollWidth <= l.clientWidth && l.getBoundingClientRect().height < 34; }), true, 'keterangan kalender satu baris (± 28px termasuk jarak atas)');
+    await shot('t8-11-kalender-360');
+    await p.setViewportSize({ width: 390, height: 844 }); await wait(200);
+
+    // ---- mode coba: contoh kegiatan dengan tugas di dalamnya; buka-tutup tidak ditulis ke HP ----
+    const before = await p.evaluate(() => localStorage.getItem('pt.fold'));
+    await p.goto(base + '?coba'); await wait(1200);
+    assert.deepEqual([await txt('#h-total'), await kids('coba13')], ['12', ['coba5']]);
+    await p.tap('#home-list .keg[data-kid="coba13"] .keg-fold'); await wait(200);
+    assert.equal(await p.locator('#home-list .keg.fold[data-kid="coba13"]').count(), 1);
+    assert.equal(await p.evaluate(() => localStorage.getItem('pt.fold')), before);
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });

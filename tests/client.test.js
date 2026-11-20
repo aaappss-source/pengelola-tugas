@@ -830,3 +830,215 @@ test('Time Blocking: strip 7 hari (Senin–Minggu) dan posisi gulir awal', () =>
   assert.equal(L.tbScrollMin([LB('lanjut', 0, 120)], null), 0);
   assert.equal(L.tbScrollMin([], null), 420);
 });
+
+// ================= Tahap 8 (Poin 17): Tugas vs Kegiatan =================
+// Kegiatan = kind 'kegiatan' (rentang jam, tidak dicentang, tidak dihitung); tugas boleh masuk ke satu kegiatan (parent).
+const K = (id, date, start, end, extra) => MT(id, date, '', Object.assign({ kind: 'kegiatan', cat: 'jamkerja', start, end }, extra || {}));
+const byIdOf = list => Object.fromEntries(list.map(t => [t.id, t]));
+
+test('Kegiatan: tidak dihitung sebagai tugas; induk hanya berlaku ke kegiatan yang ada', () => {
+  const kerja = K('kerja', '2026-11-10', '08:00', '17:00');
+  const a = MT('a', '2026-11-10', '', { start: '09:00', end: '10:00', parent: 'kerja', done: true });
+  const b = MT('b', '2026-11-10', '', { start: '13:00', end: '14:00', parent: 'kerja' });
+  const c = MT('c', '2026-11-10', '', { parent: 'a' });            // induk bukan kegiatan → tidak berlaku
+  const d = MT('d', '2026-11-10', '', { parent: 'hilang' });       // induk tidak ada
+  const e = MT('e', '2026-11-10', '', { parent: 'e' });            // diri sendiri
+  const lama = { id: 'lama', date: '2026-11-10', name: 'tanpa field kind' };   // data cache lama = tugas
+  const list = [kerja, a, b, c, d, e, lama], by = byIdOf(list);
+  assert.deepEqual([L.isKeg(kerja), L.isKeg(a), L.isKeg(lama), L.isKeg(null)], [true, false, false, false]);
+  assert.deepEqual(plain(L.tasksOnly(list).map(t => t.id)), ['a', 'b', 'c', 'd', 'e', 'lama']);
+  assert.deepEqual([a, b, c, d, e, kerja, lama].map(t => (L.parentOf(t, by) || {}).id || ''), ['kerja', 'kerja', '', '', '', '', '']);
+  assert.equal(L.parentOf(Object.assign({}, kerja, { parent: 'kerja' }), by), null, 'kegiatan tidak punya induk');
+  assert.equal(L.parentOf({ id: 'x', parent: 'toString' }, {}), null, 'ID aneh tidak dianggap ada');
+  assert.deepEqual(plain(L.kidsOf(list, 'kerja').map(t => t.id)), ['a', 'b']);
+  assert.deepEqual(plain(L.kegProgress(list, 'kerja')), { done: 1, total: 2 });
+  assert.deepEqual(plain(L.kegProgress(list, 'tidakada')), { done: 0, total: 0 });
+  // pilihan "Masuk ke kegiatan": kegiatan yang tampil di tanggal itu (termasuk kegiatan multi-hari), urut jam
+  const pagi = K('pagi', '2026-11-10', '06:00', '07:00'), multi = K('multi', '2026-11-09', '10:00', '11:00', { dlDate: '2026-11-11' });
+  const all = list.concat([pagi, multi, K('besok', '2026-11-11', '08:00', '09:00')]);
+  assert.deepEqual(plain(L.kegOn(all, '2026-11-10').map(t => t.id)), ['pagi', 'kerja', 'multi']);
+  assert.deepEqual(plain(L.kegOn(all, '2026-11-12').map(t => t.id)), []);
+});
+
+test('Kegiatan di daftar: tugas di dalamnya tampil di bawah kegiatannya (nest), filter Belum/Selesai', () => {
+  const d = '2026-11-10';
+  const kerja = K('kerja', d, '08:00', '17:00');
+  const kul = K('kul', d, '18:00', '20:00');
+  const list = [
+    kerja,
+    MT('pagi', d, '', { start: '07:00', end: '07:30', parent: 'kerja' }),     // jamnya sebelum kegiatan (K6 boleh) → tetap di bawahnya
+    MT('lap', d, '', { start: '09:00', end: '10:00', parent: 'kerja', done: true }),
+    MT('makan', d, '', { start: '12:00', end: '13:00' }),
+    MT('nt', d, '', { start: '', end: '', parent: 'kerja' }),                // tanpa jam di dalam kegiatan
+    MT('lain', d, '', { start: '15:00', end: '16:00', parent: 'kemarin' }),  // induknya di tanggal lain → tampil biasa
+    kul
+  ];
+  const sorted = L.tasksOn(list, d);
+  const shape = ent => plain(ent.map(e => e.t.id + (e.kids.length ? '[' + e.kids.map(k => k.id).join(',') + ']' : '')));
+  assert.deepEqual(shape(L.nest(sorted)), ['kerja[pagi,lap,nt]', 'makan', 'lain', 'kul'], 'pagi (07:00) dan nt (tanpa jam) ikut di bawah kegiatannya');
+  // filter Belum: kegiatan hanya tampil kalau berisi tugas yang cocok
+  const belum = sorted.filter(t => L.isKeg(t) || !t.done);
+  assert.deepEqual(shape(L.nest(belum, true)), ['kerja[pagi,nt]', 'makan', 'lain']);
+  const selesai = sorted.filter(t => L.isKeg(t) || t.done);
+  assert.deepEqual(shape(L.nest(selesai, true)), ['kerja[lap]']);
+  // tanpa dropEmpty kegiatan kosong tetap tampil
+  assert.deepEqual(shape(L.nest(selesai)), ['kerja[lap]', 'kul']);
+  // tugas yang menunjuk tugas biasa / dirinya sendiri tidak "masuk" ke mana-mana; masukan rusak aman
+  assert.deepEqual(shape(L.nest([MT('a', d, ''), MT('b', d, '', { parent: 'a' }), MT('c', d, '', { parent: 'c' })])), ['a', 'b', 'c']);
+  assert.deepEqual(plain(L.nest(null)), []);
+});
+
+test('K6: tugas di luar jam kegiatan → peringatan (bukan larangan)', () => {
+  const k = K('k', '2026-11-10', '08:00', '17:00');
+  const t = (start, end) => ({ start, end });
+  assert.deepEqual([t('09:00', '10:00'), t('08:00', '17:00'), t('07:30', '08:30'), t('16:30', '17:30'), t('18:00', '19:00'), t('16:00', '')]
+    .map(x => L.outsideKeg(x, k)), [false, false, true, true, true, false]);
+  assert.equal(L.outsideKeg(t('', ''), k), false, 'tugas tanpa jam: tanpa peringatan');
+  assert.equal(L.outsideKeg(t('09:00', '10:00'), K('nt', '2026-11-10', '', '')), false, 'kegiatan tanpa jam');
+  // kegiatan lewat tengah malam (22:00–02:00): 23:00–01:00 masih di dalam, 01:00 pagi di tanggal yang sama = di luar
+  const malam = K('malam', '2026-11-10', '22:00', '02:00');
+  assert.deepEqual([L.outsideKeg(t('23:00', '01:00'), malam), L.outsideKeg(t('01:00', '01:30'), malam)], [false, true]);
+});
+
+test('Kegiatan dipindah (drag/edit): tugas di dalamnya ikut; tugas yang dipindah sendiri keluar dari kegiatan', () => {
+  const kerja = K('kerja', '2026-11-10', '08:00', '17:00');
+  const a = MT('a', '2026-11-10', '2026-11-12', { start: '09:00', end: '10:00', parent: 'kerja', dlTime: '12:00' });   // tugas multi-hari di dalamnya
+  const b = MT('b', '2026-11-10', '', { start: '13:00', end: '14:00', parent: 'kerja' });
+  const c = MT('c', '2026-11-10', '', { start: '15:00', end: '16:00' });
+  const by = byIdOf([kerja, a, b, c]);
+  // kegiatan 10 → 13 Nov: semua tugasnya ikut +3 hari (rentang & jam tetap), tetap di dalam kegiatan
+  assert.deepEqual(plain(L.moveItem(by, 'kerja', '2026-11-10', '2026-11-13')),
+    [{ id: 'kerja', date: '2026-11-13', dlDate: '' }, { id: 'a', date: '2026-11-13', dlDate: '2026-11-15' }, { id: 'b', date: '2026-11-13', dlDate: '' }]);
+  assert.deepEqual(plain(L.shiftKids([kerja, a, b, c], 'kerja', '2026-11-10', '2026-11-09')).map(x => x.id + ' ' + x.date), ['a 2026-11-09', 'b 2026-11-09']);
+  // tugas di dalam kegiatan dipindah sendiri ke tanggal lain → keluar dari kegiatan (parent '')
+  assert.deepEqual(plain(L.moveItem(by, 'b', '2026-11-10', '2026-11-11')), [{ id: 'b', date: '2026-11-11', dlDate: '', parent: '' }]);
+  // tugas multi-hari ditarik dari baris "Hari 2/3" ke 12 Nov → mulai 11 Nov, kegiatannya (10 Nov) tidak di tanggal mulai → keluar
+  assert.deepEqual(plain(L.moveItem(by, 'a', '2026-11-11', '2026-11-12')), [{ id: 'a', date: '2026-11-11', dlDate: '2026-11-13', parent: '' }]);
+  // tugas biasa: tanpa field parent; tidak berubah / tidak ada → []
+  assert.deepEqual(plain(L.moveItem(by, 'c', '2026-11-10', '2026-11-12')), [{ id: 'c', date: '2026-11-12', dlDate: '' }]);
+  assert.deepEqual([L.moveItem(by, 'c', '2026-11-10', '2026-11-10').length, L.moveItem(by, 'x', '2026-11-10', '2026-11-12').length, L.moveItem(null, 'c', 'a', 'b').length], [0, 0, 0]);
+  // kegiatan multi-hari (data dari sheet): tugas di dalamnya yang ada di hari ke-2 tetap boleh di dalamnya setelah pindah
+  const km = K('km', '2026-11-10', '08:00', '09:00', { dlDate: '2026-11-12' }), d2 = MT('d2', '2026-11-11', '', { parent: 'km' });
+  assert.deepEqual(plain(L.moveItem(byIdOf([km, d2]), 'd2', '2026-11-11', '2026-11-12')), [{ id: 'd2', date: '2026-11-12', dlDate: '' }], 'masih dalam rentang kegiatan');
+});
+
+test('Kegiatan → server (Code.gs): tidak bisa dicentang, induk tersimpan, pindah + hapus (ikut / dikeluarkan) sama dengan HP', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const row = id => S.sheet('@adit').objects().find(o => o.ID === id);
+  const sync = list => S.post('apiSync', tok, list.map(t => (typeof t === 'string' ? { op: 'delete', id: t } : { op: 'upsert', task: L.toDoc(t) })));
+  idN = 0;
+  // simpan dari form: 1 kegiatan + 2 tugas di dalamnya (form tugas memilih kegiatan yang sudah ada)
+  const kb = L.buildBatch([D({ kind: 'kegiatan', cat: 'jamkerja', name: 'Jam kerja', date: '2026-11-10', start: '08:00', end: '17:00', diff: 'sulit', dlOn: true, noTime: true })], OPTS());
+  const kerja = kb.tasks[0];
+  assert.deepEqual([kerja.kind, kerja.start, kerja.end, kerja.diff, kerja.dlDate, kerja.dlTime, kerja.parent], ['kegiatan', '08:00', '17:00', '', '', '', ''],
+    'kegiatan: selalu berjam, tanpa kesulitan & deadline');
+  const tb = L.buildBatch([D({ name: 'Kirim laporan', date: '2026-11-10', start: '09:00', end: '10:00', parent: 'tb1' }),
+    D({ name: 'Rapat', date: '2026-11-10', start: '13:00', end: '14:00', parent: 'tb1' })], OPTS({ parentOk: (id, d) => id === 'tb1' && d === kerja.date }));
+  assert.deepEqual(plain(tb.tasks.map(t => [t.kind, t.parent])), [['tugas', 'tb1'], ['tugas', 'tb1']]);
+  let res = sync([kerja].concat(tb.tasks));
+  assert.equal(res.ok, true);
+  assert.deepEqual(['Jenis', 'Kegiatan induk', 'Status'].map(k => row('tb1')[k]), ['Kegiatan', '', 'Belum']);
+  assert.deepEqual([row('tb2')['Kegiatan induk'], row('tb3')['Kegiatan induk']], ['tb1', 'tb1']);
+  // centang kegiatan dari aplikasi lain / sheet → server tetap "Belum" (aturan yang sama dipakai mode coba: serverRules)
+  sync([Object.assign({}, kerja, { done: true, doneAt: 9, doneBy: 'p1', updatedAt: 9 })]);
+  assert.equal(row('tb1')['Status'], 'Belum');
+  // pindah kegiatan 10 → 12 Nov: tugas di dalamnya ikut, induk tetap
+  const now = byIdOf(res.tasks.map(t => L.normTask(t, t.id, isBuiltin)));
+  const ch = L.moveItem(now, 'tb1', '2026-11-10', '2026-11-12');
+  sync(ch.map(c => Object.assign({}, now[c.id], c, { updatedAt: 20 })));
+  assert.deepEqual(['tb1', 'tb2', 'tb3'].map(id => [row(id)['Tanggal'], row(id)['Hari'], row(id)['Kegiatan induk']]),
+    [['2026-11-12', 'Kamis', ''], ['2026-11-12', 'Kamis', 'tb1'], ['2026-11-12', 'Kamis', 'tb1']]);
+  // hapus kegiatan, tugasnya dikeluarkan (HP: kegDelete 'release') → sheet: kegiatan hilang, tugas tetap tanpa induk
+  let list = S.post('apiLoad', tok).tasks.map(t => L.normTask(t, t.id, isBuiltin));
+  let r = L.kegDelete(list, 'tb1', 'release', 30);
+  assert.deepEqual(plain(r), { del: ['tb1'], out: ['tb2', 'tb3'] });
+  assert.deepEqual(plain(list.filter(t => t.id !== 'tb1').map(t => t.parent + '/' + t.updatedAt)), ['/30', '/30'], 'diubah di tempat');
+  const bak = list.find(t => t.id === 'tb1');
+  sync(['tb1'].concat(list.filter(t => r.out.includes(t.id))));
+  assert.deepEqual([row('tb1'), row('tb2')['Kegiatan induk'], row('tb3')['Status']], [undefined, '', 'Belum']);
+  // urungkan: kegiatan dibuat lagi + tugasnya dimasukkan lagi dalam satu kirim
+  sync([bak].concat(list.filter(t => r.out.includes(t.id)).map(t => Object.assign({}, t, { parent: 'tb1', updatedAt: 40 }))));
+  assert.deepEqual([row('tb1')['Jenis'], row('tb2')['Kegiatan induk'], row('tb3')['Kegiatan induk']], ['Kegiatan', 'tb1', 'tb1']);
+  // hapus kegiatan + tugasnya ('all')
+  list = S.post('apiLoad', tok).tasks.map(t => L.normTask(t, t.id, isBuiltin));
+  r = L.kegDelete(list, 'tb1', 'all', 50);
+  assert.deepEqual(plain(r), { del: ['tb1', 'tb2', 'tb3'], out: [] });
+  sync(r.del);
+  assert.equal(S.sheet('@adit').objects().length, 0);
+  // server sendiri juga melepas induk kalau kegiatannya dihapus tanpa melepas tugasnya (aplikasi lama / sheet)
+  sync([K('k9', '2026-11-10', '08:00', '09:00'), MT('t9', '2026-11-10', '', { parent: 'k9' })]);
+  assert.equal(row('t9')['Kegiatan induk'], 'k9');
+  sync(['k9']);
+  assert.equal(row('t9')['Kegiatan induk'], '');
+});
+
+test('simpan Kegiatan dari form: jam wajib, "Beberapa tanggal" boleh (tanpa induk), induk yang hilang dilepas', () => {
+  idN = 0;
+  const e = L.draftErrors(D({ kind: 'kegiatan', start: '', end: '' }), isBuiltin);
+  assert.deepEqual(plain(e), { time: 'Isi jam mulai kegiatan.' });
+  assert.deepEqual(plain(L.draftErrors(D({ kind: 'tugas', start: '', end: '', noTime: true }), isBuiltin)), {}, 'tugas boleh tanpa jam');
+  const bad = L.buildBatch([D({ name: 'A' }), D({ kind: 'kegiatan', name: 'B', start: '' })], OPTS());
+  assert.deepEqual([bad.ok, plain(bad.errors)], [false, [{ i: 1, time: 'Isi jam mulai kegiatan.' }]], 'semua atau tidak sama sekali');
+  // Jam kerja Senin–Jumat sekali simpan (jawaban user): 5 kegiatan terpisah
+  const wk = L.buildBatch([D({ kind: 'kegiatan', cat: 'jamkerja', name: 'Jam kerja', multi: true, dates: ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'], start: '08:00', end: '17:00' })], OPTS());
+  assert.deepEqual(plain(wk.tasks).map(t => t.kind + ' ' + t.date + ' ' + t.start + '–' + t.end), ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'].map(d => 'kegiatan ' + d + ' 08:00–17:00'));
+  // tugas "Beberapa tanggal" tidak membawa induk (kegiatan hanya di satu tanggal)
+  assert.equal(L.buildBatch([D({ multi: true, dates: ['2026-12-01', '2026-12-02'], parent: 'k1' })], OPTS()).tasks.every(t => t.parent === ''), true);
+  // induk yang sudah tidak ada / bukan di tanggal itu → dilepas saat simpan; tanpa parentOk dipercaya apa adanya
+  assert.equal(L.buildBatch([D({ parent: 'k1' })], OPTS({ parentOk: () => false })).tasks[0].parent, '');
+  assert.equal(L.buildBatch([D({ parent: 'k1' })], OPTS()).tasks[0].parent, 'k1');
+  assert.equal(L.buildBatch([D({ parent: 'bukan id!' })], OPTS()).tasks[0].parent, '');
+  // campuran tugas + kegiatan dalam satu simpan
+  const mix = L.buildBatch([D({ kind: 'kegiatan', name: 'Kuliah' }), D({ name: 'Kuis' })], OPTS());
+  assert.deepEqual(plain(mix.tasks).map(t => t.kind), ['kegiatan', 'tugas']);
+});
+
+test('Time Blocking: kegiatan = blok latar (bg), bukan blok tugas; label kegiatan di celah pertama', () => {
+  const d = '2026-11-10';
+  const list = [K('kerja', d, '08:00', '17:00'), MT('lap', d, '', { start: '08:00', end: '09:00', parent: 'kerja' }), MT('rapat', d, '', { start: '13:00', end: '14:00' }),
+    K('shift', d, '22:00', '02:00'), K('nt', d, '', '')];
+  const it = L.tbItems(list, d);
+  assert.deepEqual(plain(it.blocks.map(b => b.t.id)), ['lap', 'rapat'], 'tugas saja yang disusun berdampingan');
+  assert.deepEqual(plain(it.bg.map(b => [b.t.id, b.start, b.end, b.cont, b.prev])), [['kerja', 480, 1020, false, false], ['shift', 1320, 1440, true, false]]);
+  assert.deepEqual(plain(it.untimed.map(t => t.id)), ['nt']);
+  assert.deepEqual(plain(L.tbItems(list, '2026-11-11').bg.map(b => [b.t.id, b.start, b.end, b.prev])), [['shift', 0, 120, true]], 'lanjutan kegiatan lewat tengah malam');
+  // tugas tidak lagi berbagi kolom dengan kegiatan panjang (dulu "Jam kerja 08–17" memakan satu kolom)
+  assert.deepEqual(lay(it.blocks, 20), [['lap', 0, 1, 1], ['rapat', 0, 1, 1]]);
+  // label: tugas 08:00–09:00 menutupi awal kegiatan → label di 09:00
+  const fg = L.tbLayout(it.blocks, 20), kerja = it.bg[0];
+  assert.equal(L.tbLabelAt(kerja, fg, 20), 540);
+  assert.equal(L.tbLabelAt(kerja, [], 20), 480, 'tanpa tugas: di awal');
+  // celah terlalu sempit dilewati: 08:00–08:50 lalu 09:05–10:00 → celah 15 mnt < 20 → label 10:00
+  assert.equal(L.tbLabelAt(kerja, [{ start: 480, vEnd: 530 }, { start: 545, vEnd: 600 }], 20), 600);
+  // tugas yang bertumpuk/berurutan dihitung bersama; tugas di luar kegiatan diabaikan
+  assert.equal(L.tbLabelAt(kerja, [{ start: 400, vEnd: 500 }, { start: 490, vEnd: 560 }, { start: 1100, vEnd: 1200 }], 20), 560);
+  // tertutup seluruhnya → null (label di awal); kegiatan pendek (< label) tanpa tugas → tetap di awal
+  assert.equal(L.tbLabelAt({ start: 480, end: 540 }, [{ start: 470, vEnd: 600 }], 20), null);
+  assert.equal(L.tbLabelAt({ start: 480, end: 490 }, [], 20), 480);
+  assert.equal(L.tbLabelAt(null, [], 20), null);
+});
+
+test('mode coba: contoh kegiatan + aturan server sama dengan Code.gs (serverRules)', () => {
+  const seed = L.demoSeed('2026-11-10', Date.UTC(2026, 10, 10, 2));
+  const keg = seed.tasks.filter(L.isKeg);
+  assert.deepEqual(plain(keg.map(t => [t.name, t.date, t.start, t.end])), [['Jam kerja', '2026-11-10', '08:00', '16:00']]);
+  assert.deepEqual(plain(L.kidsOf(seed.tasks, keg[0].id).map(t => t.name)), ['Kirim laporan pembelian']);
+  assert.equal(L.tasksOnly(seed.tasks).length, 12, 'jumlah tugas contoh tetap 12');
+  // aplikasi mengirim data yang melanggar aturan → "server" mode coba = Code.gs
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const anyCat = k => isBuiltin(k) || /^[a-z_]+$/.test(k);
+  const call = L.demoServer({ user: { id: 'coba', username: 'coba', name: 'Tamu' }, tasks: [], cats: [], profiles: [{ id: 'p1', name: 'Tamu', avatar: '' }] }, anyCat);
+  const ops = [K('k1', '2026-11-10', '08:00', '09:00', { done: true, doneAt: 5, doneBy: 'p1', parent: 'k2' }),
+    K('k2', '2026-11-10', '10:00', '11:00'),
+    MT('t1', '2026-11-10', '', { parent: 'k1' }), MT('t2', '2026-11-10', '', { parent: 't1' }), MT('t3', '2026-11-10', '', { parent: 't3' }), MT('t4', '2026-11-10', '', { parent: 'tidakada' })]
+    .map(t => ({ op: 'upsert', task: L.toDoc(t) }));
+  const pick = res => plain(res.tasks.map(t => [t.id, t.kind, t.done, t.parent].join()).sort());
+  const viaGas = pick(S.post('apiSync', tok, ops)), viaDemo = pick(call('apiSync', [L.DEMO_TOKEN, ops]));
+  assert.deepEqual(viaDemo, viaGas);
+  assert.deepEqual(viaGas, ['k1,kegiatan,false,', 'k2,kegiatan,false,', 't1,tugas,false,k1', 't2,tugas,false,', 't3,tugas,false,', 't4,tugas,false,']);
+  // hapus kegiatan tanpa melepas tugasnya → keduanya melepas induk
+  const del = [{ op: 'delete', id: 'k1' }];
+  assert.deepEqual(pick(call('apiSync', [L.DEMO_TOKEN, del])), pick(S.post('apiSync', tok, del)));
+});
