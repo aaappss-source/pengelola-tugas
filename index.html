@@ -104,6 +104,9 @@ svg{display:block}
 .diff.sedang{background:rgba(250,178,25,.16);color:var(--warn)}
 .diff.sulit{background:rgba(255,112,112,.16);color:var(--danger)}
 .task.done .diff{opacity:.6}
+/* Tahap 5: tanda tugas multi-hari ("Hari 2/3" / "3 hari") */
+.span-tag{display:inline-block;font-size:12px;font-weight:500;line-height:16px;padding:0 6px;border-radius:6px;margin-right:6px;vertical-align:1px;background:rgba(255,212,59,.14);color:var(--accent);white-space:nowrap}
+.task.done .span-tag{opacity:.6}
 .ntbox{background:#1f1f1f;border-bottom:1px solid var(--line)}
 .ntbox .task::after{left:64px}
 .subhead{display:flex;align-items:center;gap:6px;padding:7px 16px 0;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.3px}
@@ -314,6 +317,7 @@ textarea.inp{resize:vertical;min-height:76px;line-height:1.4}
 .d-row.soon em,.d-row.soon svg{color:var(--warn)}
 .d-row.over em,.d-row.over svg{color:var(--danger)}
 .d-row.ok em{color:var(--good)}
+.d-row em.d-note{color:var(--muted);font-size:12.5px;margin-top:4px}
 .d-actions{display:flex;gap:10px;margin-top:10px}
 
 /* ---------- calendar ---------- */
@@ -1034,6 +1038,58 @@ function byTime(a,b){
 /** Riwayat per kategori (Poin 8) dan pencarian: kebalikan byTime = terbaru dulu. */
 const newestFirst=(a,b)=>byTime(b,a);
 
+/* ---- Tugas multi-hari (Tahap 5, Poin 15) ----
+   Tetap SATU data tugas dengan rentang `date` (tanggal mulai) … `dlDate` (deadline). Keputusan K1: multi-hari = dlDate
+   lebih lambat dari date; tanpa deadline / deadline di hari yang sama atau lebih awal = 1 hari. Tidak ada salinan di
+   data: fungsi di bawah hanya menghitung di tanggal mana saja tugas TAMPIL. Centang, edit, dan hapus mengenai satu data
+   itu, jadi semua tanggalnya otomatis ikut. Hitungan (bulan, grafik) tetap 1 per tugas. */
+const dayNum=d=>{const p=d.split('-').map(Number);return Math.round(Date.UTC(p[0],p[1]-1,p[2])/864e5);};
+/** Tanggal terakhir tugas tampil: dlDate kalau lebih lambat dari date, selain itu date ('' kalau date rusak). */
+function spanEnd(t){const s=okD(t&&t.date);if(!s)return '';const e=okD(t.dlDate);return e&&e>s?e:s;}
+/** Tugas multi-hari? (deadline lebih lambat dari tanggal mulai) */
+const isMulti=t=>!!okD(t&&t.date)&&spanEnd(t)>t.date;
+/** Jumlah hari rentang (1 = tugas biasa, 0 = data rusak). */
+function spanDays(t){const s=okD(t&&t.date);return s?dayNum(spanEnd(t))-dayNum(s)+1:0;}
+/** Tugas tampil di tanggal `d`? */
+const onDay=(t,d)=>!!okD(t&&t.date)&&t.date<=d&&d<=spanEnd(t);
+/** Hari ke berapa (1…spanDays) di tanggal `d`; 0 kalau di luar rentang. */
+const dayOf=(t,d)=>onDay(t,d)?dayNum(d)-dayNum(t.date)+1:0;
+/** Tanda kecil di item: "Hari 2/3" (di tanggal d) atau "3 hari" (tanpa tanggal, mis. hasil pencarian); '' untuk tugas biasa. */
+function spanTag(t,d){if(!isMulti(t))return '';const i=d?dayOf(t,d):0;return i?'Hari '+i+'/'+spanDays(t):spanDays(t)+' hari';}
+/** Urutan di dalam satu tanggal: jam mulai (tanpa jam di akhir), lalu yang mulainya lebih dulu, lalu yang dibuat lebih dulu. */
+function byClock(a,b){
+  const sa=a.start||'99:99',sb=b.start||'99:99';
+  if(sa!==sb)return sa<sb?-1:1;
+  if(a.date!==b.date)return a.date<b.date?-1:1;
+  return (a.createdAt||0)-(b.createdAt||0);
+}
+/** Tugas yang tampil di tanggal `d` (termasuk tugas multi-hari yang sedang berjalan), urut jam. */
+function tasksOn(list,d){return (Array.isArray(list)?list:[]).filter(t=>onDay(t,d)).sort(byClock);}
+/** Tanggal terakhir bulan mk (YYYY-MM). */
+function monthEnd(mk){const p=String(mk).split('-').map(Number);return new Date(Date.UTC(p[0],p[1],0)).toISOString().slice(0,10);}
+/** Tugas di bulan mk = rentangnya bersinggungan dengan bulan itu. Keputusan Tahap 5: tugas yang melewati pergantian
+ *  bulan dihitung (1) di setiap bulan yang dilewatinya, supaya angka cocok dengan daftar yang tampil. */
+function inMonth(list,mk){const a=mk+'-01',b=monthEnd(mk);return (Array.isArray(list)?list:[]).filter(t=>okD(t&&t.date)&&t.date<=b&&spanEnd(t)>=a);}
+/** Tanggal-tanggal di bulan mk tempat tugas tampil (paling banyak 31; rentang panjang tidak diulang di luar bulan itu). */
+function daysIn(t,mk){
+  const a=mk+'-01',b=monthEnd(mk),e0=spanEnd(t);if(!e0)return [];
+  const s=t.date>a?t.date:a,e=e0<b?e0:b,out=[];
+  for(let d=s;d<=e;d=ymdAdd(d,1))out.push(d);
+  return out;
+}
+/** Kelompok per tanggal untuk bulan mk: {YYYY-MM-DD: [tugas…]} urut jam. Tugas multi-hari muncul di setiap tanggalnya. */
+function byDay(list,mk){
+  const g={};inMonth(list,mk).forEach(t=>daysIn(t,mk).forEach(d=>{(g[d]=g[d]||[]).push(t);}));
+  Object.keys(g).forEach(d=>g[d].sort(byClock));
+  return g;
+}
+/** Tanggal tempat tugas dihitung di kurva per tanggal bulan mk (keputusan Tahap 5: sekali, di tanggal mulainya;
+ *  kalau mulai di bulan sebelumnya → tanggal 1). */
+const countDay=(t,mk)=>t.date<mk+'-01'?mk+'-01':t.date;
+/** Jumlah per tanggal untuk kurva Grafik bulan mk: setiap tugas dihitung SEKALI. → array sepanjang jumlah hari bulan itu
+ *  (jumlah semua isinya = jumlah tugas di bulan itu). */
+function perDay(list,mk){const a=Array(+monthEnd(mk).slice(8)).fill(0);inMonth(list,mk).forEach(t=>{a[+countDay(t,mk).slice(8)-1]++;});return a;}
+
 /* ---- banyak tugas sekaligus (Tahap 4, Poin 12 + 13) ----
    Satu "draft" = isi satu form: {cat, name, detail, diff, date, multi, dates, noTime, start, end, dlOn, dlDate, dlTime, dlOff}.
    multi = "Beberapa tanggal" aktif → satu tugas berdiri sendiri per tanggal di `dates` (bukan tugas multi-hari).
@@ -1179,6 +1235,8 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   suggestNames:suggestNames,DEMO_TOKEN:DEMO_TOKEN,demoSeed:demoSeed,demoServer:demoServer,
   CAT_NAME_MAX:CAT_NAME_MAX,CAT_HUES:CAT_HUES,checkCatName:checkCatName,nextCatHue:nextCatHue,deleteCat:deleteCat,
   byTime:byTime,newestFirst:newestFirst,
+  spanEnd:spanEnd,isMulti:isMulti,spanDays:spanDays,onDay:onDay,dayOf:dayOf,spanTag:spanTag,byClock:byClock,tasksOn:tasksOn,
+  monthEnd:monthEnd,inMonth:inMonth,daysIn:daysIn,byDay:byDay,countDay:countDay,perDay:perDay,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
   dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
 })();
@@ -1556,8 +1614,11 @@ const state={
   histKey:null    // kategori yang riwayatnya dibuka dari Grafik (Poin 8)
 };
 const all=()=>Object.values(tasks);
-const inMonth=mk=>all().filter(t=>t.date.slice(0,7)===mk);
-const onDate=d=>all().filter(t=>t.date===d).sort(byTime);
+// Tahap 5 (Poin 15): tugas multi-hari (deadline lebih lambat dari tanggalnya) tampil di setiap tanggal rentangnya, tapi
+// tetap SATU data. inMonth = tugas yang rentangnya menyentuh bulan itu (dihitung 1 di setiap bulan yang dilewati),
+// onDate = tugas yang tampil di satu tanggal (urut jam). Logikanya di PT_LIB (diuji di Node).
+const inMonth=mk=>L.inMonth(all(),mk);
+const onDate=d=>L.tasksOn(all(),d);
 function byTime(a,b){return L.byTime(a,b);}   // urutan tanggal → jam → dibuat (PT_LIB, diuji di Node)
 function dlMs(t){if(!t.dlDate)return null;const d=parseYmd(t.dlDate);const tm=(t.dlTime||'23:59').split(':').map(Number);d.setHours(tm[0],tm[1],0,0);return d.getTime();}
 function dur(ms){
@@ -1582,8 +1643,9 @@ const isOver=t=>!t.done&&dlMs(t)!=null&&dlMs(t)<Date.now();
 const DIFF_N={mudah:'Mudah',sedang:'Sedang',sulit:'Sulit'};
 // Item ringkas (Poin 4): nama maks 2 baris + SATU baris info [kesulitan] jam · deadline · kategori (dipotong "…").
 // Kategori ditaruh terakhir karena sudah terwakili ikon, jadi itu yang terpotong duluan.
-function taskRow(t){
-  const c=catOf(t.cat),dl=dlInfo(t);
+// day = tanggal tempat baris ini tampil (Home/Kalender) → tugas multi-hari diberi tanda "Hari 2/3"; tanpa day → "3 hari".
+function taskRow(t,day){
+  const c=catOf(t.cat),dl=dlInfo(t),sp=L.spanTag(t,day);
   const time=t.start?(t.start+(t.end?'–'+t.end:'')):(t.end?'s/d '+t.end:'');
   const parts=[];
   if(time)parts.push(ic('clock',2)+esc(time));
@@ -1591,7 +1653,7 @@ function taskRow(t){
   parts.push(esc(c.n));
   return '<div class="task'+(t.done?' done':'')+'" data-id="'+esc(t.id)+'">'+catIc(c)+
     '<div class="task-main"><div class="task-name">'+esc(t.name)+'</div>'+
-    '<div class="task-meta">'+(DIFF_N[t.diff]?'<span class="diff '+t.diff+'">'+DIFF_N[t.diff]+'</span>':'')+parts.join('<i>·</i>')+'</div>'+
+    '<div class="task-meta">'+(sp?'<span class="span-tag" title="'+esc(spanTitle(t))+'">'+esc(sp)+'</span>':'')+(DIFF_N[t.diff]?'<span class="diff '+t.diff+'">'+DIFF_N[t.diff]+'</span>':'')+parts.join('<i>·</i>')+'</div>'+
     '</div><button class="check" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button></div>';
 }
 // Deadline versi pendek untuk baris info: yang mendesak (sisa < 1 hari / terlambat) tampil sisa waktunya,
@@ -1602,10 +1664,19 @@ function dlShort(t,dl){
   return dl.rel;
 }
 // Tugas satu tanggal: bagian "Tanpa jam" (start kosong) di atas, lalu tugas berjam urut jam (Poin 3).
-function dayRows(list){
-  const nt=list.filter(t=>!t.start),tm=list.filter(t=>!!t.start);
-  return (nt.length?'<div class="ntbox"><div class="subhead">Tanpa jam</div>'+nt.map(taskRow).join('')+'</div>':'')+tm.map(taskRow).join('');
+// day = tanggal daftar ini (untuk tanda "Hari n/m" tugas multi-hari).
+function dayRows(list,day){
+  const nt=list.filter(t=>!t.start),tm=list.filter(t=>!!t.start),row=t=>taskRow(t,day);
+  return (nt.length?'<div class="ntbox"><div class="subhead">Tanpa jam</div>'+nt.map(row).join('')+'</div>':'')+tm.map(row).join('');
 }
+// Rentang tanggal ringkas: "5–7 Nov 2026", "30 Nov – 2 Des 2026", "30 Des 2026 – 2 Jan 2027"
+function fmtRange(a,b){
+  const x=parseYmd(a),y=parseYmd(b),yr=y.getFullYear();
+  if(x.getFullYear()!==yr)return x.getDate()+' '+MON_S[x.getMonth()]+' '+x.getFullYear()+' – '+y.getDate()+' '+MON_S[y.getMonth()]+' '+yr;
+  if(x.getMonth()!==y.getMonth())return x.getDate()+' '+MON_S[x.getMonth()]+' – '+y.getDate()+' '+MON_S[y.getMonth()]+' '+yr;
+  return x.getDate()+'–'+y.getDate()+' '+MON_S[y.getMonth()]+' '+yr;
+}
+const spanTitle=t=>L.isMulti(t)?'Tugas '+L.spanDays(t)+' hari: '+fmtRange(t.date,L.spanEnd(t)):'';
 
 /* ================= HOME ================= */
 function renderHome(){
@@ -1636,13 +1707,13 @@ function renderHome(){
       (list.length?'':'<button class="btn-ghost" data-act="add">+ Tambah tugas</button>')+'</div>';
     return;
   }
-  const groups={};shown.forEach(t=>{(groups[t.date]=groups[t.date]||[]).push(t);});
+  const groups=L.byDay(shown,mk);   // tugas multi-hari muncul di setiap tanggalnya (bulan ini saja)
   let h='';
   Object.keys(groups).sort().forEach(d=>{
     const g=groups[d],dn=g.filter(t=>t.done).length,dt=parseYmd(d),rel=relDay(d);
     h+='<div class="dhead" id="g-'+d+'"><div class="dl"><b>'+dt.getDate()+' '+MON_S[dt.getMonth()]+'</b><span>'+DAYS[dt.getDay()]+'</span>'+
       (rel?'<span class="badge'+(rel==='Hari ini'?'':' dim')+'">'+rel+'</span>':'')+'</div><span>'+dn+'/'+g.length+' selesai</span></div>';
-    h+=dayRows(g);
+    h+=dayRows(g,d);
   });
   box.innerHTML=h;
 }
@@ -1663,7 +1734,7 @@ function renderCalendar(){
   const mk=state.calMonth,[y,m]=mk.split('-').map(Number);
   $('#cal-label').textContent=MON_S[m-1]+' '+y;
   const first=new Date(y,m-1,1).getDay(),n=dim(mk),td=today();
-  const by={};inMonth(mk).forEach(t=>{(by[t.date]=by[t.date]||[]).push(t);});
+  const by=L.byDay(all(),mk);   // jumlah per tanggal ikut tugas multi-hari yang tampil di tanggal itu
   let h='';for(let i=0;i<first;i++)h+='<div class="cday blank"></div>';
   for(let d=1;d<=n;d++){
     const ds=mk+'-'+pad(d),l=by[ds]||[],dn=l.filter(t=>t.done).length,od=l.some(isOver);
@@ -1673,7 +1744,7 @@ function renderCalendar(){
   $('#cgrid').innerHTML=h;
   const sel=state.calSel,l=onDate(sel),rel=relDay(sel);
   $('#cal-day-head').innerHTML='<div><small>'+(rel?rel+' · ':'')+l.length+' tugas'+(l.length?', '+l.filter(t=>t.done).length+' selesai':'')+'</small><b>'+esc(fmtLong(sel))+'</b></div>';
-  $('#cal-day-list').innerHTML=l.length?dayRows(l):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
+  $('#cal-day-list').innerHTML=l.length?dayRows(l,sel):'<div class="empty" style="padding:26px 28px 6px"><p style="margin:0">Belum ada tugas di tanggal ini.</p></div>';
   $('#add-here-lbl').textContent='Tambah tugas di '+fmtShort(sel);
 }
 
@@ -1713,9 +1784,9 @@ function renderStats(){
     const rest=crows.slice(4);segs.push({label:'Lainnya',n:rest.reduce((s,c)=>s+c.n,0),color:'var(--sx)',keys:rest.map(c=>c.k),other:true});}
   const colorOf={};segs.forEach(s=>s.keys.forEach(k=>colorOf[k]=s.color));
   // per day
-  const n=dim(mk),per=Array(n).fill(0),perDone=Array(n).fill(0);
-  list.forEach(t=>{per[+t.date.slice(8,10)-1]++;});
-  monthAll.forEach(t=>{if(t.done)perDone[+t.date.slice(8,10)-1]++;});
+  // per tanggal: setiap tugas dihitung SEKALI, di tanggal mulainya (tanggal 1 kalau mulai di bulan lalu) — keputusan Tahap 5
+  const n=dim(mk),per=L.perDay(list,mk),perDone=L.perDay(monthAll.filter(t=>t.done),mk);
+  const hasMulti=list.some(L.isMulti),fromPrev=list.some(t=>t.date<mk+'-01');
   const days=per.map((v,i)=>({d:i+1,v:v})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v||a.d-b.d);
   const doneN=monthAll.filter(t=>t.done).length,overN=list.filter(isOver).length;
   const fl={semua:'tugas',selesai:'selesai',belum:'belum selesai'}[state.statFilter];
@@ -1734,7 +1805,7 @@ function renderStats(){
       return '<div class="hbar" title="'+esc(fmtLong(ds))+': '+x.v+'"><span>'+DAYS[dd.getDay()].slice(0,3)+', '+x.d+' '+MON_S[dd.getMonth()]+'</span><div class="tr"><i style="width:'+(x.v/b.v*100)+'%"></i></div><b>'+x.v+'</b></div>';}).join('')+'</div></section>';
   // curve
   const showDone=state.statFilter==='semua';
-  h+='<section class="card"><h3>Kurva jumlah tugas per tanggal</h3><p class="sub">Sumbu Y = jumlah tugas · Sumbu X = tanggal</p>'+
+  h+='<section class="card"><h3>Kurva jumlah tugas per tanggal</h3><p class="sub">Sumbu Y = jumlah tugas · Sumbu X = tanggal'+(hasMulti?'<br>Tugas multi-hari dihitung sekali, di tanggal mulainya'+(fromPrev?' (tanggal 1 kalau mulai bulan lalu)':''):'')+'</p>'+
     '<div class="lkeys"><span><i style="background:var(--s1)"></i>'+(state.statFilter==='semua'?'Total tugas':'Tugas '+fl)+'</span>'+(showDone?'<span><i style="background:var(--s3)"></i>Selesai</span>':'')+(state.statMonth===mkey(today())?'<span><i style="background:repeating-linear-gradient(90deg,#FFD43B 0 3px,transparent 3px 6px)"></i>Hari ini</span>':'')+'</div>'+
     '<div class="chart-box" id="curve"></div>'+
     '<details class="tbl"><summary>Lihat sebagai tabel</summary><table><thead><tr><th>Tanggal</th><th>'+(showDone?'Total':'Jumlah')+'</th>'+(showDone?'<th>Selesai</th>':'')+'</tr></thead><tbody>'+
@@ -1877,6 +1948,14 @@ function renderSearch(){
 
 /* ================= DETAIL ================= */
 function openDetail(id){if(!tasks[id])return;state.detailId=id;renderDetail();$('#detail-wrap .sheet').scrollTop=0;showLayer('detail');}
+// Baris tanggal di detail. Tugas multi-hari: rentang + jumlah hari + posisi hari ini ("hari ke-2").
+function dateRow(t){
+  if(!L.isMulti(t))return '<div class="d-row">'+ic('cal')+'<div><small>Tanggal dikerjakan</small><b>'+esc(fmtLong(t.date))+'</b>'+(relDay(t.date)?'<em>'+relDay(t.date)+'</em>':'')+'</div></div>';
+  const td=today(),n=L.spanDays(t),i=L.dayOf(t,td),end=L.spanEnd(t);
+  const pos=i?'hari ini hari ke-'+i:td<t.date?(relDay(t.date)?'mulai '+relDay(t.date).toLowerCase():'belum mulai'):'sudah lewat';
+  return '<div class="d-row d-span">'+ic('cal')+'<div><small>Tanggal (multi-hari)</small><b>'+esc(fmtRange(t.date,end))+'</b>'+
+    '<em>'+n+' hari · '+esc(pos)+'</em><em class="d-note">Tampil di setiap tanggalnya sebagai satu tugas: centang, edit, dan hapus berlaku untuk semua harinya.</em></div></div>';
+}
 function renderDetail(){
   const t=tasks[state.detailId];if(!t){hideLayer('detail');return;}
   const c=catOf(t.cat),dl=dlInfo(t),over=isOver(t);
@@ -1887,7 +1966,7 @@ function renderDetail(){
     '<span class="d-status '+(t.done?'done':over?'over':'')+'">'+(t.done?ic('check',3)+'Sudah selesai':over?'Lewat deadline':'Belum selesai')+'</span>'+
     (DIFF_N[t.diff]?' <span class="diff '+t.diff+'" style="margin-left:6px;font-size:13px;line-height:24px;padding:0 10px;border-radius:12px">'+DIFF_N[t.diff]+'</span>':'')+
     (t.detail?'<p class="d-detail">'+esc(t.detail)+'</p>':'')+
-    '<div class="d-rows"><div class="d-row">'+ic('cal')+'<div><small>Tanggal dikerjakan</small><b>'+esc(fmtLong(t.date))+'</b>'+(relDay(t.date)?'<em>'+relDay(t.date)+'</em>':'')+'</div></div>'+
+    '<div class="d-rows">'+dateRow(t)+
     '<div class="d-row">'+ic('clock')+'<div><small>Jam pengerjaan</small><b>'+esc(time)+'</b>'+(dur2?'<em>Durasi '+esc(dur2)+'</em>':'')+'</div></div>'+
     (dl?'<div class="d-row '+dl.cls+'">'+ic('alarm')+'<div><small>Deadline</small><b>'+esc(fmtLong(t.dlDate))+' · '+esc(t.dlTime||'23:59')+'</b><em>'+esc(dl.rel)+'</em></div></div>':'<div class="d-row">'+ic('alarm')+'<div><small>Deadline</small><b>Tanpa deadline</b></div></div>')+
     '</div><button class="btn-primary" data-act="detail-toggle">'+(t.done?'Tandai belum selesai':'✓ Tandai selesai')+'</button>'+
@@ -1899,8 +1978,15 @@ function toggleDone(id,btn){
   const t=tasks[id];if(!t)return;
   t.done=!t.done;t.doneAt=t.done?Date.now():null;t.doneBy=t.done?curProfile():'';t.updatedAt=Date.now();
   persist(id);
-  const b=document.querySelector('.check[data-check="'+CSS.escape(id)+'"]');if(b){b.classList.add('pop');}
-  if(t.done)undoToast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',()=>{t.done=false;t.doneAt=null;t.doneBy='';t.updatedAt=Date.now();persist(id);});
+  // tugas multi-hari: semua salinannya di layar ikut tercentang (satu data yang sama)
+  document.querySelectorAll('.check[data-check="'+CSS.escape(id)+'"]').forEach(b=>b.classList.add('pop'));
+  // Urungkan memakai tasks[id] saat tombol ditekan, bukan objek `t` di atas: setelah sinkron selesai (±1 dtk) data
+  // diganti objek baru dari server, jadi mengubah `t` dulu tidak berpengaruh (bug lama, ketahuan saat uji Tahap 5).
+  if(t.done)undoToast('Mantap! "'+(t.name.length>28?t.name.slice(0,28)+'…':t.name)+'" selesai',()=>{
+    const x=tasks[id];if(!x||!x.done)return;
+    x.done=false;x.doneAt=null;x.doneBy='';x.updatedAt=Date.now();persist(id);
+    if(state.detailId===id&&isOpen('detail'))renderDetail();
+  });
 }
 function delTask(id){
   const bak=tasks[id];if(!bak)return;
@@ -1969,11 +2055,18 @@ function fillCat(){
   $('#f-cat-name').textContent=ok?c.n:'Belum dipilih';
 }
 // Deadline: satu tanggal = tanggal + jam; "Beberapa tanggal" = jarak dari tanggal tiap tugas + jam (Tahap 4)
+// Keterangan di bawah deadline: "Beberapa tanggal" = deadline per tugas; deadline lebih lambat dari tanggal = tugas
+// multi-hari (Tahap 5), termasuk tugas dari "Beberapa tanggal" dengan jarak deadline 1–7 hari (tiap tugas tetap terpisah).
 function syncDl(){
   const on=$('#f-dl-on').checked,m=!!(state.form&&state.form.multi);
   $('#f-dl-box').classList.toggle('hidden',!on);
   $('#f-dl-date').classList.toggle('hidden',m);$('#f-dl-off').classList.toggle('hidden',!m);
-  $('#f-dl-hint').classList.toggle('hidden',!on||!m);
+  let hint='';
+  if(on&&m){const off=L.dlOffOf($('#f-dl-off').value);
+    hint='Deadline tiap tugas dihitung dari tanggalnya masing-masing.'+(off?' Tiap tugas tampil '+(off+1)+' hari, dari tanggalnya sampai deadline-nya.':'');}
+  else if(on){const d=$('#f-date').value,e=$('#f-dl-date').value;
+    if(d&&e&&e>d)hint='Tampil '+L.spanDays({date:d,dlDate:e})+' hari ('+fmtRange(d,e)+') sebagai satu tugas. Centang, edit, dan hapus berlaku untuk semua harinya.';}
+  const h=$('#f-dl-hint');h.textContent=hint;h.classList.toggle('hidden',!hint);
 }
 function syncQuick(){const d=$('#f-date').value,t=today();document.querySelectorAll('#f-quick button').forEach(b=>b.classList.toggle('on',d===addDays(t,+b.dataset.d)));}
 // Kesulitan (Poin 2): opsional, tap pilihan yang sama lagi = kosongkan
@@ -2215,7 +2308,7 @@ function goToDate(ret,date){
 }
 function flashRows(ids){
   requestAnimationFrame(()=>{
-    const rows=ids.map(id=>document.querySelector('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"]')).filter(Boolean);
+    const rows=[];ids.forEach(id=>document.querySelectorAll('.view:not(.hidden) .task[data-id="'+CSS.escape(id)+'"]').forEach(x=>rows.push(x)));
     if(!rows.length)return;
     updateHdr();const r=rows[0].getBoundingClientRect();
     if(r.top<120||r.bottom>innerHeight-90)SC.scrollTo({top:SC.scrollTop+r.top-innerHeight/2+r.height/2,behavior:'smooth'});
@@ -2320,7 +2413,7 @@ function renderCatHist(){
   $('#ch-title').innerHTML=catIc(c)+'<div class="grow"><b>'+esc(c.n)+'</b><small>'+esc(fmtMonth(state.statMonth))+' · '+sum+'</small></div>';
   $('#ch-list').innerHTML=list.length?list.map(t=>{
       const d=parseYmd(t.date),over=isOver(t);
-      const when=DAYS[d.getDay()].slice(0,3)+', '+d.getDate()+' '+MON_S[d.getMonth()]+' '+d.getFullYear()+(t.start?' · '+t.start:'');
+      const when=(L.isMulti(t)?fmtRange(t.date,L.spanEnd(t))+' ('+L.spanDays(t)+' hari)':DAYS[d.getDay()].slice(0,3)+', '+d.getDate()+' '+MON_S[d.getMonth()]+' '+d.getFullYear())+(t.start?' · '+t.start:'');
       return '<button class="hrow'+(t.done?' done':'')+'" data-act="ch-open" data-id="'+esc(t.id)+'"><div class="grow"><b>'+esc(t.name)+'</b><small>'+esc(when)+'</small></div>'+
         '<span class="h-st '+(t.done?'done':over?'over':'')+'">'+(t.done?'Selesai':over?'Terlambat':'Belum')+'</span></button>';}).join('')
     :'<div class="empty"><p>Tidak ada tugas di kategori ini untuk bulan dan filter grafik yang dipilih.</p></div>';
@@ -2396,7 +2489,7 @@ $('#toast-x').addEventListener('click',hideToast);
 
 function renderMonthPicker(){
   const y=state.pickYear,cur=mkey(today());
-  const cnt={};all().forEach(t=>{const k=t.date.slice(0,7);cnt[k]=(cnt[k]||0)+1;});
+  const cnt={},list=all();for(let i=1;i<=12;i++){const k=y+'-'+pad(i);cnt[k]=L.inMonth(list,k).length;}   // multi-hari: tiap bulan yang dilewati
   $('#month-body').innerHTML='<div class="yr"><button class="icon-btn" data-act="yr" data-d="-1" aria-label="Tahun sebelumnya">'+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg></button><b>'+y+'</b><button class="icon-btn" data-act="yr" data-d="1" aria-label="Tahun berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button></div>'+
     '<div class="mgrid">'+MON_S.map((m,i)=>{const k=y+'-'+pad(i+1);return '<button data-act="pick-month" data-m="'+k+'" class="'+(k===state.homeMonth?'on ':'')+(k===cur?'now':'')+'">'+m+'<small>'+(cnt[k]?cnt[k]+' tugas':'&nbsp;')+'</small></button>';}).join('')+'</div>'+
     '<button class="btn-primary" data-act="pick-month" data-m="'+cur+'" style="margin-top:16px">Ke bulan ini</button>';
@@ -2573,15 +2666,15 @@ function handle(a,el,e){
 function setFormDate(d){
   const old=$('#f-date').value;$('#f-date').value=d;
   if(!state.form.dlTouched||$('#f-dl-date').value===old)$('#f-dl-date').value=d;
-  syncQuick();
+  syncQuick();syncDl();
 }
 $('#f-date').addEventListener('change',()=>{const v=$('#f-date').value;if(!v)return;
-  if(!state.form.dlTouched)$('#f-dl-date').value=v;syncQuick();});
+  if(!state.form.dlTouched)$('#f-dl-date').value=v;syncQuick();syncDl();});
 $('#f-dl-on').addEventListener('change',()=>{state.form.dlTouched=true;syncDl();});
-$('#f-dl-off').addEventListener('change',()=>{const f=state.form;if(!f)return;f.dlOff=L.dlOffOf($('#f-dl-off').value);f.dlTouched=true;});
+$('#f-dl-off').addEventListener('change',()=>{const f=state.form;if(!f)return;f.dlOff=L.dlOffOf($('#f-dl-off').value);f.dlTouched=true;syncDl();});
 $('#f-multi').addEventListener('change',()=>setMulti($('#f-multi').checked));
 $('#f-date').addEventListener('input',()=>{$('#f-date-err').classList.add('hidden');$('#f-date').classList.remove('bad');});
-$('#f-dl-date').addEventListener('change',()=>{state.form.dlTouched=true;});
+$('#f-dl-date').addEventListener('change',()=>{state.form.dlTouched=true;syncDl();});
 $('#f-dl-time').addEventListener('change',()=>{state.form.dlTouched=true;});
 $('#f-name').addEventListener('input',()=>{$('#f-name-err').classList.add('hidden');$('#f-name').classList.remove('bad');renderSug();});
 // Kolom Nama kehilangan fokus → saran ditutup SETELAH tap/klik selesai. Kalau ditutup seketika, form bergeser naik

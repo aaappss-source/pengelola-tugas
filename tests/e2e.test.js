@@ -427,7 +427,9 @@ test('E2E mode coba: tanpa daftar, data contoh, tidak menyentuh server maupun ak
     // 1. alamat ?coba langsung membuka mode coba, walau HP ini punya akun asli
     await p.goto(base + '?coba'); await wait(1200);
     assert.equal(await authOpen(), false, 'tanpa layar masuk');
-    assert.equal(await p.locator('#home-list .task').count(), 12, '12 contoh tugas (7–17 Nov)');
+    assert.equal(await p.evaluate(() => new Set([...document.querySelectorAll('#home-list .task')].map(x => x.dataset.id)).size), 12, '12 contoh tugas (7–17 Nov)');
+    assert.equal(await p.locator('#home-list .task').count(), 15, 'Tahap 5: 2 contoh multi-hari (3 hari + 2 hari) tampil di setiap harinya');
+    assert.equal((await p.textContent('#h-total')).trim(), '12', 'tetap dihitung 12');
     assert.equal(await p.getAttribute('#sync-dot', 'title'), 'Mode coba: berisi contoh tugas dan tidak disimpan ke server');
     assert.equal((await p.textContent('#hdr-av')).trim(), 'T');
     assert.equal(await p.isVisible('#toast-btn'), true, 'pop-up mode coba punya tombol Daftar');
@@ -478,7 +480,7 @@ test('E2E mode coba: tanpa daftar, data contoh, tidak menyentuh server maupun ak
     const calls = st.calls;
     await p.tap('#auth-try'); await wait(1200);
     assert.equal(await authOpen(), false);
-    assert.equal(await p.locator('#home-list .task').count(), 12);
+    assert.equal(await p.locator('#home-list .task').count(), 15);
     assert.equal(st.calls, calls, 'tetap tanpa panggilan server');
 
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
@@ -745,7 +747,9 @@ test('E2E Tahap 4: beberapa tanggal (Poin 12) dan banyak form tugas (Poin 13), s
       ['2026-11-17', '07:00', '07:30', '2026-11-18', '12:00', 'tkuliah', 'Mudah'], ['2026-12-01', '07:00', '07:30', '2026-12-02', '12:00', 'tkuliah', 'Mudah']],
       'satu tugas terpisah per tanggal, isi sama, deadline per tanggal');
     assert.equal(new Set(piket.map(o => o.ID)).size, 4);
-    assert.equal(await p.locator('#home-list .task').count(), 3, '3 tugas di November tampil di daftar');
+    // deadline +1 hari → sejak Tahap 5 tiap tugas tampil 2 hari (tanggalnya + deadline-nya), tetap tugas terpisah
+    assert.equal(await p.evaluate(() => new Set([...document.querySelectorAll('#home-list .task')].map(x => x.dataset.id)).size), 3, '3 tugas di November tampil di daftar');
+    assert.equal(await p.locator('#home-list .task').count(), 6, 'Tahap 5: tiap tugas tampil di tanggalnya dan tanggal deadline-nya');
     await shot('t4-02-home-setelah-simpan');
 
     // setiap tugas berdiri sendiri: centang satu, hapus satu, edit satu
@@ -906,7 +910,8 @@ test('E2E Tahap 4: beberapa tanggal (Poin 12) dan banyak form tugas (Poin 13), s
 
     // muat ulang: semuanya tetap
     await p.reload(); await wait(1500);
-    assert.equal(await p.locator('#home-list .task').count(), rows().filter(o => o['Tanggal'].startsWith('2026-11')).length);
+    // (tugas multi-hari tampil di beberapa tanggal, jadi yang dihitung ID unik)
+    assert.equal(await p.evaluate(() => new Set([...document.querySelectorAll('#home-list .task')].map(x => x.dataset.id)).size), rows().filter(o => o['Tanggal'].startsWith('2026-11')).length);
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });
@@ -935,5 +940,183 @@ test('E2E antrean offline lebih dari 1000 perubahan: terkirim bertahap, tidak ad
     assert.ok(st.calls >= 3, 'dikirim bertahap (' + st.calls + ' panggilan)');
     assert.match(await p.getAttribute('#sync-dot', 'class'), /\bok\b/);
     assert.deepEqual(errs, []);
+  } finally { await close(); }
+});
+
+test('E2E Tahap 5: tugas multi-hari (Poin 15) tampil di setiap tanggal, tetap satu tugas', { skip: !pw && 'Playwright tidak terpasang', timeout: 240000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, date, start, dlDate, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date, start, end: start ? String(+start.slice(0, 2) + 2).padStart(2, '0') + ':00' : '',
+    dlDate: dlDate || '', dlTime: dlDate ? '17:00' : '', done: false, doneAt: null, doneBy: '', createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  S.post('apiSync', reg.token, [
+    T('m1', 'Makalah DE', '2026-11-09', '13:00', '2026-11-11'),        // 3 hari, hari ini (10 Nov) hari ke-2
+    T('x1', 'Lintas bulan', '2026-11-29', '', '2026-12-02'),            // 29 Nov – 2 Des, tanpa jam
+    T('o1', 'Dari Oktober', '2026-10-30', '08:00', '2026-11-01'),       // mulai bulan lalu
+    T('s1', 'Biasa', '2026-11-10', '10:00', '2026-11-10'),              // deadline hari yang sama = 1 hari
+    T('e1', 'Deadline lebih awal', '2026-11-20', '09:00', '2026-11-18') // deadline sebelum tanggal = tetap 1 hari
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const isOpen = sel => p.evaluate(s => document.querySelector(s).classList.contains('open'), sel);
+  const rows = () => S.sheet('@adit').objects();
+  const row = id => rows().find(o => o.ID === id);
+  const txt = async sel => ((await p.locator(sel).first().textContent()) || '').trim();
+  const vis = sel => p.isVisible(sel);
+  // baris tugas di daftar: [tanggal grup, tanda multi-hari, selesai?] urut tampilan
+  const listed = (box, id) => p.evaluate(([b, id]) => [...document.querySelectorAll(b + ' .task[data-id="' + id + '"]')].map(el => {
+    let h = el.previousElementSibling || el.parentElement.previousElementSibling;
+    while (h && !h.classList.contains('dhead')) h = h.previousElementSibling || (h.parentElement && h.parentElement.classList.contains('ntbox') ? h.parentElement.previousElementSibling : null);
+    const tag = el.querySelector('.span-tag');
+    return [h ? h.id.slice(2) : '', tag ? tag.textContent : '', el.classList.contains('done')];
+  }), [box, id]);
+  try {
+    await p.goto(base); await wait(1500);
+
+    // ---- Home: tampil di setiap tanggal rentangnya, dengan tanda "Hari n/m" ----
+    assert.deepEqual(await listed('#home-list', 'm1'), [['2026-11-09', 'Hari 1/3', false], ['2026-11-10', 'Hari 2/3', false], ['2026-11-11', 'Hari 3/3', false]]);
+    assert.deepEqual(await listed('#home-list', 'x1'), [['2026-11-29', 'Hari 1/4', false], ['2026-11-30', 'Hari 2/4', false]], 'November saja; sisanya di Desember');
+    assert.deepEqual(await listed('#home-list', 'o1'), [['2026-11-01', 'Hari 3/3', false]], 'tugas dari bulan lalu tampil di sisa harinya');
+    assert.deepEqual(await listed('#home-list', 's1'), [['2026-11-10', '', false]], 'deadline hari yang sama = tugas biasa, tanpa tanda');
+    assert.deepEqual(await listed('#home-list', 'e1'), [['2026-11-20', '', false]], 'deadline lebih awal dari tanggal = tetap 1 hari');
+    // hitungan: salinan tidak menambah jumlah
+    assert.deepEqual([await txt('#h-total'), await txt('#h-done'), await txt('#h-left')], ['5', '0', '5'], 'November: 5 tugas (bukan 12 baris)');
+    assert.equal(await p.locator('#home-list .task').count(), 8);
+    assert.match(await txt('#home-chips [data-f="semua"] .n'), /^5$/);
+    assert.match(await txt('#banner .banner-today'), /Hari ini: 2 tugas/, 'tugas multi-hari yang sedang berjalan ikut "Hari ini"');
+    assert.match(await p.getAttribute('#home-list .task[data-id="m1"] .span-tag', 'title'), /Tugas 3 hari: 9–11 Nov 2026/);
+    await shot('t5-01-home');
+
+    // ---- centang di salah satu tanggal → semuanya ikut; urungkan → semuanya batal ----
+    await p.locator('#home-list .task[data-id="m1"] .check').nth(1).tap(); await wait(1500);
+    assert.deepEqual((await listed('#home-list', 'm1')).map(r => r[2]), [true, true, true], 'semua salinan tercentang');
+    assert.deepEqual([rows().length, row('m1')['Status']], [5, 'Selesai'], 'di server tetap satu baris');
+    assert.deepEqual([await txt('#h-done'), await txt('#h-left')], ['1', '4'], 'dihitung 1');
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.deepEqual((await listed('#home-list', 'm1')).map(r => r[2]), [false, false, false], 'urungkan → semua batal');
+    assert.equal(row('m1')['Status'], 'Belum');
+    // centang dari tanggal lain lalu batalkan lewat centang lagi
+    await p.locator('#home-list .task[data-id="m1"] .check').nth(2).tap(); await wait(400);
+    await p.locator('#home-list .task[data-id="m1"] .check').nth(0).tap(); await wait(1500);
+    assert.deepEqual((await listed('#home-list', 'm1')).map(r => r[2]), [false, false, false], 'batal centang dari hari 1 = batal di semua hari');
+    assert.equal(row('m1')['Status'], 'Belum');
+    // filter "Selesai": tugas multi-hari yang selesai tampil di semua harinya
+    await p.locator('#home-list .task[data-id="x1"] .check').first().tap(); await wait(400);
+    await p.tap('[data-act="home-filter"][data-f="selesai"]'); await wait(200);
+    assert.deepEqual(await listed('#home-list', 'x1'), [['2026-11-29', 'Hari 1/4', true], ['2026-11-30', 'Hari 2/4', true]]);
+    assert.match(await txt('#home-chips [data-f="selesai"] .n'), /^1$/);
+    await p.tap('[data-act="home-filter"][data-f="semua"]'); await wait(200);
+
+    // ---- Kalender: jumlah per tanggal ikut tugas yang sedang berjalan; daftar tanggal pakai tanda ----
+    await p.click('#nav [data-view="kalender"]'); await wait(300);
+    const cell = d => p.evaluate(d => { const c = document.querySelector('#cgrid [data-d="' + d + '"] .c1'); return c ? c.textContent : ''; }, d);
+    assert.deepEqual([await cell('2026-11-08'), await cell('2026-11-09'), await cell('2026-11-10'), await cell('2026-11-11'), await cell('2026-11-12')],
+      ['', '1 tugas', '2 tugas', '1 tugas', '']);
+    assert.deepEqual([await cell('2026-11-01'), await cell('2026-11-30')], ['1 tugas', '1 tugas']);
+    await p.tap('#cgrid [data-d="2026-11-11"]'); await wait(200);
+    assert.equal(await txt('#cal-day-list .task[data-id="m1"] .span-tag'), 'Hari 3/3');
+    await p.tap('[data-act="cal-next"]'); await wait(200);
+    assert.deepEqual([await cell('2026-12-01'), await cell('2026-12-02'), await cell('2026-12-03')], ['1 tugas', '1 tugas', '']);
+    await p.tap('#cgrid [data-d="2026-12-02"]'); await wait(200);
+    assert.equal(await txt('#cal-day-list .task[data-id="x1"] .span-tag'), 'Hari 4/4');
+    assert.equal(await p.locator('#cal-day-list .task[data-id="x1"].done').count(), 1, 'selesai juga di bulan berikutnya');
+    await shot('t5-02-kalender');
+
+    // ---- Grafik: dihitung 1; kurva sekali di tanggal mulai (tanggal 1 kalau mulai bulan lalu) ----
+    await p.click('#nav [data-view="grafik"]'); await wait(400);
+    assert.equal(await txt('#donut-c b'), '5');
+    assert.equal(await txt('#stats-body .tiles .tile b'), '5', 'ubin Total');
+    assert.match(await txt('#stats-body .card:has(#curve) .sub'), /Tugas multi-hari dihitung sekali, di tanggal mulainya/);
+    const table = () => p.evaluate(() => [...document.querySelectorAll('#stats-body details.tbl tbody tr')].map(r => [...r.cells].map(c => c.textContent)));
+    assert.deepEqual(await table(), [['1 Nov', '1', '0'], ['9 Nov', '1', '0'], ['10 Nov', '1', '0'], ['20 Nov', '1', '0'], ['29 Nov', '1', '1']], 'jumlah kurva = 5 tugas');
+    assert.match(await txt('#stats-body .crow[data-k="tkuliah"]'), /5 tugas/);
+    await p.tap('#stats-body .crow[data-k="tkuliah"]'); await wait(400);
+    assert.equal(await isOpen('#cathist-screen'), true);
+    const hist = await p.evaluate(() => [...document.querySelectorAll('#ch-list .hrow')].map(r => r.querySelector('small').textContent));
+    assert.deepEqual(hist, ['29 Nov – 2 Des 2026 (4 hari)', 'Jum, 20 Nov 2026 · 09:00', 'Sel, 10 Nov 2026 · 10:00', '9–11 Nov 2026 (3 hari) · 13:00', '30 Okt – 1 Nov 2026 (3 hari) · 08:00']);
+    await p.tap('[data-act="close-cathist"]'); await wait(300);
+    await p.tap('#mtabs [data-m="2026-12"]'); await wait(300);
+    assert.equal(await txt('#donut-c b'), '1', 'Desember: tugas 29 Nov – 2 Des ikut dihitung (1)');
+    assert.deepEqual(await table(), [['1 Des', '1', '1']], 'dihitung di 1 Des untuk kurva Desember');
+    assert.match(await txt('#stats-body .card:has(#curve) .sub'), /di tanggal mulainya \(tanggal 1 kalau mulai bulan lalu\)/);
+    await shot('t5-03-grafik');
+
+    // ---- detail, edit (berlaku untuk semua tanggal), hapus + urungkan ----
+    await p.click('#nav [data-view="tugas"]'); await wait(300);
+    await p.locator('#home-list .task[data-id="m1"]').nth(2).tap(); await wait(400);
+    assert.equal(await isOpen('#detail-wrap'), true);
+    assert.equal(await txt('#detail .d-span b'), '9–11 Nov 2026');
+    assert.match(await txt('#detail .d-span'), /3 hari · hari ini hari ke-2/);
+    await shot('t5-04-detail');
+    await p.tap('[data-act="detail-edit"]'); await wait(700);
+    assert.equal(await isOpen('#form-wrap'), true);
+    assert.equal(await txt('#f-dl-hint'), 'Tampil 3 hari (9–11 Nov 2026) sebagai satu tugas. Centang, edit, dan hapus berlaku untuk semua harinya.');
+    await p.fill('#f-name', 'Makalah DE final');
+    await p.fill('#f-dl-date', '2026-11-12'); await p.dispatchEvent('#f-dl-date', 'change'); await wait(80);
+    assert.match(await txt('#f-dl-hint'), /^Tampil 4 hari \(9–12 Nov 2026\)/);
+    await p.tap('#f-save'); await wait(1500);
+    assert.deepEqual(await listed('#home-list', 'm1'), [['2026-11-09', 'Hari 1/4', false], ['2026-11-10', 'Hari 2/4', false], ['2026-11-11', 'Hari 3/4', false], ['2026-11-12', 'Hari 4/4', false]]);
+    assert.deepEqual(await p.evaluate(() => [...document.querySelectorAll('#home-list .task[data-id="m1"] .task-name')].map(x => x.textContent)), Array(4).fill('Makalah DE final'));
+    assert.deepEqual([rows().length, row('m1')['Nama tugas'], row('m1')['Tanggal'], row('m1')['Deadline (tanggal)']], [5, 'Makalah DE final', '2026-11-09', '2026-11-12']);
+    await p.locator('#home-list .task[data-id="m1"]').nth(3).tap(); await wait(400);
+    await p.tap('[data-act="detail-delete"]'); await wait(300); await p.tap('[data-act="confirm-yes"]'); await wait(1500);
+    assert.equal(await p.locator('#home-list .task[data-id="m1"]').count(), 0, 'hapus → hilang dari semua tanggal');
+    assert.equal(row('m1'), undefined);
+    await p.tap('#toast-btn'); await wait(1500);
+    assert.equal(await p.locator('#home-list .task[data-id="m1"]').count(), 4, 'urungkan → kembali di semua tanggal');
+    assert.equal(row('m1')['Nama tugas'], 'Makalah DE final');
+
+    // ---- buat tugas multi-hari dari form: cukup deadline lebih lambat dari tanggalnya ----
+    await p.tap('.nav .fab'); await wait(350); await p.tap('[data-act="pick-cat"][data-k="belajar"]'); await wait(450);
+    await p.fill('#f-name', 'Laporan praktikum');
+    assert.equal(await p.isChecked('#f-dl-on'), true);
+    assert.equal(await vis('#f-dl-hint'), false, 'deadline hari yang sama → tanpa keterangan');
+    await p.fill('#f-dl-date', '2026-11-13'); await p.dispatchEvent('#f-dl-date', 'change'); await wait(80);
+    assert.equal(await txt('#f-dl-hint'), 'Tampil 4 hari (10–13 Nov 2026) sebagai satu tugas. Centang, edit, dan hapus berlaku untuk semua harinya.');
+    await p.locator('#f-dl-hint').scrollIntoViewIfNeeded(); await shot('t5-05-form');
+    await p.tap('[data-act="quick-date"][data-d="1"]'); await wait(80);   // "Besok": deadline yang sudah diubah tetap
+    assert.match(await txt('#f-dl-hint'), /^Tampil 3 hari \(11–13 Nov 2026\)/);
+    await p.tap('[data-act="quick-date"][data-d="0"]'); await wait(80);
+    await p.tap('#f-save'); await wait(1500);
+    const lap = rows().filter(o => o['Nama tugas'] === 'Laporan praktikum');
+    assert.deepEqual(lap.map(o => [o['Tanggal'], o['Deadline (tanggal)']]), [['2026-11-10', '2026-11-13']], 'satu baris dengan rentang');
+    const lapId = lap[0].ID;
+    assert.deepEqual((await listed('#home-list', lapId)).map(r => r[0] + ' ' + r[1]), ['2026-11-10 Hari 1/4', '2026-11-11 Hari 2/4', '2026-11-12 Hari 3/4', '2026-11-13 Hari 4/4']);
+    assert.equal(await txt('#h-total'), '6');
+    // "Beberapa tanggal" + jarak deadline → keterangan bahwa tiap tugas tampil beberapa hari
+    await p.tap('.nav .fab'); await wait(350); await p.tap('[data-act="pick-cat"][data-k="belajar"]'); await wait(450);
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    assert.equal(await txt('#f-dl-hint'), 'Deadline tiap tugas dihitung dari tanggalnya masing-masing.');
+    await p.selectOption('#f-dl-off', '2'); await wait(80);
+    assert.equal(await txt('#f-dl-hint'), 'Deadline tiap tugas dihitung dari tanggalnya masing-masing. Tiap tugas tampil 3 hari, dari tanggalnya sampai deadline-nya.');
+    await p.tap('.opt-switch:has(#f-multi)'); await wait(100);
+    assert.match(await txt('#f-dl-hint'), /^Tampil 3 hari \(10–12 Nov 2026\)/, 'kembali ke satu tanggal: deadline = tanggal + jarak tadi');
+    await p.tap('.form-cat [data-act="form-collapse"]'); await wait(300);
+    await p.tap('[data-act="add-cancel"]'); await wait(300);
+
+    // ---- pencarian: tugas multi-hari muncul sekali, dengan jumlah harinya ----
+    await p.tap('[data-act="search"]'); await wait(300);
+    await p.fill('#search-q', 'laporan'); await wait(150);
+    assert.equal(await p.locator('#search-list .task').count(), 1);
+    assert.equal(await txt('#search-list .span-tag'), '4 hari');
+    await p.tap('[data-act="close-search"]'); await wait(300);
+
+    // ---- pemilih bulan: Desember ikut menghitung tugas 29 Nov – 2 Des ----
+    await p.tap('[data-act="month-picker"]'); await wait(300);
+    assert.deepEqual([await txt('#month-body [data-m="2026-11"] small'), await txt('#month-body [data-m="2026-12"] small'), await txt('#month-body [data-m="2026-10"] small')], ['6 tugas', '1 tugas', '1 tugas']);
+    await p.tap('#month-body [data-m="2026-12"]'); await wait(400);
+    assert.deepEqual(await listed('#home-list', 'x1'), [['2026-12-01', 'Hari 3/4', true], ['2026-12-02', 'Hari 4/4', true]]);
+    assert.equal(await txt('#h-total'), '1');
+
+    // ---- muat ulang: tetap; layar 360px tanpa geser samping ----
+    await p.reload(); await wait(1500);
+    assert.equal(await p.locator('#home-list .task[data-id="m1"]').count(), 4);
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    assert.equal(await p.evaluate(() => document.getElementById('sc').scrollWidth <= innerWidth), true);
+    const tagFits = await p.evaluate(() => [...document.querySelectorAll('#home-list .task[data-id="m1"] .task-meta')].every(m => m.querySelector('.span-tag').getBoundingClientRect().right <= m.getBoundingClientRect().right + 0.5));
+    assert.equal(tagFits, true, 'tanda "Hari n/m" tidak terpotong (ditaruh paling depan)');
+    await p.evaluate(() => document.getElementById('g-2026-11-09').scrollIntoView()); await wait(200);
+    await shot('t5-06-home-360');
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });

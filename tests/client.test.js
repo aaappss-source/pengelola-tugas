@@ -521,3 +521,128 @@ test('form baru dari "+": jam berurutan dengan durasi sama', () => {
   assert.deepEqual(plain(L.nextSlot('', '')), { start: '', end: '' });
   assert.deepEqual(plain(L.nextSlot('', '17:00')), { start: '', end: '17:00' });
 });
+
+// ================= Tahap 5 (Poin 15): tugas dengan deadline lebih dari 1 hari =================
+// Satu data tugas dengan rentang date … dlDate (K1). Fungsi di bawah hanya menghitung tampilan; data tidak disalin.
+const MT = (id, date, dlDate, extra) => Object.assign({ id, cat: 'tkuliah', name: 'Tugas ' + id, detail: '', date, start: '08:00', end: '09:00',
+  dlDate: dlDate || '', dlTime: dlDate ? '23:59' : '', done: false, doneAt: null, createdAt: 1, updatedAt: 1, kind: 'tugas', diff: '', parent: '', by: 'p1', doneBy: '' }, extra || {});
+const allDays = (list, from, n) => Array.from({ length: n }, (_, i) => L.ymdAdd(from, i)).map(d => [d, L.tasksOn(list, d).map(t => t.id).join()]);
+
+test('multi-hari: tampil di setiap tanggal dari tanggal mulai sampai deadline, tidak di luar itu', () => {
+  const m = MT('m', '2026-11-05', '2026-11-07');
+  assert.deepEqual([L.isMulti(m), L.spanDays(m), L.spanEnd(m)], [true, 3, '2026-11-07']);
+  assert.deepEqual(allDays([m], '2026-11-03', 7), [['2026-11-03', ''], ['2026-11-04', ''], ['2026-11-05', 'm'], ['2026-11-06', 'm'], ['2026-11-07', 'm'], ['2026-11-08', ''], ['2026-11-09', '']]);
+  assert.deepEqual(['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08'].map(d => L.dayOf(m, d)), [0, 1, 2, 3, 0]);
+  assert.deepEqual(['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08'].map(d => L.spanTag(m, d)), ['Hari 1/3', 'Hari 2/3', 'Hari 3/3', '3 hari']);
+  assert.equal(L.spanTag(m), '3 hari', 'tanpa tanggal (pencarian/riwayat) → jumlah hari');
+  // bukan multi-hari: tanpa deadline, deadline hari yang sama, deadline lebih awal dari tanggal (tetap 1 hari, tidak mundur)
+  for (const t of [MT('a', '2026-11-05', ''), MT('b', '2026-11-05', '2026-11-05'), MT('c', '2026-11-05', '2026-11-02')]) {
+    assert.deepEqual([L.isMulti(t), L.spanDays(t), L.spanTag(t, '2026-11-05')], [false, 1, ''], t.id);
+    assert.deepEqual(allDays([t], '2026-11-01', 7).filter(x => x[1]).map(x => x[0]), ['2026-11-05'], t.id + ' hanya di tanggalnya');
+  }
+  // lewat bulan & tahun, rentang panjang
+  const y = MT('y', '2026-12-30', '2027-01-02');
+  assert.deepEqual([L.spanDays(y), L.dayOf(y, '2027-01-01')], [4, 3]);
+  const lama = MT('lama', '2026-11-01', '2026-11-20');   // seperti data lama nyata: 1 Nov → 20 Nov
+  assert.equal(L.spanDays(lama), 20);
+  assert.equal(L.spanDays(MT('k', '2024-02-28', '2024-03-01')), 3, 'tahun kabisat');
+  assert.deepEqual([L.isMulti(null), L.spanDays({}), L.onDay({ date: 'x' }, 'x'), L.spanTag({})], [false, 0, false, '']);
+});
+
+test('multi-hari: urutan dalam satu tanggal = jam, lalu yang mulainya lebih dulu', () => {
+  const list = [MT('baru', '2026-11-06', '', { start: '08:00', createdAt: 1 }), MT('lanjut', '2026-11-04', '2026-11-08', { start: '08:00', createdAt: 9 }),
+    MT('pagi', '2026-11-06', '', { start: '07:00' }), MT('tj', '2026-11-05', '2026-11-06', { start: '', end: '' })];
+  assert.deepEqual(plain(L.tasksOn(list, '2026-11-06').map(t => t.id)), ['pagi', 'lanjut', 'baru', 'tj'], 'tanpa jam di akhir (Home menaruhnya di bagian "Tanpa jam")');
+});
+
+test('multi-hari: per bulan dihitung 1 (di setiap bulan yang dilewati), salinan tidak menambah jumlah', () => {
+  const list = [MT('a', '2026-11-05', '2026-11-07'), MT('b', '2026-11-30', '2026-12-02'), MT('c', '2026-10-28', '2026-11-01'),
+    MT('d', '2026-11-10', ''), MT('e', '2026-12-05', ''), MT('f', '2026-10-01', '2027-02-01')];
+  const ids = mk => L.inMonth(list, mk).map(t => t.id).sort().join();
+  assert.equal(ids('2026-11'), 'a,b,c,d,f');
+  assert.equal(ids('2026-12'), 'b,e,f', 'b (30 Nov – 2 Des) ikut dihitung di Desember');
+  assert.equal(ids('2026-10'), 'c,f');
+  assert.equal(ids('2027-01'), 'f');
+  assert.equal(ids('2027-03'), '');
+  assert.equal(L.monthEnd('2026-02'), '2026-02-28');
+  assert.equal(L.monthEnd('2024-02'), '2024-02-29');
+  assert.equal(L.monthEnd('2026-12'), '2026-12-31');
+  // kelompok per tanggal (Home & Kalender): muncul di setiap tanggalnya di bulan itu saja
+  const g = L.byDay(list, '2026-11');
+  assert.deepEqual(Object.keys(g).sort().slice(0, 8), ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08']);
+  assert.deepEqual(plain(g['2026-11-01'].map(t => t.id).sort()), ['c', 'f']);
+  assert.deepEqual(plain(g['2026-11-06'].map(t => t.id).sort()), ['a', 'f']);
+  assert.deepEqual(plain(g['2026-11-30'].map(t => t.id).sort()), ['b', 'f']);
+  assert.equal(Object.keys(g).length, 30, 'f (Okt – Feb) tampil di semua 30 hari November, tidak lebih');
+  assert.deepEqual(plain(L.daysIn(list[1], '2026-12')), ['2026-12-01', '2026-12-02']);
+  assert.deepEqual(plain(L.daysIn(list[5], '2027-02')), ['2027-02-01']);
+});
+
+test('multi-hari di grafik: kurva per tanggal menghitung sekali (di tanggal mulai, atau tanggal 1 kalau mulai bulan lalu)', () => {
+  const list = [MT('a', '2026-11-05', '2026-11-07'), MT('b', '2026-11-30', '2026-12-02'), MT('c', '2026-10-28', '2026-11-01'),
+    MT('d', '2026-11-05', ''), MT('e', '2026-11-06', '2026-11-06')];
+  const nov = L.perDay(list, '2026-11');
+  assert.equal(nov.length, 30);
+  assert.equal(nov.reduce((s, v) => s + v, 0), L.inMonth(list, '2026-11').length, 'jumlah kurva = jumlah tugas bulan itu (tetap 1 per tugas)');
+  assert.deepEqual([nov[0], nov[4], nov[5], nov[6], nov[29]], [1, 2, 1, 0, 1], 'c di tgl 1, a+d di tgl 5, e di tgl 6, tgl 7 kosong, b di tgl 30');
+  const des = L.perDay(list, '2026-12');
+  assert.deepEqual([des.length, des[0], des.reduce((s, v) => s + v, 0)], [31, 1, 1], 'b dihitung di 1 Des untuk grafik Desember');
+  assert.deepEqual([L.countDay(list[0], '2026-11'), L.countDay(list[2], '2026-11'), L.countDay(list[1], '2026-12')], ['2026-11-05', '2026-11-01', '2026-12-01']);
+});
+
+test('multi-hari: centang/batal/edit/hapus satu data → semua tanggal ikut; di server tetap SATU baris', () => {
+  const S = makeRuntime();
+  const tok = S.post('apiRegister', 'adit', '1234', 'Adit').token;
+  const t = MT('tm1', '2026-11-05', '2026-11-07', { dlTime: '17:00' });
+  let res = S.post('apiSync', tok, [{ op: 'upsert', task: L.toDoc(t) }]);
+  assert.equal(res.ok, true);
+  const rows = () => S.sheet('@adit').objects();
+  assert.equal(rows().length, 1, 'disimpan sebagai satu data dengan rentang tanggal, bukan salinan');
+  assert.deepEqual([rows()[0]['Tanggal'], rows()[0]['Deadline (tanggal)'], rows()[0]['Deadline (jam)']], ['2026-11-05', '2026-11-07', '17:00']);
+  // dari data yang dikirim balik server, setiap tanggal menampilkan objek yang sama
+  const merged = plain(L.mergeServer(res, [], { cats: [], profiles: [] }, isBuiltin));
+  const list = Object.values(merged.tasks);
+  const days = ['2026-11-05', '2026-11-06', '2026-11-07'];
+  const shown = () => days.map(d => L.tasksOn(list, d)[0]);
+  assert.ok(shown().every(x => x === list[0]), 'tiga tanggal = satu objek tugas');
+  // centang di "hari 2" → semuanya tercentang; batal → semuanya batal
+  const onDay2 = L.tasksOn(list, '2026-11-06')[0];
+  Object.assign(onDay2, { done: true, doneAt: 9, doneBy: 'p1', updatedAt: 9 });
+  assert.deepEqual(shown().map(x => x.done), [true, true, true]);
+  res = S.post('apiSync', tok, [{ op: 'upsert', task: L.toDoc(onDay2) }]);
+  assert.deepEqual([rows().length, rows()[0]['Status']], [1, 'Selesai']);
+  Object.assign(L.tasksOn(list, '2026-11-07')[0], { done: false, doneAt: null, doneBy: '', updatedAt: 10 });
+  assert.deepEqual(shown().map(x => x.done), [false, false, false]);
+  // edit (nama + perpanjang deadline) berlaku untuk semua tanggal
+  Object.assign(list[0], { name: 'Makalah', dlDate: '2026-11-08', updatedAt: 11 });
+  assert.deepEqual(['2026-11-05', '2026-11-08'].map(d => L.tasksOn(list, d)[0].name), ['Makalah', 'Makalah']);
+  assert.equal(L.spanTag(list[0], '2026-11-08'), 'Hari 4/4');
+  res = S.post('apiSync', tok, [{ op: 'upsert', task: L.toDoc(list[0]) }]);
+  assert.deepEqual([rows().length, rows()[0]['Nama tugas'], rows()[0]['Status'], rows()[0]['Deadline (tanggal)']], [1, 'Makalah', 'Belum', '2026-11-08']);
+  // hapus → hilang dari semua tanggal
+  res = S.post('apiSync', tok, [{ op: 'delete', id: 'tm1' }]);
+  assert.equal(rows().length, 0);
+  assert.deepEqual(days.map(d => L.tasksOn(res.tasks, d).length), [0, 0, 0]);
+});
+
+test('multi-hari dari "Beberapa tanggal" (konsekuensi K1): deadline +n hari → tiap tugas tampil n+1 hari, tetap terpisah', () => {
+  idN = 0;
+  const r = L.buildBatch([D({ name: 'Piket', multi: true, dates: ['2026-12-07', '2026-12-09'], dlOn: true, dlOff: 2 })], OPTS());
+  const [sen, rab] = r.tasks;
+  assert.deepEqual([L.spanDays(sen), L.spanDays(rab)], [3, 3]);
+  assert.deepEqual(plain(L.tasksOn(r.tasks, '2026-12-09').map(t => [t.id, L.spanTag(t, '2026-12-09')])), [[sen.id, 'Hari 3/3'], [rab.id, 'Hari 1/3']], 'hari Rabu ada dua (tugas berbeda)');
+  sen.done = true;
+  assert.equal(L.tasksOn(r.tasks, '2026-12-09').filter(t => t.done).length, 1, 'centang tugas Senin tidak ikut tugas Rabu');
+  assert.equal(L.inMonth(r.tasks, '2026-12').length, 2);
+  // deadline "hari yang sama" (bawaan) tetap 1 hari
+  assert.equal(L.spanDays(L.buildBatch([D({ multi: true, dates: ['2026-12-07'], dlOn: true, dlOff: 0 })], OPTS()).tasks[0]), 1);
+});
+
+test('mode coba: contoh tugas multi-hari ada dan tampil di setiap harinya', () => {
+  const seed = L.demoSeed('2026-11-10', Date.UTC(2026, 10, 10, 2));
+  const multi = seed.tasks.filter(L.isMulti);
+  assert.ok(multi.length >= 1, 'ada contoh multi-hari');
+  const m = multi.find(t => t.name === 'Desain halaman toko online');
+  assert.deepEqual([m.date, m.dlDate, L.spanDays(m)], ['2026-11-12', '2026-11-14', 3]);
+  assert.deepEqual(['2026-11-12', '2026-11-13', '2026-11-14'].map(d => L.tasksOn(seed.tasks, d).some(t => t === m)), [true, true, true]);
+});
