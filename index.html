@@ -9,8 +9,33 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Tugas">
 <link rel="manifest" href="manifest.webmanifest">
+<!-- Tahap 10 (Poin 7): logo "Kalender centang". Semua ikon & splash dibuat dari icons/buat-ikon.js -->
+<link rel="icon" type="image/svg+xml" href="icons/logo.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<!-- layar pembuka iOS (Android membuat sendiri dari manifest: nama + ikon + background_color) -->
+<link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-640x1136.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-750x1334.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1242x2208.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1080x2340.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1260x2736.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash/splash-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1488x2266.png">
+<link rel="apple-touch-startup-image" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1536x2048.png">
+<link rel="apple-touch-startup-image" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1620x2160.png">
+<link rel="apple-touch-startup-image" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1640x2360.png">
+<link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1668x2224.png">
+<link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-1668x2388.png">
+<link rel="apple-touch-startup-image" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash/splash-2048x2732.png">
 <title>Pengelola Tugas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,6 +68,9 @@ svg{display:block}
 .icon-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--text)}
 .icon-btn:active{background:#333}
 .icon-btn svg{width:26px;height:26px}
+/* nama aplikasi (Tahap 10, Poin 7): "Pengelola" putih + "Tugas" kuning tebal */
+.wm{font-weight:500;letter-spacing:-.2px;white-space:nowrap}
+.wm b{font-weight:700;color:var(--accent)}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--sx);display:inline-block}
 .sync-dot.ok{background:var(--good)}
 .sync-dot.busy{background:var(--warn)}
@@ -139,6 +167,16 @@ svg{display:block}
 .nav .fab{position:absolute;left:50%;top:-24px;transform:translateX(-50%);width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.45),0 0 0 6px var(--bg2)}
 .nav .fab svg{width:32px;height:32px}
 .nav .fab:active{transform:translateX(-50%) scale(.94)}
+
+/* ---------- geser pindah menu (Tahap 10, Poin 11) ---------- */
+#app{overflow-x:clip}   /* menu yang sedang digeser tidak keluar dari kolom aplikasi (layar lebar); clip ≠ hidden: kepala halaman tetap menempel */
+.view.sw-move{will-change:transform,opacity}
+.sw-hint{position:fixed;top:44%;left:0;z-index:25;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 14px 10px;min-width:88px;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--text2);font-size:13px;font-weight:500;
+  opacity:0;transform:translate(-50%,-50%) scale(.9);transition:opacity .15s,transform .15s,color .15s,border-color .15s;visibility:hidden}
+.sw-hint.on{visibility:visible}
+.sw-hint svg{width:28px;height:28px}
+.sw-hint.ready{color:var(--accent);border-color:var(--accent);transform:translate(-50%,-50%) scale(1)}
 
 /* ---------- screens & sheets ---------- */
 .screen{position:fixed;top:0;bottom:0;left:50%;width:min(100%,480px);background:var(--bg);z-index:50;transform:translate(-50%,100%);transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .3s;overflow-y:auto;visibility:hidden}
@@ -510,6 +548,12 @@ button.d-row .chev{margin-left:auto;align-self:center}
 .tb-kc svg{flex:none;width:12px;height:12px}
 .tb-kc span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tb-b.done .tb-kc{opacity:.7}
+.tb-b.kh{padding-top:2px;padding-bottom:2px}
+.tb-b.kh .tb-kc{margin-bottom:0}
+.tb-b.kh .tb-bt{display:grid;grid-template-columns:fit-content(62%) minmax(0,1fr);column-gap:6px;align-items:baseline}
+.tb-b.kh .tb-kc{grid-column:1/-1}
+.tb-b.kh .tb-n{display:block;white-space:nowrap;text-overflow:ellipsis;max-width:100%}
+.tb-b.kh .tb-m{min-width:0}
 .tb-fg .tb-b{pointer-events:auto}
 /* dialog dengan tiga pilihan (hapus kegiatan: keluarkan / hapus semua / batal) tersusun ke bawah */
 .dialog.three .d-actions{flex-direction:column;gap:8px}
@@ -660,9 +704,9 @@ button.crow{width:100%;text-align:left}
 .auth.open{display:block}
 .auth-in{max-width:420px;margin:0 auto;padding:22px 22px 40px}
 .auth-top{display:flex;align-items:center;min-height:44px;margin:-6px -8px 0}
-.auth-logo{width:64px;height:64px;border-radius:18px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;margin:8px auto 12px}
-.auth-logo svg{width:38px;height:38px}
-.auth h1{text-align:center;font-size:24px;margin:0}
+.auth-logo{width:76px;height:76px;margin:8px auto 12px;filter:drop-shadow(0 6px 16px rgba(255,212,59,.18))}
+.auth-logo svg{width:100%;height:100%}
+.auth h1{text-align:center;font-size:26px;margin:0}
 .auth-sub{text-align:center;color:var(--text2);margin:6px 0 22px;font-size:14.5px}
 .auth .seg{margin:0 0 18px}
 .inp.pin{letter-spacing:6px;font-size:20px}
@@ -834,7 +878,7 @@ button.crow{width:100%;text-align:left}
     <header class="top" id="home-top">
       <div class="titlebar">
         <button class="avatar-btn" data-act="accounts" aria-label="Akun"><span class="av" id="hdr-av">?</span></button>
-        <h1>Pengelola Tugas <i class="sync-dot" id="sync-dot" title="Status penyimpanan"></i></h1>
+        <h1><span class="wm">Pengelola <b>Tugas</b></span> <i class="sync-dot" id="sync-dot" title="Status penyimpanan"></i></h1>
         <!-- Tahap 7 (Poin 16): pilihan tampilan To Do List / Time Blocking (ikon = tampilan tujuan), diingat di HP -->
         <button class="icon-btn hv-btn" id="home-view" data-act="home-view" data-v="tb" aria-label="Ganti ke tampilan Time Blocking" title="Ganti ke tampilan Time Blocking"></button>
         <button class="icon-btn" data-act="search" aria-label="Cari tugas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></svg></button>
@@ -1078,8 +1122,8 @@ button.crow{width:100%;text-align:left}
 <div class="auth" id="auth" aria-hidden="true">
   <div class="auth-in">
     <div class="auth-top" id="auth-top"></div>
-    <div class="auth-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>
-    <h1>Pengelola Tugas</h1>
+    <div class="auth-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="ptg" x1="0" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFDD57"/><stop offset="1" stop-color="#FFC928"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#ptg)"/><rect x="112" y="142" width="288" height="262" rx="56" fill="#1E1E1E"/><rect x="112" y="204" width="288" height="14" fill="url(#ptg)"/><rect x="174" y="98" width="44" height="88" rx="22" fill="#1E1E1E" stroke="url(#ptg)" stroke-width="16"/><rect x="294" y="98" width="44" height="88" rx="22" fill="#1E1E1E" stroke="url(#ptg)" stroke-width="16"/><path d="M188 308 L238 356 L326 262" fill="none" stroke="#FFD43B" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h1 class="wm">Pengelola <b>Tugas</b></h1>
     <p class="auth-sub">Jadwal &amp; checklist tugasmu</p>
     <div class="seg" id="auth-seg"><button type="button" data-act="auth-tab" data-t="masuk" class="on">Masuk</button><button type="button" data-act="auth-tab" data-t="daftar">Daftar</button></div>
     <form id="auth-form" novalidate autocomplete="on">
@@ -1107,6 +1151,8 @@ button.crow{width:100%;text-align:left}
   </div>
 </div>
 
+<!-- Tahap 10 (Poin 11): petunjuk menu tujuan di area yang terbuka saat menu digeser -->
+<div class="sw-hint" id="sw-hint" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-btn" class="hidden"></button><button id="toast-x" class="toast-x hidden" aria-label="Tutup pop-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
 
 <script id="pt-lib">
@@ -1475,25 +1521,35 @@ function tbLabelAt(bg,busy,h){
   for(const b of list){if(b.start>=y+h)break;if(ve(b)>y)y=ve(b);}
   return y+h<=end?y:null;
 }
-/** Tempat label tiap kegiatan (perbaikan Tahap 8, laporan user: kegiatan & tugas di jam yang sama → nama kegiatan tertutup).
- *  bg/fg = hasil tbLayout untuk latar kegiatan / blok tugas. Untuk setiap kegiatan → {at, host}:
+/** Tempat label tiap kegiatan (perbaikan Tahap 8, laporan user: kegiatan & tugas di jam yang sama → nama kegiatan tertutup;
+ *  dirapikan Tahap 10). bg/fg = hasil tbLayout untuk latar kegiatan / blok tugas. Untuk setiap kegiatan → {at, host}:
  *  - at = menit label di latar kegiatan: celah pertama (tbLabelAt) kalau jaraknya ≤ `near` menit dari awal kegiatan;
- *  - host = indeks blok tugas (fg) yang menutupi awal kegiatan dan cukup tinggi (≥ hostMin menit): nama kegiatan ditaruh
- *    di dalam blok tugas itu (baris kecil di atas nama tugas), supaya tetap terlihat di bagian atas kegiatan;
- *  - tidak ada keduanya → celah yang jauh kalau ada, selain itu {at:null, host:-1} (tidak ada tempat; kegiatan sangat pendek). */
-function tbLabels(bg,fg,h,near,hostMin){
-  const ve=b=>isFinite(b.vEnd)?b.vEnd:b.end;h=Math.max(0,+h||0);
+ *  - host = indeks blok tugas (fg) tempat nama kegiatan ditaruh (baris kecil di atas nama tugas) kalau awal kegiatan tertutup:
+ *    hanya tugas ANGGOTA kegiatan itu (parent = id kegiatan; tugas lain yang hanya bertabrakan jam tidak dipakai), yang
+ *    menutupi awal kegiatan dan cukup tinggi (≥ hostMin menit); yang mulainya paling dekat dengan awal kegiatan, lalu kolom kiri;
+ *  - blok tugas yang sempit (lebar < minFrac area, mis. 3 tugas berdampingan → label terpotong) hanya dipakai kalau tidak ada
+ *    celah sama sekali; kalau ada celah (walau jauh) label ditaruh di celah itu;
+ *  - tidak ada tempat → {at:null, host:-1} (nama kegiatan tetap ada di detailnya). */
+function tbLabels(bg,fg,h,near,hostMin,minFrac){
+  const ve=b=>isFinite(b.vEnd)?b.vEnd:b.end;h=Math.max(0,+h||0);minFrac=Math.max(0,+minFrac||0);
+  const frac=b=>(isFinite(b.span)&&isFinite(b.cols)&&b.cols>0)?b.span/b.cols:1;
   return (Array.isArray(bg)?bg:[]).map(k=>{
-    const at=tbLabelAt(k,fg,h);
     if(!k||!isFinite(k.start))return {at:null,host:-1};
+    const at=tbLabelAt(k,fg,h),kid=k.t&&k.t.id;
     if(at!=null&&at-k.start<=near)return {at:at,host:-1};
-    let host=-1;
-    (Array.isArray(fg)?fg:[]).forEach((b,i)=>{
-      if(!b||!isFinite(b.start)||!(b.start<k.start+h&&ve(b)>k.start)||ve(b)-b.start<hostMin)return;
-      const p=fg[host];
-      if(host<0||Math.abs(b.start-k.start)<Math.abs(p.start-k.start)||(b.start===p.start&&(b.col||0)<(p.col||0)))host=i;
-    });
-    return host>=0?{at:null,host:host}:{at:at,host:-1};
+    const pick=wide=>{
+      let host=-1;
+      (Array.isArray(fg)?fg:[]).forEach((b,i)=>{
+        if(!b||!isFinite(b.start)||!b.t||!kid||b.t.parent!==kid)return;
+        if(!(b.start<k.start+h&&ve(b)>k.start)||ve(b)-b.start<hostMin||(wide&&frac(b)<minFrac))return;
+        const p=fg[host];
+        if(host<0||Math.abs(b.start-k.start)<Math.abs(p.start-k.start)||(b.start===p.start&&(b.col||0)<(p.col||0)))host=i;
+      });
+      return host;
+    };
+    const wide=pick(true);if(wide>=0)return {at:null,host:wide};
+    if(at!=null)return {at:at,host:-1};
+    return {at:null,host:pick(false)};
   });
 }
 /** Susunan blok supaya yang bertabrakan tampil berdampingan, tidak bertumpuk (Poin 16).
@@ -1769,6 +1825,41 @@ function demoServer(seed,isBuiltinCat){
   };
 }
 
+/* ---- geser kiri/kanan untuk pindah menu (Tahap 10, Poin 11) ----
+   Keputusan gestur dalam fungsi murni (diuji di Node); script utama hanya membaca sentuhan dan menggeser halaman.
+   Satuan px dan ms. Urutan menu = urutan bottom navigation. */
+const SWIPE={SLOP:10,RATIO:1.3,DIST:0.28,FLICK:0.45,FLICK_MIN:32,BACK:0.2,EDGE_K:0.22,EDGE_MAX:56};
+/** Arah gerak jari sejak menyentuh: null = belum jelas (masih di dalam `slop`), 'x' = geser ke samping (pindah menu),
+ *  'y' = gulir biasa. Gerak diagonal 45° dianggap gulir (samping harus ≥ 1,3× gerak vertikal). */
+function swipeAxis(dx,dy,slop,ratio){
+  slop=slop==null?SWIPE.SLOP:+slop;ratio=+ratio||SWIPE.RATIO;
+  const ax=Math.abs(+dx||0),ay=Math.abs(+dy||0);
+  if(Math.max(ax,ay)<slop)return null;
+  return ax>=ay*ratio?'x':'y';
+}
+/** Menu tujuan: jari ke kiri (dx < 0) = menu berikutnya, ke kanan = menu sebelumnya. null di ujung / menu tidak dikenal. */
+function swipeNext(views,cur,dx){
+  const list=Array.isArray(views)?views:[],i=list.indexOf(cur);
+  if(i<0||!(+dx))return null;
+  const j=dx<0?i+1:i-1;
+  return j>=0&&j<list.length?list[j]:null;
+}
+/** Seberapa jauh halaman ikut jari. Di ujung (tidak ada menu tujuan) hanya bergeser sedikit (efek karet, maks 56 px). */
+function swipeOffset(dx,hasNext){
+  dx=+dx||0;if(hasNext)return dx;
+  const v=Math.min(Math.abs(dx)*SWIPE.EDGE_K,SWIPE.EDGE_MAX);
+  return dx<0?-v:v;
+}
+/** Pindah menu saat jari diangkat? Ya kalau sudah ≥ 28% lebar halaman, atau dikibas cepat (≥ 0,45 px/ms, minimal 32 px)
+ *  ke arah yang sama. Jari yang sedang bergerak balik (≥ 0,2 px/ms berlawanan arah) membatalkan. vx = kecepatan terakhir. */
+function swipeCommit(dx,vx,width){
+  dx=+dx||0;vx=+vx||0;const w=Math.max(1,+width||0);
+  if(!dx)return false;
+  if(vx&&Math.sign(vx)!==Math.sign(dx)&&Math.abs(vx)>=SWIPE.BACK)return false;
+  if(Math.abs(dx)>=w*SWIPE.DIST)return true;
+  return Math.abs(dx)>=SWIPE.FLICK_MIN&&Math.abs(vx)>=SWIPE.FLICK&&Math.sign(vx)===Math.sign(dx);
+}
+
 return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CATS,isId:isId,isProf:isProf,isCustomCat:isCustomCat,
   normTask:normTask,toDoc:toDoc,normCat:normCat,normProfile:normProfile,opKey:opKey,enqueue:enqueue,mergeServer:mergeServer,
   migrateCache:migrateCache,makeBackup:makeBackup,parseBackup:parseBackup,serverIsCurrent:serverIsCurrent,pickProfile:pickProfile,
@@ -1784,7 +1875,8 @@ return {SCHEMA:SCHEMA,CACHE_V:CACHE_V,MAX_PROFILES:MAX_PROFILES,MAX_CATS:MAX_CAT
   isKeg:isKeg,tasksOnly:tasksOnly,parentOf:parentOf,kidsOf:kidsOf,kegProgress:kegProgress,kegOn:kegOn,nest:nest,outsideKeg:outsideKeg,
   shiftKids:shiftKids,moveItem:moveItem,kegDelete:kegDelete,serverRules:serverRules,
   MAX_FORMS:MAX_FORMS,MAX_BATCH:MAX_BATCH,MAX_TASKS:MAX_TASKS,MAX_OPS:MAX_OPS,DL_OFF_MAX:DL_OFF_MAX,draftDates:draftDates,toggleDate:toggleDate,
-  dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd};
+  dlOffOf:dlOffOf,draftFields:draftFields,draftErrors:draftErrors,buildBatch:buildBatch,nextSlot:nextSlot,ymdAdd:ymdAdd,
+  SWIPE:SWIPE,swipeAxis:swipeAxis,swipeNext:swipeNext,swipeOffset:swipeOffset,swipeCommit:swipeCommit};
 })();
 </script>
 <script>
@@ -2510,8 +2602,9 @@ function scrollToDate(d,smooth){
    tombol centang (jawaban user); tap blok = detail. Bulan di kepala halaman ikut bulan hari yang tampil. */
 const TB_PX=1,TB_TOP=10,TB_MIN=20,TB_CHK=45;   // 1 menit = 1px; jarak atas grid; tinggi tampil minimal (mnt); centang ≥ 45 mnt
 const TB_RAIL=12,TB_KL=20;   // Tahap 8: geser tugas dari kiri saat ada kegiatan (px); tinggi label kegiatan (mnt)
+const TB_FULL=54;   // Tahap 10: tinggi blok (px) yang muat label kegiatan + nama + baris jam; lebih pendek → nama & jam satu baris
 // label kegiatan: celah ≤ TB_NEAR mnt dari awal kegiatan; kalau tidak ada, di blok tugas penutup yang tingginya ≥ TB_HOST mnt
-const TB_NEAR=60,TB_HOST=40;
+const TB_NEAR=60,TB_HOST=40,TB_WIDE=0.5;   // Tahap 10: blok penutup selebar < ½ area (≥ 3 berdampingan) hanya dipakai kalau tidak ada celah
 const DAYS_S=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const tbOn=()=>state.view==='tugas'&&state.homeView==='tb';
 const HV_NAME={list:'To Do List',tb:'Time Blocking'};
@@ -2581,7 +2674,7 @@ function renderTB(){
   // supaya garis kiri kegiatan tetap terlihat). Label kegiatan (L.tbLabels): di celah dekat awal kegiatan yang tidak tertutup
   // tugas; kalau awal kegiatan tertutup tugas (mis. jamnya sama persis), nama kegiatan ditaruh di dalam blok tugas itu.
   const fg=L.tbLayout(it.blocks,TB_MIN),bg=L.tbLayout(it.bg,TB_MIN),inset=bg.length?TB_RAIL:0;
-  const lab=L.tbLabels(bg,fg,TB_KL,TB_NEAR,TB_HOST),hosted={};
+  const lab=L.tbLabels(bg,fg,TB_KL,TB_NEAR,TB_HOST,TB_WIDE),hosted={};
   lab.forEach((x,i)=>{if(x.host>=0)(hosted[x.host]=hosted[x.host]||[]).push(bg[i]);});
   // perkiraan lebar area blok (px): blok yang terlalu sempit tidak diberi tombol centang (tetap bisa lewat detail)
   const aw=Math.max(120,Math.min(innerWidth||360,480)-60-inset);
@@ -2600,10 +2693,13 @@ function tbBlock(b,d,aw,kegs){
   const mp=multiProf(),f=firstProf(),by=mp?L.byOf(t,f):'',dby=mp?L.doneByOf(t,f):'';
   const meta=(mp?avEl(profOf(by),'xxs',' title="Dibuat oleh '+esc(profName(by))+'"'):'')+(dl&&dl.cls==='over'?'<i class="tb-od" title="Lewat deadline"></i>':'')+(sp?'<span class="span-tag">'+esc(sp)+'</span>':'')+esc(time)+
     (dby?' · <span class="m-by">✓ '+esc(profShort(dby))+'</span>':'');
-  const kc=kegs&&kegs.length&&!xs?'<div class="tb-kc" style="--kh:'+catOf(kegs[0].t.cat).h+'" title="'+esc('Kegiatan: '+kegs.map(k=>k.t.name).join(', '))+'">'+ic('layers',2.2)+
+  // label kegiatan: ketuk = detail KEGIATAN (Tahap 10; dulu membuka tugas di bawahnya)
+  const kc=kegs&&kegs.length&&!xs?'<div class="tb-kc" data-keg="'+esc(kegs[0].t.id)+'" role="button" style="--kh:'+catOf(kegs[0].t.cat).h+'" title="'+esc('Kegiatan: '+kegs.map(k=>k.t.name).join(', '))+'">'+ic('layers',2.2)+
     '<span>'+esc(kegs.length>1?kegs.map(k=>k.t.name).join(', '):kegs[0].t.name+' · '+tbTime(kegs[0])+tbProg(kegs[0].t))+'</span></div>':'';
-  const ln=xs?1:Math.max(1,Math.floor((hpx-6-15-(kc?17:0))/16));
-  return '<div class="tb-b'+(t.done?' done':'')+(xs?' xs':'')+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc(t.name+' · '+time)+'"'+
+  // blok berlabel yang pendek (< TB_FULL px, mis. 40–55 mnt): nama + jam satu baris supaya baris jam tidak terpotong (Tahap 10)
+  const kh=!!kc&&hpx<TB_FULL;
+  const ln=xs||kh?1:Math.max(1,Math.floor((hpx-6-15-(kc?17:0))/16));
+  return '<div class="tb-b'+(t.done?' done':'')+(xs?' xs':'')+(kh?' kh':'')+(b.cont?' cont':'')+(b.prev?' prev':'')+'" data-id="'+esc(t.id)+'" title="'+esc(t.name+' · '+time)+'"'+
     ' style="--h:'+c.h+';--ln:'+ln+';top:'+(TB_TOP+b.start*TB_PX+1)+'px;height:'+hpx+'px;left:calc('+(b.col/b.cols*100).toFixed(3)+'% + 1px);width:calc('+(b.span/b.cols*100).toFixed(3)+'% - 2px)">'+
     '<div class="tb-bt">'+kc+'<div class="tb-n">'+esc(t.name)+'</div><div class="tb-m">'+meta+'</div></div>'+
     (chk?'<button class="check tb-chk" data-check="'+esc(t.id)+'" aria-label="'+(t.done?'Tandai belum selesai':'Tandai selesai')+'" aria-pressed="'+t.done+'">'+ic('check',3)+'</button>':'')+'</div>';
@@ -3673,6 +3769,7 @@ const layers=[];
 function isOpen(id){return layers.indexOf(id)>=0;}
 function showLayer(id){
   if(drag)dragCancel();
+  if(sw)swCancel();   // layar baru terbuka di tengah geser menu (Tahap 10) → menu kembali ke tempatnya
   const el=$(LAYER_EL[id]);el.classList.add('open');el.setAttribute('aria-hidden','false');$('#toast').classList.remove('on');
   const i=layers.indexOf(id);if(i>=0)layers.splice(i,1);layers.push(id);syncHist();
 }
@@ -3805,6 +3902,112 @@ function render(){
   if(isOpen('add')&&state.form)renderCatGrid();   // kategori custom bisa berubah setelah sinkron
 }
 
+/* ---- geser kiri/kanan = pindah menu (Tahap 10, Poin 11) ----
+   Menu yang tampil ikut jari; dilepas cukup jauh atau dikibas → pindah ke menu sebelahnya (urutan bottom navigation,
+   VIEWS) dengan animasi geser, kalau tidak → kembali ke tempatnya. Di menu paling kiri/kanan hanya bergeser sedikit.
+   Keputusan arah/pindah = L.swipeAxis/swipeNext/swipeOffset/swipeCommit. Hanya sentuhan (bukan mouse).
+   Gestur TIDAK dimulai (swipeOff) kalau:
+   - ada layar/sheet terbuka (layers): layar +, form, detail, cari, profil, dll. punya alur sendiri;
+   - Mode Edit kalender menyala atau tugas sedang/akan ditarik (drag): tekan lama + tarik tugas (Tahap 6, PROGRESS §4 6h);
+   - sentuhan mulai di elemen yang bisa digeser ke samping (chip di menu Tugas, tab bulan di Grafik, dan elemen lain yang
+     isinya lebih lebar dari kotaknya), di kurva Grafik (tooltip ikut jari), di kolom isian, atau di bottom navigation;
+   - sentuhan mulai ≤ 20 px dari tepi kiri/kanan layar (gestur "kembali" bawaan Android/iOS);
+   - jari ditahan diam > 0,5 dtk sebelum bergerak (tekan lama, bukan geser), atau ada jari kedua (cubit/zoom). */
+const SW_EDGE=20,SW_HOLD=500;
+let sw=null,swBusy=false;
+const reduceMotion=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}};
+function swipeOff(tg,x){
+  if(!me||swBusy||drag||layers.length||(state.view==='kalender'&&state.calEdit))return true;
+  if(x<SW_EDGE||x>innerWidth-SW_EDGE)return true;
+  if(!tg||!tg.closest||!tg.closest('.view')||tg.closest('#nav,input,textarea,select,[contenteditable],#curve'))return true;
+  for(let el=tg;el&&!el.classList.contains('view');el=el.parentElement){
+    if(el.scrollWidth>el.clientWidth+1){const o=getComputedStyle(el).overflowX;if(o==='auto'||o==='scroll')return true;}
+  }
+  return false;
+}
+const swReset=el=>{el.style.transition='';el.style.transform='';el.style.opacity='';el.classList.remove('sw-move');};
+// animasikan menu ke posisi x (px) dan opacity op dalam ms, lalu done() (cadangan waktu kalau transitionend tidak datang)
+function swAnim(el,x,op,ms,done){
+  const to='translate3d('+x+'px,0,0)';
+  if(!ms){el.style.transition='none';el.style.transform=to;el.style.opacity=String(op);done();return;}
+  let over=false,tm=0;
+  const fin=()=>{if(over)return;over=true;clearTimeout(tm);el.removeEventListener('transitionend',te);done();};
+  const te=e=>{if(e.target===el&&e.propertyName==='transform')fin();};
+  el.style.transition='transform '+ms+'ms cubic-bezier(.2,.8,.2,1),opacity '+ms+'ms linear';
+  el.addEventListener('transitionend',te);tm=setTimeout(fin,ms+80);
+  el.style.transform=to;el.style.opacity=String(op);
+}
+function swipeEnd(go){
+  const s=sw;sw=null;swHint(null);
+  if(!s||s.axis!=='x'||!s.el)return;
+  const el=s.el,fast=reduceMotion();
+  if(!go||!s.to||state.view!==s.from||layers.length||drag){swBusy=true;swAnim(el,0,1,fast?0:220,()=>{swReset(el);swBusy=false;});return;}
+  const dir=s.dx<0?-1:1;
+  swBusy=true;
+  // sisa jarak ditempuh secepat jari (90–200 ms), lalu menu tujuan masuk dari arah yang sama
+  const ms=fast?0:Math.round(Math.max(90,Math.min(200,(s.w-Math.abs(s.dx))/Math.max(Math.abs(s.vx),1.6))));
+  swAnim(el,dir*s.w,.35,ms,()=>{
+    swReset(el);
+    if(state.view===s.from&&!layers.length)goView(s.to);
+    const nel=$('#v-'+state.view);
+    if(fast||nel===el){swBusy=false;return;}
+    nel.classList.add('sw-move');nel.style.transition='none';nel.style.transform='translate3d('+Math.round(-dir*s.w*0.3)+'px,0,0)';nel.style.opacity='0';
+    void nel.offsetWidth;
+    swAnim(nel,0,1,240,()=>{swReset(nel);swBusy=false;});
+  });
+}
+// touchmove/touchend dipasang di elemen yang disentuh (bukan di #sc): daftar bisa dirender ulang di tengah gestur (sinkron
+// selesai, render tiap menit), dan elemen yang sudah dibuang dari halaman tetap menerima sentuhannya tapi tidak meneruskannya
+// ke #sc. Tanpa ini menu bisa tertahan setengah bergeser.
+let swTg=null;
+function swUnbind(){if(swTg){swTg.removeEventListener('touchmove',swMove);swTg.removeEventListener('touchend',swUp);swTg.removeEventListener('touchcancel',swCancel);swTg=null;}}
+SC.addEventListener('touchstart',e=>{
+  if(sw){const two=e.touches.length!==1;swUnbind();swipeEnd(false);if(two)return;}   // jari kedua → batal
+  if(e.touches.length!==1)return;
+  const p=e.touches[0],tg=/** @type {Element} */(e.target);
+  if(swipeOff(tg,p.clientX))return;
+  sw={id:p.identifier,x0:p.clientX,y0:p.clientY,t0:e.timeStamp,axis:null,dx:0,vx:0,lx:p.clientX,lt:e.timeStamp,el:null,r:null,to:null,w:0,from:state.view};
+  swTg=tg;tg.addEventListener('touchmove',swMove,{passive:false});tg.addEventListener('touchend',swUp);tg.addEventListener('touchcancel',swCancel);
+},{passive:true});
+function swCancel(){swUnbind();if(sw)swipeEnd(false);}
+function swMove(/** @type {TouchEvent} */e){
+  if(!sw){swUnbind();return;}
+  if(e.touches.length!==1){swCancel();return;}
+  const p=touchOf(e,sw.id);if(!p)return;
+  const dx=p.clientX-sw.x0,dy=p.clientY-sw.y0;
+  if(!sw.axis){
+    const ax=L.swipeAxis(dx,dy);if(!ax)return;
+    // gulir biasa / tekan lama / keadaan berubah sejak disentuh → bukan geser menu
+    if(ax==='y'||e.timeStamp-sw.t0>SW_HOLD||drag||layers.length||state.view!==sw.from){sw=null;swUnbind();return;}
+    sw.axis='x';sw.el=$('#v-'+sw.from);sw.w=sw.el.offsetWidth||innerWidth;sw.el.classList.add('sw-move');sw.el.style.transition='none';sw.r=sw.el.getBoundingClientRect();
+  }
+  if(e.cancelable)e.preventDefault();   // halaman tidak ikut bergulir naik-turun selama menggeser
+  const dt=e.timeStamp-sw.lt;
+  if(dt>0){const v=(p.clientX-sw.lx)/dt;sw.vx=dt>=60?v:sw.vx*0.35+v*0.65;}
+  sw.lx=p.clientX;sw.lt=e.timeStamp;sw.dx=dx;
+  sw.to=L.swipeNext(VIEWS,sw.from,dx);
+  sw.el.style.transform='translate3d('+L.swipeOffset(dx,!!sw.to).toFixed(1)+'px,0,0)';
+  swHint(sw);
+}
+// petunjuk menu tujuan (ikon + nama dari bottom navigation) di tengah area yang terbuka; kuning = dilepas sekarang akan pindah
+function swHint(s){
+  const h=$('#sw-hint');
+  if(!s||!s.to){h.classList.remove('on','ready');h.style.opacity='';return;}
+  if(h.dataset.v!==s.to){const b=$('#nav [data-view="'+s.to+'"]');h.innerHTML=b?b.innerHTML:'';h.dataset.v=s.to;}
+  const gap=Math.abs(s.dx),x=s.dx<0?s.r.right-gap/2:s.r.left+gap/2;   // s.r = posisi menu sebelum digeser
+  h.style.left=Math.round(x)+'px';h.style.opacity=String(Math.max(0,Math.min(1,(gap-24)/70)));
+  h.classList.add('on');h.classList.toggle('ready',L.swipeCommit(s.dx,0,s.w));
+}
+function swUp(/** @type {TouchEvent} */e){
+  if(!sw){swUnbind();return;}
+  if(!touchOf(e,sw.id))return;
+  swUnbind();
+  if(sw.axis!=='x'){sw=null;return;}
+  if(e.timeStamp-sw.lt>90)sw.vx=0;   // jari sempat berhenti sebelum diangkat → bukan kibasan
+  swipeEnd(L.swipeCommit(sw.dx,sw.vx,sw.w));
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&sw)swCancel();});   // aplikasi ke latar belakang di tengah gestur
+
 document.addEventListener('click',e=>{
   const tg=/** @type {Element} */(e.target);
   // klik yang menyusul akhir drag (Mode Edit kalender) jangan membuka detail / memilih tanggal
@@ -3813,6 +4016,8 @@ document.addEventListener('click',e=>{
   if(chk){e.preventDefault();toggleDone(chk.dataset.check,chk);return;}
   const act=tg.closest('[data-act]');
   if(act){handle(act.dataset.act,act,e);return;}
+  const kl=tg.closest('.tb-kc[data-keg]');   // Tahap 10: label kegiatan di blok tugas → detail kegiatan
+  if(kl&&tasks[kl.getAttribute('data-keg')]){openDetail(kl.getAttribute('data-keg'));return;}
   const row=tg.closest('.task[data-id],.tb-b[data-id],.keg-h[data-id],.tb-k[data-id]');   // baris tugas / blok Time Blocking (Tahap 7) / kegiatan (Tahap 8)
   if(row){openDetail(row.getAttribute('data-id'));return;}
   if(!tg.closest('#curve')){const c=$('#curve');if(c&&c._hide)c._hide();}

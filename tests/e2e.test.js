@@ -25,7 +25,7 @@ function loadPlaywright() {
 const pw = loadPlaywright();
 
 function serve() {
-  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.json': 'application/json' };
+  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml' };
   const srv = http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (p.endsWith('/')) p += 'index.html';
@@ -1969,8 +1969,12 @@ test('E2E Tahap 8 (perbaikan): nama kegiatan di Time Blocking tidak tertutup tug
     await scrollTo(600); await wait(200);
     await p.click('.tb-b[data-id="cek"] .check'); await wait(400);
     assert.equal(await p.textContent('.tb-b[data-id="cek"] .tb-kc'), 'Kerja kantor · 10:00–17:00 · 1/1 selesai');
-    // tap label kegiatan di blok tugas = detail tugas (blok tugas), latar di garis kiri = detail kegiatan
+    // tap label kegiatan di blok tugas = detail KEGIATAN (dirapikan Tahap 10; dulu detail tugas), tap bagian lain blok = detail tugas
     await p.click('.tb-b[data-id="cek"] .tb-kc'); await wait(400);
+    assert.equal(await p.textContent('#detail-top'), 'Detail kegiatan');
+    assert.match(await p.textContent('#detail-wrap .sheet'), /Kerja kantor/);
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+    await p.click('.tb-b[data-id="cek"] .tb-n'); await wait(400);
     assert.equal(await p.textContent('#detail-top'), 'Detail tugas');
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
@@ -2213,6 +2217,294 @@ test('E2E Tahap 9: profil (pilih setelah masuk, tambah/ubah/hapus + urungkan), f
     await p.tap('#acct-body .pf-chip[data-id="p2"]'); await wait(300);
     assert.equal(await hdr(), 'p2|hijab|Sari|svg');
     assert.equal(await p.evaluate(() => JSON.stringify(Object.keys(localStorage).sort().map(k => [k, localStorage.getItem(k)]))), before, 'mode coba tidak menulis localStorage');
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});
+
+test('E2E Tahap 10: geser kiri/kanan untuk pindah menu (Poin 11) — animasi, tab aktif, tempat yang dinonaktifkan', { skip: !pw && 'Playwright tidak terpasang', timeout: 240000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, date, start, extra) => Object.assign({ id, cat: 'tkuliah', name, detail: '', date, start, end: start ? String(+start.slice(0, 2) + 1).padStart(2, '0') + start.slice(2) : '',
+    dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '', createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  const many = Array.from({ length: 14 }, (_, i) => T('h' + i, 'Tugas ' + (i + 1), '2026-11-10', String(7 + i).padStart(2, '0') + ':00'));
+  S.post('apiSync', reg.token, many.concat([
+    T('k', 'Jam kerja', '2026-11-10', '08:00', { cat: 'jamkerja', kind: 'kegiatan', end: '16:00' }),
+    T('o', 'Oktober', '2026-10-05', '09:00'), T('s', 'September', '2026-09-05', '09:00', { done: true, doneAt: 1762740000000, doneBy: 'p1' })
+  ]).map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const cdp = await p.context().newCDPSession(p);
+  const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts || [] });
+  const V = ['tugas', 'kalender', 'grafik', 'saya'];
+  const view = () => p.evaluate(V => V.filter(v => !document.getElementById('v-' + v).classList.contains('hidden')).join(','), V);
+  const navOn = () => p.evaluate(() => [...document.querySelectorAll('#nav button.on')].map(b => b.dataset.view).join(','));
+  const tx = v => p.evaluate(v => { const m = getComputedStyle(document.getElementById('v-' + v)).transform; return m === 'none' ? 0 : Math.round(new DOMMatrix(m).m41); }, v);
+  const leftovers = () => p.evaluate(V => V.filter(v => { const e = document.getElementById('v-' + v); return e.style.transform || e.style.opacity || e.style.transition || e.classList.contains('sw-move'); }), V);
+  const scTop = () => p.evaluate(() => document.getElementById('sc').scrollTop);
+  /** geser satu jari dari (x0,y0) ke (x1,y1) dalam n langkah tiap `ms` ms; mid() sebelum jari diangkat; hold = diam dulu */
+  async function swipe(x0, y0, x1, y1, o) {
+    o = o || {}; const n = o.n || 8, ms = o.ms || 16;
+    await touch('touchStart', [{ x: x0, y: y0 }]);
+    if (o.hold) await wait(o.hold);
+    for (let i = 1; i <= n; i++) { await touch('touchMove', [{ x: x0 + (x1 - x0) * i / n, y: y0 + (y1 - y0) * i / n }]); await wait(ms); }
+    if (o.mid) await o.mid();
+    if (o.rest) await wait(o.rest);
+    await touch('touchEnd'); await wait(o.after == null ? 650 : o.after);
+  }
+  const left = (o, y) => swipe(330, y || 520, 70, y || 520, o);
+  const right = (o, y) => swipe(70, y || 520, 330, y || 520, o);
+  try {
+    await p.goto(base); await wait(1500);
+    assert.equal(await view(), 'tugas');
+
+    // ---- Tugas → Kalender: menu ikut jari, halaman tidak bergulir, tab aktif ikut berubah, tidak ada sisa gaya ----
+    const y0 = await scTop();
+    await swipe(330, 640, 70, 490, { mid: async () => {   // miring ±30° ke atas: tetap geser menu, halaman tidak boleh ikut bergulir
+      assert.ok(await tx('tugas') <= -200, 'menu Tugas ikut jari ke kiri: ' + await tx('tugas'));
+      assert.equal(await scTop(), y0, 'halaman tidak ikut bergulir saat menggeser');
+      assert.equal(await navOn(), 'tugas', 'tab aktif berubah saat jari diangkat');
+      // petunjuk menu tujuan di area yang terbuka: ikon + "Kalender", kuning karena sudah cukup jauh
+      const h = await p.evaluate(() => { const e = document.getElementById('sw-hint'), r = e.getBoundingClientRect(), v = document.getElementById('v-tugas').getBoundingClientRect();
+        return { txt: e.textContent.trim(), ready: e.classList.contains('ready'), op: +getComputedStyle(e).opacity, inGap: r.left >= v.right - 1 && r.right <= 391 }; });
+      assert.deepEqual([h.txt, h.ready, h.op > 0.9, h.inGap], ['Kalender', true, true, true], JSON.stringify(h));
+      await shot('t10-01-menggeser');
+    } });
+    assert.deepEqual([await view(), await navOn()], ['kalender', 'kalender']);
+    assert.deepEqual(await leftovers(), [], 'setelah animasi tidak ada transform/opacity tersisa');
+    assert.equal(await p.isVisible('#cgrid'), true);
+    // animasi masuk: menu baru datang dari kanan lalu berhenti di 0
+    await swipe(330, 520, 70, 520, { after: 0 }); await wait(240);
+    const mid = await tx('grafik');
+    await wait(500);
+    assert.equal(await view(), 'grafik');
+    assert.ok(mid > 0 && mid < 130, 'Grafik masuk dari kanan (sedang di ' + mid + ' px)');
+    assert.equal(await tx('grafik'), 0);
+    await left();
+    assert.deepEqual([await view(), await navOn()], ['saya', 'saya']);
+    await shot('t10-02-saya');
+
+    // ---- ujung kanan: hanya bergeser sedikit (efek karet) lalu kembali ----
+    await left({ mid: async () => { const x = await tx('saya'); assert.ok(x < 0 && x >= -56, 'efek karet maks 56 px: ' + x);
+      assert.equal(await p.isVisible('#sw-hint'), false, 'di ujung tidak ada menu tujuan'); } });
+    assert.equal(await view(), 'saya');
+    assert.deepEqual(await leftovers(), []);
+
+    // ---- geser kanan = kembali berurutan; tombol back HP tetap ke menu Tugas ----
+    await right();
+    assert.deepEqual([await view(), await navOn()], ['grafik', 'grafik']);
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+    assert.equal(await view(), 'tugas', 'back HP setelah geser → menu Tugas');
+    assert.equal(await p.evaluate(() => location.href.startsWith('http')), true, 'tidak keluar aplikasi');
+    await right({ mid: async () => { const x = await tx('tugas'); assert.ok(x > 0 && x <= 56, 'ujung kiri: efek karet ' + x); } });
+    assert.equal(await view(), 'tugas');
+
+    // ---- geser pendek & pelan = kembali; kibasan pendek & cepat = pindah ----
+    await swipe(300, 520, 220, 520, { n: 8, ms: 50, rest: 150, mid: async () => {
+      assert.deepEqual(await p.evaluate(() => { const e = document.getElementById('sw-hint'); return [e.textContent.trim(), e.classList.contains('ready')]; }), ['Kalender', false], 'belum cukup jauh: petunjuk belum kuning'); } });
+    assert.equal(await p.isVisible('#sw-hint'), false, 'petunjuk hilang setelah dilepas');
+    assert.equal(await view(), 'tugas', '80 px pelan + berhenti → batal');
+    assert.deepEqual(await leftovers(), []);
+    await swipe(300, 520, 236, 520, { n: 2, ms: 0 });
+    assert.equal(await view(), 'kalender', 'kibasan 60 px cepat → pindah');
+    await right();
+    assert.equal(await view(), 'tugas');
+
+    // ---- gulir naik-turun (agak miring) tetap gulir biasa ----
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 0)); await wait(100);
+    await swipe(200, 700, 240, 300, { n: 10, ms: 16 });
+    assert.equal(await view(), 'tugas', 'gulir tidak pindah menu');
+    assert.ok(await scTop() > 100, 'halaman bergulir: ' + await scTop());
+    assert.deepEqual(await leftovers(), []);
+
+    // ---- tepi layar (gestur back bawaan HP) dan tekan lama dulu → tidak pindah ----
+    await swipe(8, 520, 300, 520);
+    assert.equal(await view(), 'tugas', 'mulai di tepi kiri');
+    await swipe(382, 520, 100, 520);
+    assert.equal(await view(), 'tugas', 'mulai di tepi kanan');
+    await swipe(330, 520, 70, 520, { hold: 650 });
+    assert.equal(await view(), 'tugas', 'ditahan > 0,5 dtk dulu = tekan lama, bukan geser');
+
+    // ---- dua jari (cubit) → batal ----
+    await touch('touchStart', [{ x: 300, y: 500 }]);
+    await touch('touchMove', [{ x: 260, y: 500 }]); await wait(16);
+    await touch('touchMove', [{ x: 220, y: 500 }, { x: 200, y: 600 }]); await wait(16);
+    await touch('touchMove', [{ x: 120, y: 500 }, { x: 100, y: 600 }]); await wait(16);
+    await touch('touchEnd'); await wait(500);
+    assert.equal(await view(), 'tugas', 'jari kedua membatalkan');
+    assert.deepEqual(await leftovers(), []);
+
+    // ---- daftar dirender ulang di tengah gestur (sinkron / render tiap menit) → gestur tetap selesai ----
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 0)); await wait(100);
+    const rowY = await p.evaluate(() => { const r = document.querySelector('#home-list .task[data-id="h3"]').getBoundingClientRect(); return r.y + r.height / 2; });
+    await touch('touchStart', [{ x: 330, y: rowY }]);
+    for (let i = 1; i <= 4; i++) { await touch('touchMove', [{ x: 330 - 30 * i, y: rowY }]); await wait(16); }
+    await p.evaluate(() => { window.__row = document.querySelector('#home-list .task[data-id="h3"]'); document.getElementById('home-view').click(); document.getElementById('home-view').click(); });
+    assert.equal(await p.evaluate(() => window.__row.isConnected), false, 'baris yang disentuh sudah diganti');
+    for (let i = 5; i <= 8; i++) { await touch('touchMove', [{ x: 330 - 30 * i, y: rowY }]); await wait(16); }
+    assert.ok(await tx('tugas') <= -200, 'menu tetap ikut jari setelah render ulang');
+    await touch('touchEnd'); await wait(650);
+    assert.equal(await view(), 'kalender');
+    assert.deepEqual(await leftovers(), []);
+
+    // ---- Kalender: Mode Edit menyala → geser tidak aktif (tekan lama + tarik tugas) ----
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+    await left(null, 300); await right(null, 300);
+    assert.equal(await view(), 'kalender', 'Mode Edit: tidak pindah menu');
+    assert.equal(await p.evaluate(() => document.getElementById('v-kalender').classList.contains('editing')), true);
+    await p.tap('[data-act="cal-edit"]'); await wait(200);
+    await right(null, 300);
+    assert.equal(await view(), 'tugas', 'Mode Edit mati → geser lagi');
+
+    // ---- Grafik: tab bulan (bisa digeser ke samping) & kurva → tidak pindah menu ----
+    await p.click('#nav [data-view="grafik"]'); await wait(400);
+    const tabs = await p.evaluate(() => { const r = document.getElementById('mtabs').getBoundingClientRect(), m = document.getElementById('mtabs');
+      return { y: r.y + r.height / 2, over: m.scrollWidth > m.clientWidth, sl: m.scrollLeft }; });
+    assert.equal(tabs.over, true, 'tab bulan lebih lebar dari layar');
+    await swipe(70, tabs.y, 330, tabs.y);   // tab "Bulan ini" ada di kanan → geser ke kanan untuk melihat bulan sebelumnya
+    assert.equal(await view(), 'grafik', 'geser di tab bulan = menggeser tab');
+    assert.ok(await p.evaluate(() => document.getElementById('mtabs').scrollLeft) < tabs.sl - 100, 'tab bulan ikut bergeser');
+    await p.evaluate(() => document.getElementById('curve').scrollIntoView({ block: 'center' })); await wait(150);
+    const cv = await p.evaluate(() => { const r = document.getElementById('curve').getBoundingClientRect(); return r.y + r.height / 2; });
+    await swipe(330, cv, 70, cv);
+    assert.equal(await view(), 'grafik', 'geser di kurva = tooltip, bukan pindah menu');
+    await p.evaluate(() => document.getElementById('sc').scrollTo(0, 0)); await wait(100);
+    await swipe(330, 300, 70, 300);
+    assert.equal(await view(), 'saya', 'di luar tab & kurva tetap pindah');
+
+    // ---- layar/sheet terbuka → gestur milik layar itu ----
+    await right(); await right(); await right();
+    assert.equal(await view(), 'tugas');
+    await p.click('[data-act="search"]'); await wait(400);
+    await swipe(330, 500, 70, 500);
+    assert.equal(await p.evaluate(() => document.getElementById('search-screen').classList.contains('open')), true);
+    assert.equal(await view(), 'tugas');
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+
+    // ---- Time Blocking: geser = pindah menu; strip 7 hari tetap menempel di bawah kepala halaman saat menu digeser ----
+    await p.click('#home-view'); await wait(500);
+    assert.equal(await p.isVisible('#tb'), true);
+    await p.evaluate(() => document.getElementById('sc').scrollBy(0, 500)); await wait(150);
+    const stuck = () => p.evaluate(() => Math.round(document.getElementById('tb-bar').getBoundingClientRect().top - document.getElementById('home-top').getBoundingClientRect().bottom) + 0);
+    assert.equal(await stuck(), 0, 'strip menempel sebelum digeser');
+    await left({ mid: async () => {
+      assert.equal(await stuck(), 0, 'strip tetap menempel saat menu digeser');
+      assert.ok(await p.evaluate(() => document.getElementById('home-top').getBoundingClientRect().top) === 0, 'kepala halaman tetap di atas');
+      await shot('t10-03-time-blocking-digeser');
+    } }, 600);
+    assert.equal(await view(), 'kalender');
+    await right();
+    assert.deepEqual([await view(), await p.isVisible('#tb')], ['tugas', true], 'kembali ke Time Blocking');
+    // tap tugas setelah geser tetap membuka detail
+    await p.locator('.tb-b[data-id="h2"]').tap(); await wait(400);
+    assert.equal(await p.evaluate(() => document.getElementById('detail-wrap').classList.contains('open')), true);
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+
+    // ---- pengaturan "kurangi gerakan" → pindah tanpa animasi ----
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    await swipe(330, 520, 70, 520, { after: 30 });
+    assert.equal(await view(), 'kalender');
+    assert.deepEqual(await leftovers(), [], 'tanpa animasi: langsung di tempatnya');
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
+
+    // ---- layar 360 px ----
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    await swipe(300, 400, 60, 400);
+    assert.equal(await view(), 'grafik');
+    await swipe(60, 400, 300, 400); await swipe(60, 400, 300, 400);
+    assert.equal(await view(), 'tugas');
+    assert.deepEqual(await leftovers(), []);
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});
+
+test('E2E Tahap 10: logo baru di layar masuk, nama aplikasi di kepala halaman, ikon & splash bisa diambil (Poin 7)', { skip: !pw && 'Playwright tidak terpasang', timeout: 120000 }, async () => {
+  const S = makeRuntime();
+  const { p, base, errs, close, wait } = await open(S);
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  try {
+    await p.goto(base); await wait(600);
+    // layar masuk: logo kalender centang 76 px + "Pengelola" putih, "Tugas" kuning
+    const auth = await p.evaluate(() => { const l = document.querySelector('.auth-logo svg').getBoundingClientRect(), h = document.querySelector('#auth h1');
+      return { w: Math.round(l.width), h: Math.round(l.height), txt: h.textContent, tugas: getComputedStyle(h.querySelector('b')).color, kata: getComputedStyle(h).color }; });
+    assert.deepEqual(auth, { w: 76, h: 76, txt: 'Pengelola Tugas', tugas: 'rgb(255, 212, 59)', kata: 'rgb(242, 242, 240)' });
+    await shot('t10-10-layar-masuk');
+    // semua ikon, favicon, manifest, dan splash yang dirujuk halaman bisa diambil
+    const refs = await p.evaluate(async () => {
+      const hrefs = [...document.querySelectorAll('link[rel~="icon"],link[rel="apple-touch-icon"],link[rel="apple-touch-startup-image"],link[rel="manifest"]')].map(l => l.href);
+      const man = await (await fetch(document.querySelector('link[rel="manifest"]').href)).json();
+      man.icons.forEach(i => hrefs.push(new URL(i.src, location.href).href));
+      const st = await Promise.all(hrefs.map(async h => (await fetch(h)).status));
+      return { n: hrefs.length, bad: hrefs.filter((h, i) => st[i] !== 200) };
+    });
+    assert.deepEqual(refs.bad, [], 'semua rujukan ikon/splash ada');
+    assert.ok(refs.n >= 30, 'favicon, apple-touch, 21 splash, manifest + 5 ikon: ' + refs.n);
+    // daftar → kepala halaman memakai nama baru dan tetap muat di 390 & 360 px
+    await p.fill('#a-name', 'Adit'); await p.fill('#a-user', 'adit'); await p.fill('#a-pin', '1234'); await p.fill('#a-pin2', '1234');
+    await p.click('#a-submit'); await wait(900);
+    const fit = () => p.evaluate(() => { const h = document.querySelector('#home-top h1'), wm = h.querySelector('.wm').getBoundingClientRect(), dot = h.querySelector('.sync-dot').getBoundingClientRect();
+      return { txt: h.querySelector('.wm').textContent, tugas: getComputedStyle(h.querySelector('.wm b')).color,
+        fits: wm.left >= document.querySelector('#home-top .avatar-btn').getBoundingClientRect().right - 1 && dot.right <= document.getElementById('home-view').getBoundingClientRect().left,
+        oneLine: Math.round(wm.height) < 30 }; });
+    assert.deepEqual(await fit(), { txt: 'Pengelola Tugas', tugas: 'rgb(255, 212, 59)', fits: true, oneLine: true });
+    await shot('t10-11-kepala-390');
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300);
+    assert.deepEqual(await fit(), { txt: 'Pengelola Tugas', tugas: 'rgb(255, 212, 59)', fits: true, oneLine: true }, '360 px');
+    await shot('t10-12-kepala-360');
+    await p.setViewportSize({ width: 320, height: 640 }); await wait(300);
+    assert.equal((await fit()).fits, true, '320 px (HP kecil)');
+    assert.deepEqual(errs, [], 'tidak ada error JavaScript');
+  } finally { await close(); }
+});
+
+test('E2E Tahap 10: label kegiatan di Time Blocking dirapikan (3 tugas berdampingan, blok pendek, ketuk label, bukan anggota)', { skip: !pw && 'Playwright tidak terpasang', timeout: 120000 }, async () => {
+  const S = makeRuntime();
+  const reg = S.post('apiRegister', 'adit', '1234', 'Adit');
+  const T = (id, name, start, end, extra) => Object.assign({ id, cat: 'tkerja', name, detail: '', date: '2026-11-10', start, end, dlDate: '', dlTime: '', done: false, doneAt: null, doneBy: '',
+    createdAt: 1762740000000, updatedAt: 1762740000000, kind: 'tugas', diff: '', parent: '', by: 'p1' }, extra || {});
+  S.post('apiSync', reg.token, [
+    T('kul', 'Kuliah pagi', '08:00', '12:00', { cat: 'kuliah', kind: 'kegiatan' }),
+    T('a', 'Absen', '08:00', '10:00', { parent: 'kul' }), T('b', 'Catat', '08:00', '10:00', { parent: 'kul' }), T('c', 'Kuis', '08:00', '10:00', { parent: 'kul' }),
+    T('rap', 'Rapat siang', '13:00', '13:42', { cat: 'meeting', kind: 'kegiatan' }),
+    T('not', 'Notulen rapat', '13:00', '13:42', { parent: 'rap' }),
+    T('ker', 'Kerja shift', '15:00', '20:00', { cat: 'jamkerja', kind: 'kegiatan' }),
+    T('tel', 'Telepon klien', '15:00', '20:00')                                  // bukan anggota "Kerja shift", hanya jamnya sama
+  ].map(t => ({ op: 'upsert', task: t })));
+  const { p, base, errs, close, wait } = await open(S, { localStorage: {
+    'pt.accounts': [{ id: reg.user.id, username: 'adit', name: 'Adit', token: reg.token }], 'pt.current': reg.user.id, 'pt.homeView': 'tb' } });
+  const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
+  const scrollTo = min => p.evaluate(m => { const g = document.getElementById('tb-grid'), sc = document.getElementById('sc');
+    sc.scrollTo(0, g.getBoundingClientRect().top + sc.scrollTop + 10 + m - document.getElementById('home-top').offsetHeight - document.getElementById('tb-bar').offsetHeight - 30); }, min);
+  try {
+    await p.goto(base); await wait(1500);
+    // (1) tiga tugas berdampingan menutupi awal "Kuliah pagi" → nama utuh di celah 10:00, bukan terpotong di blok sempit
+    await scrollTo(470); await wait(200);
+    const k1 = await p.evaluate(() => { const l = document.querySelector('.tb-k[data-id="kul"] .tb-kl'), b = l && l.querySelector('b'), r = l && l.getBoundingClientRect(), hit = l && document.elementFromPoint(r.left + 20, r.top + r.height / 2);
+      return { label: !!l, top: l ? Math.round(r.top - document.querySelector('.tb-k[data-id="kul"]').getBoundingClientRect().top) : null, full: b ? b.scrollWidth <= b.clientWidth : false,
+        seen: !!hit && l.contains(hit), hosted: document.querySelectorAll('.tb-b .tb-kc').length && [...document.querySelectorAll('.tb-kc')].map(x => x.dataset.keg).includes('kul') }; });
+    assert.deepEqual(k1, { label: true, top: 121, full: true, seen: true, hosted: false }, 'label di 10:00 (120 mnt dari awal + 1 px garis)');
+    await shot('t10-20-tiga-berdampingan');
+    await p.setViewportSize({ width: 360, height: 740 }); await wait(300); await scrollTo(470); await wait(150);
+    assert.equal(await p.evaluate(() => { const b = document.querySelector('.tb-k[data-id="kul"] .tb-kl b'); return b.scrollWidth <= b.clientWidth; }), true, '360 px: nama tetap utuh');
+    await p.setViewportSize({ width: 390, height: 844 }); await wait(300);
+    // (2) blok tugas 42 mnt memuat label "Rapat siang" → nama tugas & jamnya tetap terlihat (satu baris), tidak terpotong
+    await scrollTo(760); await wait(200);
+    const blk = await p.evaluate(() => { const b = document.querySelector('.tb-b[data-id="not"]'), r = b.getBoundingClientRect(), kc = b.querySelector('.tb-kc'), n = b.querySelector('.tb-n'), m = b.querySelector('.tb-m');
+      const inside = e => { const x = e.getBoundingClientRect(); return x.height > 0 && x.top >= r.top && x.bottom <= r.bottom + 0.5 && x.right <= r.right + 0.5; };
+      return { kh: b.classList.contains('kh'), h: Math.round(r.height), kc: !!kc && inside(kc), name: inside(n), time: inside(m) && m.textContent.includes('13:00–13:42'), keg: kc && kc.dataset.keg }; });
+    assert.deepEqual(blk, { kh: true, h: 40, kc: true, name: true, time: true, keg: 'rap' });
+    await shot('t10-21-blok-pendek');
+    // (3) ketuk label = detail kegiatan; ketuk nama = detail tugas
+    await p.click('.tb-b[data-id="not"] .tb-kc'); await wait(400);
+    assert.equal(await p.textContent('#detail-top'), 'Detail kegiatan');
+    assert.match(await p.textContent('#detail-wrap .sheet'), /Rapat siang/);
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+    await p.click('.tb-b[data-id="not"] .tb-n'); await wait(400);
+    assert.equal(await p.textContent('#detail-top'), 'Detail tugas');
+    await p.goBack({ waitUntil: 'commit' }).catch(() => {}); await wait(400);
+    // (4) "Telepon klien" bukan anggota "Kerja shift" → label kegiatan tidak menumpang di sana (latar tetap bisa diketuk)
+    assert.equal(await p.locator('.tb-b[data-id="tel"] .tb-kc').count(), 0, 'tidak menumpang di tugas yang bukan anggota');
+    assert.equal(await p.locator('.tb-k[data-id="ker"]').count(), 1);
     assert.deepEqual(errs, [], 'tidak ada error JavaScript');
   } finally { await close(); }
 });

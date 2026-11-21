@@ -1046,7 +1046,8 @@ test('mode coba: contoh kegiatan + aturan server sama dengan Code.gs (serverRule
 
 test('Time Blocking (perbaikan Tahap 8): nama kegiatan tidak boleh tertutup tugas — label di celah dekat awal, atau di blok tugas penutup', () => {
   const lab = (bg, fg) => plain(L.tbLabels(L.tbLayout(bg, 20), L.tbLayout(fg, 20), 20, 60, 40));
-  const k = (s, e) => LB('k', s, e), t = (id, s, e) => LB(id, s, e);
+  // tugas di sini anggota kegiatan "k" (sejak Tahap 10 label hanya menumpang di tugas anggota kegiatan itu)
+  const k = (s, e) => LB('k', s, e), t = (id, s, e, par) => LB(id, s, e, { parent: par || 'k' });
   assert.deepEqual(lab([k(480, 1020)], []), [{ at: 480, host: -1 }], 'tanpa tugas: di awal kegiatan');
   assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 540)]), [{ at: 540, host: -1 }], 'tugas 1 jam di awal: label tepat di bawahnya');
   // laporan user: kegiatan & tugas 10:00–17:00 → dulu label tertutup seluruhnya; sekarang di blok tugas itu
@@ -1061,8 +1062,34 @@ test('Time Blocking (perbaikan Tahap 8): nama kegiatan tidak boleh tertutup tuga
   assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 515), t('b', 515, 550)]), [{ at: 550, host: -1 }]);
   assert.deepEqual(lab([k(600, 630)], [t('a', 600, 630)]), [{ at: null, host: -1 }]);
   // beberapa kegiatan sekaligus; masukan kosong/rusak aman
-  assert.deepEqual(lab([k(480, 600), LB('k2', 900, 960)], [t('x', 900, 960)]), [{ at: 480, host: -1 }, { at: null, host: 0 }]);
+  assert.deepEqual(lab([k(480, 600), LB('k2', 900, 960)], [t('x', 900, 960, 'k2')]), [{ at: 480, host: -1 }, { at: null, host: 0 }]);
   assert.deepEqual(plain(L.tbLabels(null, null, 20, 60, 40)), []);
+});
+
+test('Time Blocking (dirapikan Tahap 10): label kegiatan hanya di tugas anggotanya, blok sempit hanya kalau tidak ada celah', () => {
+  const k = (s, e) => LB('k', s, e), t = (id, s, e, par) => LB(id, s, e, { parent: par == null ? 'k' : par });
+  const lab = (bg, fg, frac) => plain(L.tbLabels(L.tbLayout(bg, 20), L.tbLayout(fg, 20), 20, 60, 40, frac == null ? 0.5 : frac));
+  // (4) tugas yang BUKAN anggota kegiatan, hanya bertabrakan jam → tidak dipakai; celah jauh kalau ada, kalau tidak → tanpa label
+  assert.deepEqual(lab([k(600, 1020)], [t('lain', 600, 1020, '')]), [{ at: null, host: -1 }], 'jam sama, bukan anggota');
+  assert.deepEqual(lab([k(480, 1020)], [t('lain', 480, 720, '')]), [{ at: 720, host: -1 }], 'bukan anggota → celah jauh');
+  assert.deepEqual(lab([k(480, 1020)], [t('lain', 480, 720, 'k-lain')]), [{ at: 720, host: -1 }], 'anggota kegiatan lain');
+  // anggota dipilih walau tugas lain mulai lebih dekat dengan awal kegiatan
+  const mix = L.tbLayout([t('lain', 600, 1020, ''), t('anggota', 610, 1020)], 20);
+  assert.equal(mix[plain(L.tbLabels(L.tbLayout([k(600, 1020)], 20), mix, 20, 60, 40, 0.5))[0].host].t.id, 'anggota');
+  // (1) tiga tugas berdampingan menutupi awal kegiatan (masing-masing ⅓ lebar): ada celah di bawahnya → label di celah itu
+  const three = [t('a', 480, 600), t('b', 480, 600), t('c', 480, 600)];
+  assert.deepEqual(lab([k(480, 720)], three), [{ at: 600, host: -1 }], '3 berdampingan + celah jauh → celah');
+  // … tanpa celah sama sekali → tetap di blok sempit (lebih baik terpotong daripada hilang)
+  const full = [t('a', 480, 720), t('b', 480, 720), t('c', 480, 720)];
+  const fl = L.tbLayout(full, 20), r3 = plain(L.tbLabels(L.tbLayout([k(480, 720)], 20), fl, 20, 60, 40, 0.5))[0];
+  assert.equal(r3.at, null);
+  assert.equal(fl[r3.host].col, 0, 'blok kiri');
+  // dua berdampingan (½ lebar) masih dianggap cukup lebar → tetap di blok tugas seperti perbaikan Tahap 8
+  assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 720), t('b', 480, 720)]), [{ at: null, host: 0 }]);
+  // minFrac 0 (tanpa batas lebar) = perilaku lama untuk anggota
+  assert.deepEqual(lab([k(480, 720)], three, 0), [{ at: null, host: 0 }]);
+  // celah dekat (≤ 60 mnt) tetap paling utama
+  assert.deepEqual(lab([k(480, 1020)], [t('a', 480, 530), t('b', 480, 530), t('c', 480, 530)]), [{ at: 530, host: -1 }]);
 });
 
 // ---------------- Tahap 9 (Poin 6 + 18): profil & foto profil ----------------
@@ -1177,4 +1204,52 @@ test('mode coba: dua profil contoh, tugas dibuat/dicentang profil kedua', () => 
   assert.ok(st.rows[1].made >= 2 && st.rows[1].checked >= 1, 'Sari membuat & mencentang tugas contoh');
   assert.equal(L.tasksOnly(seed.tasks).length, 12, 'jumlah tugas contoh tetap 12');
   seed.tasks.forEach(t => assert.ok(L.isProf(t.by) && (t.done ? L.isProf(t.doneBy) : t.doneBy === ''), t.name));
+});
+
+// ---------------- Tahap 10 (Poin 11): geser kiri/kanan untuk pindah menu ----------------
+test('geser pindah menu: arah gerak, menu tujuan, efek karet di ujung, kapan pindah', () => {
+  const V = ['tugas', 'kalender', 'grafik', 'saya'];
+  // arah: belum jelas di dalam slop; samping harus ≥ 1,3× vertikal; diagonal 45° = gulir
+  assert.equal(L.swipeAxis(0, 0), null);
+  assert.equal(L.swipeAxis(9, 3), null, 'masih di dalam slop 10 px');
+  assert.equal(L.swipeAxis(-12, 2), 'x');
+  assert.equal(L.swipeAxis(13, 10), 'x', '13 ≥ 10 × 1,3');
+  assert.equal(L.swipeAxis(12, 10), 'y', '12 < 13');
+  assert.equal(L.swipeAxis(30, 30), 'y', 'diagonal = gulir');
+  assert.equal(L.swipeAxis(2, -40), 'y');
+  assert.equal(L.swipeAxis(6, 0, 5), 'x', 'slop bisa diatur');
+  // menu tujuan = urutan bottom navigation; jari ke kiri = berikutnya
+  assert.equal(L.swipeNext(V, 'tugas', -50), 'kalender');
+  assert.equal(L.swipeNext(V, 'kalender', -50), 'grafik');
+  assert.equal(L.swipeNext(V, 'grafik', -1), 'saya');
+  assert.equal(L.swipeNext(V, 'saya', -50), null, 'menu paling kanan');
+  assert.equal(L.swipeNext(V, 'saya', 50), 'grafik');
+  assert.equal(L.swipeNext(V, 'kalender', 50), 'tugas');
+  assert.equal(L.swipeNext(V, 'tugas', 50), null, 'menu paling kiri');
+  assert.equal(L.swipeNext(V, 'tugas', 0), null);
+  assert.equal(L.swipeNext(V, 'cari', -50), null, 'bukan menu utama');
+  assert.equal(L.swipeNext(null, 'tugas', -50), null);
+  // halaman ikut jari; di ujung hanya bergeser sedikit (maks 56 px), arahnya tetap
+  assert.equal(L.swipeOffset(-120, true), -120);
+  assert.equal(L.swipeOffset(80, true), 80);
+  assert.equal(L.swipeOffset(100, false), 22);
+  assert.equal(L.swipeOffset(-100, false), -22);
+  assert.equal(L.swipeOffset(-1000, false), -56);
+  assert.equal(L.swipeOffset(0, false), 0);
+  // pindah: ≥ 28% lebar, atau kibas cepat ke arah yang sama (≥ 0,45 px/ms, ≥ 32 px)
+  assert.equal(L.swipeCommit(-110, 0, 390), true, '110 ≥ 28% × 390');
+  assert.equal(L.swipeCommit(-100, 0, 390), false, 'kurang jauh & jari berhenti');
+  assert.equal(L.swipeCommit(60, 0.2, 390), false, 'pelan');
+  assert.equal(L.swipeCommit(-40, -0.6, 390), true, 'kibasan');
+  assert.equal(L.swipeCommit(40, 0.6, 390), true);
+  assert.equal(L.swipeCommit(-25, -1.5, 390), false, 'kibasan terlalu pendek (< 32 px)');
+  assert.equal(L.swipeCommit(-200, 0.5, 390), false, 'jari sedang kembali → batal walau sudah jauh');
+  assert.equal(L.swipeCommit(-200, 0.1, 390), true, 'gerak balik kecil (< 0,2 px/ms) tidak membatalkan');
+  assert.equal(L.swipeCommit(0, -2, 390), false);
+  assert.equal(L.swipeCommit(-150, 0, 0), true, 'lebar tidak diketahui → tetap aman');
+  // urutan menu di aplikasi = bottom navigation
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const nav = [...(html.match(/<nav class="nav" id="nav">([\s\S]*?)<\/nav>/) || ['', ''])[1].matchAll(/data-view="(\w+)"/g)].map(m => m[1]);
+  assert.deepEqual(nav, V, 'urutan bottom navigation');
+  assert.match(html, /const VIEWS=\['tugas','kalender','grafik','saya'\];/, 'VIEWS sama dengan bottom navigation');
 });
